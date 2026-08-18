@@ -41,8 +41,15 @@ jobs:
           ./gradlew --no-daemon --stacktrace
           :core:domain:jvmTest :core:data:jvmTest :core:beacon:jvmTest :server:test
 
-      - name: Build landing + fat jar
-        run: ./gradlew --no-daemon --stacktrace :server:buildLanding :server:shadowJar
+      # Separate invocations: buildLanding writes into processResources' input dir (server/.../web), so
+      # running both in one Gradle invocation trips Gradle 9's implicit-dependency validation. Sequence
+      # them instead — regenerate web/, then package it. (buildLanding is intentionally not wired into
+      # processResources, to keep Heroku's Node-less build packaging the committed web/ as-is.)
+      - name: Build landing site
+        run: ./gradlew --no-daemon --stacktrace :server:buildLanding
+
+      - name: Build server fat jar (landing bundled)
+        run: ./gradlew --no-daemon --stacktrace :server:shadowJar
 
       - name: Create GitHub Release with the server jar
         uses: softprops/action-gh-release@v2

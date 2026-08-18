@@ -93,10 +93,17 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # buildLanding runs the Vite build and copies dist/ into server/src/main/resources/web; shadowJar
-      # then packages that web/ into the deployable fat jar (same artifact Heroku/`:server:stage` ships).
-      - name: Build landing + fat jar
-        run: ./gradlew --no-daemon --stacktrace :server:buildLanding :server:shadowJar
+      # Two SEPARATE Gradle invocations on purpose: buildLanding writes into
+      # server/src/main/resources/web, which is processResources' input dir. If both ran in one
+      # invocation, Gradle 9 fails with an implicit-dependency validation error (processResources would
+      # consume buildLanding's output without a declared edge). buildLanding is deliberately NOT wired
+      # into processResources (so Heroku's Node-less build packages the committed web/ as-is), so we
+      # sequence them here instead: first regenerate web/, then package it into the fat jar.
+      - name: Build landing site
+        run: ./gradlew --no-daemon --stacktrace :server:buildLanding
+
+      - name: Build server fat jar (landing bundled)
+        run: ./gradlew --no-daemon --stacktrace :server:shadowJar
 
       - name: Upload server fat jar (landing bundled)
         uses: actions/upload-artifact@v4
