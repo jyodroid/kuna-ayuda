@@ -26,10 +26,10 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      - name: Set up Node 20 (for the Vite landing build)
+      - name: Set up Node 22 (for the Vite landing build)
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: landing/package-lock.json
 
