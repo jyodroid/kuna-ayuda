@@ -1,0 +1,101 @@
+name: CI
+
+# Runs on every push to main AND every PR targeting main. The PR run is the guardrail: enable branch
+# protection on `main` requiring these checks, then merge through PRs (even solo) so a red build can't
+# land. See CONTRIBUTING / the repo's branch-protection settings.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# A newer push to the same ref cancels the in-flight run — saves CI minutes on rapid pushes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Unit tests + shared-client compile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      # Runs the whole unit-test suite (core:domain, core:data, core:beacon, server — all Docker-free)
+      # and compiles the shared Compose client for the JVM target, which force-compiles commonMain +
+      # jvmMain and catches most shared-code breakage without needing the Android SDK / a macOS runner.
+      - name: Run tests
+        run: >
+          ./gradlew --no-daemon --stacktrace
+          :core:domain:jvmTest
+          :core:data:jvmTest
+          :core:beacon:jvmTest
+          :server:test
+          :composeApp:compileKotlinJvm
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: '**/build/reports/tests/'
+          if-no-files-found: ignore
+
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so a secret in any commit is caught, not just the diff
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITLEAKS_LICENSE is only required for GitHub *organizations*; not needed for a personal repo.
+
+  package:
+    name: Build landing + server fat jar
+    runs-on: ubuntu-latest
+    needs: test # only package once the tests are green
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Node 20 (for the Vite landing build)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: landing/package-lock.json
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      # buildLanding runs the Vite build and copies dist/ into server/src/main/resources/web; shadowJar
+      # then packages that web/ into the deployable fat jar (same artifact Heroku/`:server:stage` ships).
+      - name: Build landing + fat jar
+        run: ./gradlew --no-daemon --stacktrace :server:buildLanding :server:shadowJar
+
+      - name: Upload server fat jar (landing bundled)
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-fatjar
+          path: server/build/libs/server*all.jar
+          if-no-files-found: error
