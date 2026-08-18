@@ -1,0 +1,12 @@
+TEAM_ID=
+
+PRODUCT_NAME=KunaSismoAyuda
+PRODUCT_BUNDLE_IDENTIFIER=com.jyodroid.kunasismoayuda.KunaSismoAyuda$(TEAM_ID)
+
+CURRENT_PROJECT_VERSION=1
+MARKETING_VERSION=1.0
+
+// MapLibre Native (added via SPM: maplibre-gl-native-distribution 6.25.1, product "MapLibre").
+// ComposeApp MUST be linked before MapLibre — both ship HarfBuzz, and the reverse order silently
+// breaks Compose text rendering on iOS (per the maplibre-compose docs). Listing both here forces it.
+OTHER_LDFLAGS=$(inherited) -framework ComposeApp -framework MapLibre

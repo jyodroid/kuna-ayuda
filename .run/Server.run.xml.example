@@ -1,0 +1,41 @@
+<!--
+  TEMPLATE — copy this to ".run/Server.run.xml" (which is gitignored) and fill in real
+  local values. NEVER commit the real file: it holds local secrets (a NASA FIRMS key and
+  your local DB URL). This .example is the only file under .run/ that is tracked in git.
+
+  Why these live here at all: a Dock-launched IDE does NOT inherit ~/.zshrc, so any env the
+  local :8080 server needs (the FIRMS key for /api/fires, the project-scoped DB URL) must be
+  set in the run config too, not only in the shell profile. See CLAUDE.md → Local database setup.
+-->
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Server" type="GradleRunConfiguration" factoryName="Gradle">
+    <ExternalSystemSettings>
+      <option name="env">
+        <map>
+          <!-- Project-scoped DB var (see DbEnvParser). Named DATABASE_URL_KUNA so a generic
+               DATABASE_URL exported for another project can't hijack this server. Local dev only. -->
+          <entry key="DATABASE_URL_KUNA" value="postgres://kuna_user:CHANGE_ME@localhost:5432/kuna_sismo_db" />
+          <!-- Free NASA FIRMS Area-API key (https://firms.modaps.eosdis.nasa.gov/api/area/):
+               enables the dense active-fire point feed on GET /api/fires. Local dev only. -->
+          <entry key="FIRMS_MAP_KEY" value="YOUR_FIRMS_MAP_KEY_HERE" />
+        </map>
+      </option>
+      <option name="executionName" />
+      <option name="externalProjectPath" value="$PROJECT_DIR$" />
+      <option name="externalSystemIdString" value="GRADLE" />
+      <option name="scriptParameters" value="" />
+      <option name="taskDescriptions">
+        <list />
+      </option>
+      <option name="taskNames">
+        <list>
+          <option value=":server:run" />
+        </list>
+      </option>
+      <option name="vmOptions" />
+    </ExternalSystemSettings>
+    <GradleScriptDebugEnabled>true</GradleScriptDebugEnabled>
+    <ForceTestExec>false</ForceTestExec>
+    <method v="2" />
+  </configuration>
+</component>

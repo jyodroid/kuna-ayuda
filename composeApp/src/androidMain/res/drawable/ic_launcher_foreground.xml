@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive-icon foreground: the Kuna mark (teal line-art), centered inside the 108dp canvas within
+     the safe zone. The source PNG is teal-on-white (not truly transparent), so it is shown as-is over
+     a WHITE background (@color/ic_launcher_background) — the mark reads teal-on-white, matching iOS.
+     (No android:tint: tinting the opaque bitmap white produced a solid white rectangle.) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:width="60dp"
+        android:height="46dp"
+        android:gravity="center">
+        <bitmap
+            android:src="@drawable/ic_launcher_logo"
+            android:gravity="fill" />
+    </item>
+</layer-list>

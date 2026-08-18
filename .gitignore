@@ -1,0 +1,30 @@
+*.iml
+.kotlin
+.gradle
+**/build/
+xcuserdata
+!src/**/build/
+local.properties
+.idea
+.DS_Store
+captures
+.externalNativeBuild
+.cxx
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+node_modules/
+landing/dist/
+
+# JetBrains run configurations — .run/Server.run.xml holds local secrets (DATABASE_URL_KUNA,
+# FIRMS_MAP_KEY). NEVER commit it. Only the sanitized .run/*.example template is tracked.
+.run/*
+!.run/*.example
+
+# Local env / secret files
+.env
+*.local
+

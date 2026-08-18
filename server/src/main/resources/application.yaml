@@ -1,0 +1,13 @@
+ktor:
+    application:
+        modules:
+            - com.jyodroid.kunasismoayuda.server.ApplicationKt.module
+    deployment:
+        port: "$PORT:8080"
+    database:
+        driver: "org.postgresql.Driver"
+
+jwt:
+    domain: "https://kuna-sismo-ayuda/"
+    audience: "kuna-sismo-ayuda-audience"
+    realm: "Kuna Sismo Ayuda"
