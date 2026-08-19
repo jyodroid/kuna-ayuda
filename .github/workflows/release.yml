@@ -1,0 +1,59 @@
+name: Release
+
+# Cut a release by pushing a version tag, e.g.:
+#   git tag v1.0.0 && git push origin v1.0.0
+# This builds the landing site + the server fat jar (with the landing bundled) and attaches the jar to a
+# GitHub Release for that tag. Deploy = download the jar and `java -jar server-all.jar` (or point Heroku
+# at the tag). Secrets/DB config come from the deploy environment, never the jar.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write # needed to create the Release and upload the jar
+
+jobs:
+  release:
+    name: Build + publish server fat jar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Node 22 (for the Vite landing build)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: landing/package-lock.json
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Run tests
+        run: >
+          ./gradlew --no-daemon --stacktrace
+          :core:domain:jvmTest :core:data:jvmTest :core:beacon:jvmTest :server:test
+
+      # Separate invocations: buildLanding writes into processResources' input dir (server/.../web), so
+      # running both in one Gradle invocation trips Gradle 9's implicit-dependency validation. Sequence
+      # them instead — regenerate web/, then package it. (buildLanding is intentionally not wired into
+      # processResources, to keep Heroku's Node-less build packaging the committed web/ as-is.)
+      - name: Build landing site
+        run: ./gradlew --no-daemon --stacktrace :server:buildLanding
+
+      - name: Build server fat jar (landing bundled)
+        run: ./gradlew --no-daemon --stacktrace :server:shadowJar
+
+      - name: Create GitHub Release with the server jar
+        uses: softprops/action-gh-release@v2
+        with:
+          files: server/build/libs/server*all.jar
+          generate_release_notes: true
+          fail_on_unmatched_files: true
