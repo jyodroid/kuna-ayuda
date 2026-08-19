@@ -78,8 +78,26 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = libs.versions.desktopPackageName.get()
+            // User-facing app name (the .app bundle, Start-menu entry, DMG title).
+            packageName = "Kuna Ayuda"
             packageVersion = libs.versions.desktopPackageVersion.get()
+            description = "Disaster-relief resource network — earthquakes and wildfires first."
+            vendor = "Kuna Ayuda"
+
+            macOS {
+                // Reverse-DNS bundle id — must be set explicitly since packageName now has a space.
+                bundleID = libs.versions.projectApplicationId.get()
+                iconFile.set(project.file("desktop-icons/icon.icns"))
+            }
+            windows {
+                iconFile.set(project.file("desktop-icons/icon.ico"))
+                menuGroup = "Kuna Ayuda"
+            }
+            linux {
+                // Debian package names must be lowercase with no spaces.
+                packageName = "kuna-ayuda"
+                iconFile.set(project.file("desktop-icons/icon.png"))
+            }
         }
     }
 }
