@@ -7,6 +7,7 @@ import com.jyodroid.kunasismoayuda.server.upstream.FireSource
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
+import kotlin.math.floor
 
 /**
  * Aggregates active-wildfire data — the wildfire analog of [QuakeService]. Tries the primary source
@@ -29,6 +30,11 @@ class FireService(
 
     companion object {
         const val DEFAULT_MAX_FIRES = 200
+
+        /** Grid cell (degrees) for clustering hotspots. A single wildfire triggers many adjacent FIRMS
+         *  pixels; ~0.1° (≈11 km at the equator) collapses that pixel cloud to one representative fire so
+         *  the list/map show distinct fires, not duplicate-looking pixels. */
+        const val CLUSTER_CELL_DEG = 0.1
     }
 
     private data class CacheEntry(val key: String, val at: Long, val data: List<FireResponse>)
@@ -43,9 +49,10 @@ class FireService(
         return mutex.withLock {
             cache?.let { if (it.key == key && now() - it.at < cacheTtlMillis) return it.data }
 
-            // Rank by intensity (Fire Radiative Power) so the cap keeps the strongest fires; recency
+            // Cluster adjacent hotspots (one wildfire = many FIRMS pixels) → one entry per cell, then
+            // rank by intensity (Fire Radiative Power) so the cap keeps the strongest fires; recency
             // breaks ties. GDACS events (no FRP) sort after FIRMS points but are few, so they survive.
-            val fires = fetchFromSources(bbox)
+            val fires = clusterHotspots(fetchFromSources(bbox))
                 .sortedWith(
                     compareByDescending<FireResponse> { it.frpMw ?: -1.0 }
                         .thenByDescending { it.time },
@@ -55,6 +62,17 @@ class FireService(
             fires
         }
     }
+
+    /** Collapses hotspots that fall in the same ~[CLUSTER_CELL_DEG] grid cell to the single most intense
+     *  one (highest FRP, recency breaks ties) — de-duplicates a fire's pixel cloud into one entry. */
+    internal fun clusterHotspots(fires: List<FireResponse>): List<FireResponse> =
+        fires.groupBy {
+            floor(it.latitude / CLUSTER_CELL_DEG).toInt() to floor(it.longitude / CLUSTER_CELL_DEG).toInt()
+        }.values.map { group ->
+            group.maxWithOrNull(
+                compareBy<FireResponse> { it.frpMw ?: -1.0 }.thenBy { it.time },
+            )!!
+        }
 
     private suspend fun fetchFromSources(bbox: BBox): List<FireResponse> {
         runCatching { primary.recentFires(bbox) }

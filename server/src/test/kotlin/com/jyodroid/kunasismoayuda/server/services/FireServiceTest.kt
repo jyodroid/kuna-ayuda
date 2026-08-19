@@ -9,8 +9,10 @@ import org.junit.jupiter.api.Test
 
 class FireServiceTest {
 
-    private fun fire(id: String, frp: Double?, time: Long) =
-        FireResponse(id, time, 0.0, 0.0, null, frp, null, null, "TEST", null)
+    // Distinct lat per fire (>0.1° apart) so hotspot clustering keeps them separate; overridable.
+    private var nextLat = 0.0
+    private fun fire(id: String, frp: Double?, time: Long, lat: Double = nextLat.also { nextLat += 1.0 }, lon: Double = 0.0) =
+        FireResponse(id, time, lat, lon, null, frp, null, null, "TEST", null)
 
     private fun source(sourceName: String, fires: List<FireResponse>) = object : FireSource {
         override val name = sourceName
@@ -42,5 +44,19 @@ class FireServiceTest {
         val fallback = source("fallback", listOf(fire("x", 5.0, 1)))
         val service = FireService(throwing, fallback)
         assertEquals(listOf("x"), service.recentFires("CO").map { it.id })
+    }
+
+    @Test
+    fun clusters_adjacent_hotspots_keeping_the_most_intense() = runBlocking {
+        // Three pixels of ONE fire (same ~0.1° cell) + one distant fire → two entries, and the cluster
+        // keeps the highest-FRP pixel (mirrors the "duplicate-looking" list of FIRMS pixels).
+        val pixelA = fire("a", 10.0, 1, lat = 11.01, lon = -73.05)
+        val pixelB = fire("b", 90.0, 2, lat = 11.02, lon = -73.06) // strongest in the cluster
+        val pixelC = fire("c", 30.0, 3, lat = 11.03, lon = -73.07)
+        val distant = fire("far", 50.0, 4, lat = 3.05, lon = -75.05)
+        val service = FireService(source("p", listOf(pixelA, pixelB, pixelC, distant)), emptySource)
+
+        val result = service.recentFires("CO").map { it.id }
+        assertEquals(listOf("b", "far"), result) // cluster collapses to "b"; ranked by FRP (90 > 50)
     }
 }
