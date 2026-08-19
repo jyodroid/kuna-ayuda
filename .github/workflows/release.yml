@@ -67,16 +67,22 @@ jobs:
             glob: composeApp/build/compose/binaries/main/msi/*.msi
             asset: Kuna-Ayuda-Windows.msi
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30 # a hung leg can't stall the release for hours
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '17', cache: gradle }
 
-      # jpackage prerequisites the base runner image may lack.
+      # jpackage's .deb build needs fakeroot (+ binutils). Both are normally already on the runner, so
+      # try installing from the existing cache first (fast, no network); only fall back to `apt-get
+      # update` if that fails. The step is capped so a flaky apt mirror can't hang for many minutes.
       - name: Install .deb tooling (Linux)
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y fakeroot binutils
+        timeout-minutes: 5
+        run: |
+          sudo apt-get install -y --no-install-recommends fakeroot binutils \
+            || { sudo apt-get update && sudo apt-get install -y --no-install-recommends fakeroot binutils; }
 
       - name: Install WiX Toolset (Windows, for .msi)
         if: matrix.os == 'windows-latest'
