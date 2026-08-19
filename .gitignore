@@ -28,3 +28,8 @@ landing/dist/
 .env
 *.local
 
+# Android release signing — the upload keystore and its passwords must NEVER be committed.
+keystore.properties
+*.jks
+*.keystore
+

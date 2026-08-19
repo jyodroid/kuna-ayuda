@@ -61,7 +61,7 @@ testcontainers = "1.20.4"
 mockk = "1.13.13"
 
 projectApplicationId = "com.jyodroid.kunasismoayuda"
-projectVersionName = "1.0"
+projectVersionName = "1.0.1"
 projectMinSdkVersion = "26"
 projectTargetSdkVersion = "36"
 projectCompileSdkVersion = "36"

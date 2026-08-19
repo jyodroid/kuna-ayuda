@@ -1,5 +1,6 @@
 import org.gradle.api.tasks.JavaExec
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.convention.cmp.application)
@@ -63,6 +64,13 @@ compose.resources {
     generateResClass = always
 }
 
+// Release signing reads from a gitignored keystore.properties at the repo root (never committed). When
+// it's absent (CI, a fresh clone, debug-only work) release signing is simply skipped, so nothing breaks.
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) keystorePropsFile.inputStream().use { load(it) }
+}
+
 android {
     namespace = libs.versions.projectApplicationId.get()
 
@@ -70,6 +78,26 @@ android {
         applicationId = libs.versions.projectApplicationId.get()
         versionCode = libs.versions.projectVersionCode.get().toInt()
         versionName = libs.versions.projectVersionName.get()
+    }
+
+    signingConfigs {
+        if (keystorePropsFile.exists()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            if (keystorePropsFile.exists()) signingConfig = signingConfigs.getByName("release")
+            // Minify is left OFF for now: R8 can strip reflection used by Koin/Ktor/kotlinx.serialization.
+            // Turning it on later requires keep rules — a separate, tested change.
+            isMinifyEnabled = false
+        }
     }
 }
 
