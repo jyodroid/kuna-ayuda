@@ -2,58 +2,132 @@ name: Release
 
 # Cut a release by pushing a version tag, e.g.:
 #   git tag v1.0.0 && git push origin v1.0.0
-# This builds the landing site + the server fat jar (with the landing bundled) and attaches the jar to a
-# GitHub Release for that tag. Deploy = download the jar and `java -jar server-all.jar` (or point Heroku
-# at the tag). Secrets/DB config come from the deploy environment, never the jar.
+# This builds the native desktop installers (macOS .dmg, Windows .msi, Linux .deb) AND the server fat
+# jar (with the landing bundled), renames each to a STABLE, version-less name, and attaches them to the
+# GitHub Release for that tag. The stable names matter: the landing page links to
+#   https://github.com/<owner>/kuna-ayuda/releases/latest/download/<stable-name>
+# which always resolves to the latest release's asset — so the download links never need updating.
 on:
   push:
     tags: ['v*']
 
 permissions:
-  contents: write # needed to create the Release and upload the jar
+  contents: write # create the Release and upload assets
 
 jobs:
-  release:
-    name: Build + publish server fat jar
+  # Fast correctness gate before we spend minutes on 3-OS installer builds.
+  test:
+    name: Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17', cache: gradle }
+      - run: chmod +x ./gradlew
+      - run: >
+          ./gradlew --no-daemon --stacktrace
+          :core:domain:jvmTest :core:data:jvmTest :core:beacon:jvmTest :server:test
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+  # Native desktop installer, one per OS. fail-fast:false so a flaky Windows/msi build can't sink the
+  # macOS + Linux + server release — whatever built gets attached.
+  desktop:
+    name: Desktop installer (${{ matrix.os }})
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            task: packageDmg
+            glob: composeApp/build/compose/binaries/main/dmg/*.dmg
+            asset: Kuna-Ayuda-macOS.dmg
+          - os: ubuntu-latest
+            task: packageDeb
+            glob: composeApp/build/compose/binaries/main/deb/*.deb
+            asset: Kuna-Ayuda-Linux.deb
+          - os: windows-latest
+            task: packageMsi
+            glob: composeApp/build/compose/binaries/main/msi/*.msi
+            asset: Kuna-Ayuda-Windows.msi
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17', cache: gradle }
+
+      # jpackage prerequisites the base runner image may lack.
+      - name: Install .deb tooling (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y fakeroot binutils
+
+      - name: Install WiX Toolset (Windows, for .msi)
+        if: matrix.os == 'windows-latest'
+        run: choco install wixtoolset --no-progress -y
+
+      - name: Build installer
+        shell: bash
+        run: |
+          chmod +x ./gradlew || true
+          ./gradlew --no-daemon --stacktrace :composeApp:${{ matrix.task }}
+
+      - name: Collect + rename to a stable name
+        shell: bash
+        run: |
+          mkdir -p dist
+          f="$(ls ${{ matrix.glob }} | head -n1)"
+          echo "Packaged: $f -> ${{ matrix.asset }}"
+          cp "$f" "dist/${{ matrix.asset }}"
+
+      - uses: actions/upload-artifact@v4
         with:
-          distribution: temurin
-          java-version: '17'
-          cache: gradle
+          name: installer-${{ matrix.os }}
+          path: dist/${{ matrix.asset }}
+          if-no-files-found: error
 
-      - name: Set up Node 22 (for the Vite landing build)
-        uses: actions/setup-node@v4
+  # Server fat jar (landing bundled) — same artifact the deploy path ships.
+  server:
+    name: Server fat jar
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17', cache: gradle }
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
           cache-dependency-path: landing/package-lock.json
+      - run: chmod +x ./gradlew
+      # Separate invocations (buildLanding writes into processResources' input dir — see ci.yml note).
+      - run: ./gradlew --no-daemon --stacktrace :server:buildLanding
+      - run: ./gradlew --no-daemon --stacktrace :server:shadowJar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: server-fatjar
+          path: server/build/libs/server*all.jar
+          if-no-files-found: error
 
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Run tests
-        run: >
-          ./gradlew --no-daemon --stacktrace
-          :core:domain:jvmTest :core:data:jvmTest :core:beacon:jvmTest :server:test
-
-      # Separate invocations: buildLanding writes into processResources' input dir (server/.../web), so
-      # running both in one Gradle invocation trips Gradle 9's implicit-dependency validation. Sequence
-      # them instead — regenerate web/, then package it. (buildLanding is intentionally not wired into
-      # processResources, to keep Heroku's Node-less build packaging the committed web/ as-is.)
-      - name: Build landing site
-        run: ./gradlew --no-daemon --stacktrace :server:buildLanding
-
-      - name: Build server fat jar (landing bundled)
-        run: ./gradlew --no-daemon --stacktrace :server:shadowJar
-
-      - name: Create GitHub Release with the server jar
+  # Gather every built artifact and publish the Release.
+  release:
+    name: Publish GitHub Release
+    needs: [desktop, server]
+    if: always() && needs.server.result == 'success' # server jar is the floor; installers are best-effort
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts # each artifact lands in artifacts/<name>/...
+      - name: List gathered artifacts
+        run: find artifacts -type f -print
+      - name: Create/Update the Release with all assets
         uses: softprops/action-gh-release@v2
         with:
-          files: server/build/libs/server*all.jar
+          files: |
+            artifacts/**/*.dmg
+            artifacts/**/*.msi
+            artifacts/**/*.deb
+            artifacts/**/server*all.jar
           generate_release_notes: true
-          fail_on_unmatched_files: true
+          fail_on_unmatched_files: false # tolerate a missing installer (e.g. a failed Windows leg)
