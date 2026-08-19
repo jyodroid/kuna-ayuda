@@ -135,3 +135,7 @@ section .lead { color: var(--text-muted); max-width: 680px; margin: 0 0 28px; }
 .attrib { font-size: 0.82rem; color: var(--text-muted); margin-top: 20px; }
 
 .placeholder { color: var(--danger); font-weight: 600; }
+
+.dl-help { margin-top: 14px; font-size: 0.88rem; }
+.dl-help summary { cursor: pointer; color: var(--teal); font-weight: 600; }
+.dl-help p { color: var(--text-muted); margin: 8px 0 0; line-height: 1.5; }
