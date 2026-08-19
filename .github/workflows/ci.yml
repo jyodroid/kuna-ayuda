@@ -111,3 +111,31 @@ jobs:
           name: server-fatjar
           path: server/build/libs/server*all.jar
           if-no-files-found: error
+
+  deploy:
+    name: Deploy to Heroku
+    runs-on: ubuntu-latest
+    # Only on a green main push: waits for tests, the secret scan, AND a clean package build. Never on
+    # PRs or feature branches. Requires the HEROKU_API_KEY repo secret (see below); if it's absent the
+    # step still runs but fails loudly — that's the signal to add the secret.
+    needs: [test, secret-scan, package]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Heroku's buildpack deploy is a git push — it needs the full history
+
+      # Deploys by pushing to Heroku's git endpoint with an API-key credential (no third-party action;
+      # the token comes from the secret and is never echoed). Heroku then runs `./gradlew stage` and
+      # boots the fat jar via the root Procfile. -f because Heroku's git branch is just a deploy trigger.
+      - name: Push to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_APP: kuna-ayuda
+        run: |
+          if [ -z "$HEROKU_API_KEY" ]; then
+            echo "::error::HEROKU_API_KEY secret is not set — add it in repo Settings → Secrets → Actions."
+            exit 1
+          fi
+          git config http.postBuffer 524288000
+          git push -f "https://heroku:${HEROKU_API_KEY}@git.heroku.com/${HEROKU_APP}.git" HEAD:refs/heads/main
