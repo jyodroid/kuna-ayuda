@@ -50,7 +50,10 @@ import com.jyodroid.kunasismoayuda.core.data.remote.defaultServerBaseUrl
 import com.jyodroid.kunasismoayuda.core.domain.model.SearchReport
 import com.jyodroid.kunasismoayuda.core.domain.model.SearchStatus
 import com.jyodroid.kunasismoayuda.core.domain.model.SearchSubject
+import androidx.compose.material3.Icon
+import org.jetbrains.compose.resources.painterResource
 import com.jyodroid.kunasismoayuda.resources.Res
+import com.jyodroid.kunasismoayuda.resources.ic_add
 import com.jyodroid.kunasismoayuda.resources.board_filter_all
 import com.jyodroid.kunasismoayuda.resources.help_call
 import com.jyodroid.kunasismoayuda.resources.retry
@@ -159,7 +162,7 @@ fun SearchScreen(
         ExtendedFloatingActionButton(
             onClick = onNew,
             text = { Text(stringResource(Res.string.search_new)) },
-            icon = { Text("➕") },
+            icon = { Icon(painterResource(Res.drawable.ic_add), contentDescription = null) },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
         )
     }

@@ -39,7 +39,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jyodroid.kunasismoayuda.core.domain.model.Shelter
 import com.jyodroid.kunasismoayuda.core.domain.model.ShelterType
+import androidx.compose.material3.Icon
+import org.jetbrains.compose.resources.painterResource
 import com.jyodroid.kunasismoayuda.resources.Res
+import com.jyodroid.kunasismoayuda.resources.ic_check
 import com.jyodroid.kunasismoayuda.resources.admin_cancel
 import com.jyodroid.kunasismoayuda.resources.help_call
 import com.jyodroid.kunasismoayuda.resources.retry
@@ -215,7 +218,13 @@ fun ShelterCard(shelter: Shelter, modifier: Modifier = Modifier, distanceKm: Dou
                     AssistChip(
                         onClick = {},
                         label = { Text(stringResource(Res.string.shelters_verified)) },
-                        leadingIcon = { Text("✓") },
+                        leadingIcon = {
+                            Icon(
+                                painterResource(Res.drawable.ic_check),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        },
                         colors = AssistChipDefaults.assistChipColors(
                             labelColor = MaterialTheme.colorScheme.primary,
                         ),

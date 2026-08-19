@@ -46,7 +46,10 @@ import androidx.compose.ui.unit.dp
 import com.jyodroid.kunasismoayuda.core.domain.model.PostKind
 import com.jyodroid.kunasismoayuda.core.domain.model.ResourcePost
 import com.jyodroid.kunasismoayuda.core.domain.model.ResourceType
+import androidx.compose.material3.Icon
+import org.jetbrains.compose.resources.painterResource
 import com.jyodroid.kunasismoayuda.resources.Res
+import com.jyodroid.kunasismoayuda.resources.ic_add
 import com.jyodroid.kunasismoayuda.resources.board_email
 import com.jyodroid.kunasismoayuda.resources.board_kind_offer
 import com.jyodroid.kunasismoayuda.resources.board_kind_request
@@ -177,7 +180,7 @@ fun BoardScreen(
         ExtendedFloatingActionButton(
             onClick = onNewPost,
             text = { Text(stringResource(Res.string.board_new)) },
-            icon = { Text("➕") },
+            icon = { Icon(painterResource(Res.drawable.ic_add), contentDescription = null) },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
         )
     }
