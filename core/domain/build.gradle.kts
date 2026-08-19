@@ -4,6 +4,31 @@ plugins {
     alias(libs.plugins.android.lint)
 }
 
+// Generates AppInfo.kt (the in-app version label) from the version catalog, so the version lives in
+// exactly one place: gradle/libs.versions.toml -> desktopPackageVersion.
+val generateAppInfo by tasks.registering {
+    val version = libs.versions.desktopPackageVersion.get()
+    val outputDir = layout.buildDirectory.dir("generated/appinfo/kotlin")
+    inputs.property("version", version)
+    outputs.dir(outputDir)
+    doLast {
+        val file = outputDir.get()
+            .file("com/jyodroid/kunasismoayuda/core/domain/AppInfo.kt").asFile
+        file.parentFile.mkdirs()
+        file.writeText(
+            """
+            |package com.jyodroid.kunasismoayuda.core.domain
+            |
+            |// GENERATED — do not edit. Source of truth: gradle/libs.versions.toml (desktopPackageVersion).
+            |object AppInfo {
+            |    const val VERSION: String = "$version"
+            |}
+            |
+            """.trimMargin(),
+        )
+    }
+}
+
 kotlin {
 
     // Target declarations - add or remove as needed below. These define
@@ -62,6 +87,9 @@ kotlin {
     // See: https://kotlinlang.org/docs/multiplatform-hierarchy.html
     sourceSets {
         commonMain {
+            // Single source of truth for the app version: generated from gradle/libs.versions.toml
+            // (desktopPackageVersion), so a release bumps just the catalog + the git tag.
+            kotlin.srcDir(generateAppInfo)
             dependencies {
                 implementation(libs.kotlin.stdlib)
                 // StateFlow is part of the SosRepository public API (pending-count).

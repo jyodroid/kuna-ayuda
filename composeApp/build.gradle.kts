@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.JavaExec
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
@@ -100,4 +101,11 @@ compose.desktop {
             }
         }
     }
+}
+
+// Local-dev convenience: `:composeApp:run` (desktop) points the app at a local server via a JVM system
+// property. Packaged/release builds (packageDmg/Msi/Deb, the runnable jar) never get this flag, so they
+// use the production API — a release can't accidentally ship pointing at a developer's machine.
+tasks.matching { it.name == "run" }.configureEach {
+    (this as? JavaExec)?.systemProperty("kuna.local", "true")
 }

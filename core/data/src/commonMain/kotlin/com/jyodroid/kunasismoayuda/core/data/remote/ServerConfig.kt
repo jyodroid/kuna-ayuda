@@ -10,10 +10,14 @@ package com.jyodroid.kunasismoayuda.core.data.remote
 const val PROD_BASE_URL: String = "https://kuna-ayuda-def81359e2e0.herokuapp.com"
 
 /**
- * Base URL of the Kuna backend. Defaults to [PROD_BASE_URL]; each platform allows a local-dev override:
- *  - **Desktop (JVM):** run with `-Dkuna.server.url=http://localhost:8080`
- *  - **iOS:** set a `KUNA_SERVER_URL` environment variable in the Xcode scheme
- *  - **Android:** flip the actual to `http://10.0.2.2:8080` (emulator loopback) while developing
+ * Base URL of the Kuna backend, chosen automatically by **build type** so a release can never ship
+ * pointing at a developer's machine:
+ *  - **Release / packaged builds → [PROD_BASE_URL]** (the safe default on every platform).
+ *  - **Debug / local dev → a local server.** Desktop: `:composeApp:run` sets `-Dkuna.local=true`
+ *    (or pass it yourself) → `http://localhost:8080`. Android: a *debuggable* build → `http://10.0.2.2:8080`
+ *    (emulator loopback). iOS: a *debug* framework → `http://localhost:8080` (simulator).
+ *
+ * Explicit overrides still win where handy: `-Dkuna.server.url=...` on desktop, `KUNA_SERVER_URL` env on iOS.
  */
 expect fun defaultServerBaseUrl(): String
 
