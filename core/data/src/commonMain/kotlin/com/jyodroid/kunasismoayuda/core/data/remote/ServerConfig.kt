@@ -1,8 +1,19 @@
 package com.jyodroid.kunasismoayuda.core.data.remote
 
 /**
- * Base URL of the Kuna backend for local development. Differs per platform because
- * "localhost" means different things on an Android emulator vs. desktop/iOS simulator.
+ * Production API base URL (the Heroku server). **Release/packaged apps use this** — the whole point is
+ * that a downloaded app talks to the live backend, not a developer's machine. For LOCAL development
+ * against a server on your own machine, override it per platform (see [defaultServerBaseUrl]).
+ *
+ * TODO: switch to the custom domain (e.g. https://api.kunaayuda.org) once DNS is set up.
+ */
+const val PROD_BASE_URL: String = "https://kuna-ayuda-def81359e2e0.herokuapp.com"
+
+/**
+ * Base URL of the Kuna backend. Defaults to [PROD_BASE_URL]; each platform allows a local-dev override:
+ *  - **Desktop (JVM):** run with `-Dkuna.server.url=http://localhost:8080`
+ *  - **iOS:** set a `KUNA_SERVER_URL` environment variable in the Xcode scheme
+ *  - **Android:** flip the actual to `http://10.0.2.2:8080` (emulator loopback) while developing
  */
 expect fun defaultServerBaseUrl(): String
 
@@ -22,8 +33,9 @@ const val APP_CLIENT_KEY: String = "b7e2d40915a86c3f0e1d7942bc63f58a2049e1cd76b8
  * `/privacy` and `/terms`). The app links here from the Guide screen, and the app-store listings point
  * their required Privacy-Policy URL here too.
  *
- * TODO: set to the real registered domain (e.g. https://kunaayuda.org) before launch.
+ * TODO: set to the real registered domain (e.g. https://kunaayuda.org) once DNS is set up. For now it
+ * points at the live Heroku server, which serves /privacy and /terms, so the in-app links work today.
  */
-const val SITE_BASE_URL: String = "https://kunaayuda.org"
+const val SITE_BASE_URL: String = PROD_BASE_URL
 const val PRIVACY_URL: String = "$SITE_BASE_URL/privacy"
 const val TERMS_URL: String = "$SITE_BASE_URL/terms"

@@ -75,7 +75,7 @@
     <string name="sos_beacon_warning_body">La linterna parpadeará y sonará una alarma en Morse (SOS) para ayudar a que te localicen. Consume batería rápido: úsala solo cuando necesites que te encuentren. Se apaga sola después de un momento.</string>
     <string name="sos_beacon_start">Encender</string>
     <string name="sos_beacon_cancel">Cancelar</string>
-    <string name="sos_beacon_active">Emitiendo SOS · %d s</string>
+    <string name="sos_beacon_active">Emitiendo SOS · %1$d s</string>
     <string name="sos_beacon_stop">Detener</string>
     <string name="sos_beacon_light">Luz</string>
     <string name="sos_beacon_sound">Sonido</string>
@@ -88,7 +88,7 @@
     <string name="sos_queued">Sin conexión: tu alerta quedó guardada y se enviará automáticamente al recuperar señal. Si puedes, llama al %1$s.</string>
     <string name="sos_safe_sent">Registramos que estás a salvo.</string>
     <string name="sos_queued_safe">Sin conexión: tu aviso quedó guardado y se enviará al recuperar señal.</string>
-    <string name="sos_pending">%d aviso(s) en cola. Reintentando el envío…</string>
+    <string name="sos_pending">%1$d aviso(s) en cola. Reintentando el envío…</string>
     <string name="sos_error">No se pudo enviar. Reintenta o llama al %1$s.</string>
     <string name="sos_location_on">Ubicación precisa incluida</string>
     <string name="sos_location_off">Sin ubicación precisa. Indica tu barrio o punto de referencia.</string>

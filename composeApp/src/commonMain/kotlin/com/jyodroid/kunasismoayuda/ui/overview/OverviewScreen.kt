@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.foundation.layout.Spacer
@@ -144,11 +145,23 @@ fun OverviewScreen(
                         item { AffectedPlaces(affectedRegions) }
                         item { QuakeBubble(featuredQuake, onQuakeTap) }
                         item { FireBubble(featuredFire, featuredFireNear, onFireTap) }
+                        item { AppVersionFooter() }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun AppVersionFooter() {
+    Text(
+        text = "Kuna Ayuda · v${com.jyodroid.kunasismoayuda.core.domain.AppInfo.VERSION}",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+    )
 }
 
 @Composable

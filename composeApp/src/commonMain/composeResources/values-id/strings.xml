@@ -75,7 +75,7 @@
     <string name="sos_beacon_warning_body">Senter akan berkedip dan alarm berbunyi dalam Morse (SOS) untuk membantu orang menemukan Anda. Ini menguras baterai dengan cepat — gunakan hanya saat Anda perlu ditemukan. Mati sendiri setelah beberapa saat.</string>
     <string name="sos_beacon_start">Nyalakan</string>
     <string name="sos_beacon_cancel">Batal</string>
-    <string name="sos_beacon_active">Mengirim SOS · %d d</string>
+    <string name="sos_beacon_active">Mengirim SOS · %1$d d</string>
     <string name="sos_beacon_stop">Hentikan</string>
     <string name="sos_beacon_light">Cahaya</string>
     <string name="sos_beacon_sound">Suara</string>
@@ -88,7 +88,7 @@
     <string name="sos_queued">Luring: peringatan Anda disimpan dan akan dikirim otomatis saat ada sinyal. Jika bisa, hubungi %1$s.</string>
     <string name="sos_safe_sent">Kami mencatat bahwa Anda selamat.</string>
     <string name="sos_queued_safe">Luring: laporan Anda disimpan dan akan dikirim saat ada sinyal.</string>
-    <string name="sos_pending">%d laporan menunggu. Mencoba mengirim ulang…</string>
+    <string name="sos_pending">%1$d laporan menunggu. Mencoba mengirim ulang…</string>
     <string name="sos_error">Tidak dapat mengirim. Coba lagi atau hubungi %1$s.</string>
     <string name="sos_location_on">Lokasi presisi disertakan</string>
     <string name="sos_location_off">Tanpa lokasi presisi. Tambahkan lingkungan atau patokan Anda.</string>

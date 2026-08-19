@@ -75,7 +75,7 @@
     <string name="sos_beacon_warning_body">The flashlight will flash and an alarm will sound in Morse (SOS) to help people locate you. It drains the battery fast — use it only when you need to be found. It turns itself off after a short while.</string>
     <string name="sos_beacon_start">Turn on</string>
     <string name="sos_beacon_cancel">Cancel</string>
-    <string name="sos_beacon_active">Signalling SOS · %d s</string>
+    <string name="sos_beacon_active">Signalling SOS · %1$d s</string>
     <string name="sos_beacon_stop">Stop</string>
     <string name="sos_beacon_light">Light</string>
     <string name="sos_beacon_sound">Sound</string>
@@ -88,7 +88,7 @@
     <string name="sos_queued">Offline: your alert was saved and will be sent automatically once you have signal. If you can, call %1$s.</string>
     <string name="sos_safe_sent">We recorded that you’re safe.</string>
     <string name="sos_queued_safe">Offline: your check-in was saved and will be sent once you have signal.</string>
-    <string name="sos_pending">%d report(s) waiting. Retrying delivery…</string>
+    <string name="sos_pending">%1$d report(s) waiting. Retrying delivery…</string>
     <string name="sos_error">Couldn’t send. Retry or call %1$s.</string>
     <string name="sos_location_on">Precise location included</string>
     <string name="sos_location_off">No precise location. Add your neighborhood or a landmark.</string>

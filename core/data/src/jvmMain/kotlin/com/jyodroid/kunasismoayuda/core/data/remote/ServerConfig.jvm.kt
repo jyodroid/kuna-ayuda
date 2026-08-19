@@ -1,3 +1,5 @@
 package com.jyodroid.kunasismoayuda.core.data.remote
 
-actual fun defaultServerBaseUrl(): String = "http://localhost:8080"
+// Desktop: production by default; run with `-Dkuna.server.url=http://localhost:8080` for local dev.
+actual fun defaultServerBaseUrl(): String =
+    System.getProperty("kuna.server.url")?.takeIf { it.isNotBlank() } ?: PROD_BASE_URL

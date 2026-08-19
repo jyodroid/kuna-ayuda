@@ -1,4 +1,5 @@
 package com.jyodroid.kunasismoayuda.core.data.remote
 
-// 10.0.2.2 is the host loopback as seen from the Android emulator.
-actual fun defaultServerBaseUrl(): String = "http://10.0.2.2:8080"
+// Android: production by default. For local emulator dev against a server on your machine, temporarily
+// return "http://10.0.2.2:8080" (the emulator's loopback to the host) instead of PROD_BASE_URL.
+actual fun defaultServerBaseUrl(): String = PROD_BASE_URL

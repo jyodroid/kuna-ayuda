@@ -75,7 +75,7 @@
     <string name="sos_beacon_warning_body">La torcia lampeggerà e suonerà un allarme in Morse (SOS) per aiutare a localizzarti. Consuma la batteria in fretta: usalo solo quando hai bisogno di essere trovato. Si spegne da solo dopo poco.</string>
     <string name="sos_beacon_start">Attiva</string>
     <string name="sos_beacon_cancel">Annulla</string>
-    <string name="sos_beacon_active">Invio SOS · %d s</string>
+    <string name="sos_beacon_active">Invio SOS · %1$d s</string>
     <string name="sos_beacon_stop">Ferma</string>
     <string name="sos_beacon_light">Luce</string>
     <string name="sos_beacon_sound">Suono</string>
@@ -88,7 +88,7 @@
     <string name="sos_queued">Offline: la tua allerta è stata salvata e verrà inviata automaticamente quando avrai segnale. Se puoi, chiama %1$s.</string>
     <string name="sos_safe_sent">Abbiamo registrato che stai bene.</string>
     <string name="sos_queued_safe">Offline: la tua conferma è stata salvata e verrà inviata quando avrai segnale.</string>
-    <string name="sos_pending">%d segnalazione/i in attesa. Nuovo tentativo di invio…</string>
+    <string name="sos_pending">%1$d segnalazione/i in attesa. Nuovo tentativo di invio…</string>
     <string name="sos_error">Invio non riuscito. Riprova o chiama %1$s.</string>
     <string name="sos_location_on">Posizione precisa inclusa</string>
     <string name="sos_location_off">Nessuna posizione precisa. Aggiungi il tuo quartiere o un punto di riferimento.</string>
