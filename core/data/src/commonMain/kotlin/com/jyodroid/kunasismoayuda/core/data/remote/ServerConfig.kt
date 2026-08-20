@@ -5,9 +5,9 @@ package com.jyodroid.kunasismoayuda.core.data.remote
  * that a downloaded app talks to the live backend, not a developer's machine. For LOCAL development
  * against a server on your own machine, override it per platform (see [defaultServerBaseUrl]).
  *
- * TODO: switch to the custom domain (e.g. https://api.kunaayuda.org) once DNS is set up.
+ * Custom domain (kunaayuda.org) → the same Heroku server; serves both the API and the landing/legal pages.
  */
-const val PROD_BASE_URL: String = "https://kuna-ayuda-def81359e2e0.herokuapp.com"
+const val PROD_BASE_URL: String = "https://kunaayuda.org"
 
 /**
  * Base URL of the Kuna backend, chosen automatically by **build type** so a release can never ship

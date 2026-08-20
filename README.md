@@ -10,7 +10,7 @@ Kotlin Multiplatform (Android · iOS · Desktop) + a Ktor backend. Multi-country
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-0F5E66.svg)](LICENSE)
 
-**🌐 [Live site](https://kuna-ayuda-def81359e2e0.herokuapp.com/)** · **⬇️ [Download the desktop app](https://github.com/jyodroid/kuna-ayuda/releases/latest)** · [Privacy](https://kuna-ayuda-def81359e2e0.herokuapp.com/privacy) · [Terms](https://kuna-ayuda-def81359e2e0.herokuapp.com/terms)
+**🌐 [Live site](https://kunaayuda.org/)** · **⬇️ [Download the desktop app](https://github.com/jyodroid/kuna-ayuda/releases/latest)** · [Privacy](https://kunaayuda.org/privacy) · [Terms](https://kunaayuda.org/terms)
 
 </div>
 
