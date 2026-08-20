@@ -14,5 +14,9 @@
 	<string>Kuna Ayuda usa la cámara para tomar una foto de una mascota o persona perdida o encontrada. / Kuna Ayuda uses the camera to take a photo of a lost or found pet or person.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Kuna Ayuda accede a tus fotos para adjuntar una imagen a un reporte de búsqueda. / Kuna Ayuda accesses your photos to attach an image to a search report.</string>
+	<!-- App only uses standard OS-provided HTTPS/TLS (exempt encryption); declares this so App
+	     Store Connect skips the export-compliance prompt on every upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
