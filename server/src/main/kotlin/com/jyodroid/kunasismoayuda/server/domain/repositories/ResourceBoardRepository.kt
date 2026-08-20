@@ -12,6 +12,19 @@ interface ResourceBoardRepository {
     fun setStatus(id: Int, status: String): Boolean
     fun close(id: Int): Boolean
 
+    /**
+     * Restore a post's status + contact fields from a snapshot (revert of a reject/close, which had
+     * scrubbed the contact). Returns true if the row existed.
+     */
+    fun restore(
+        id: Int,
+        status: String,
+        contactPhone: String?,
+        contactEmail: String?,
+        contactName: String?,
+        ownerSecret: String?,
+    ): Boolean
+
     /** Closes every ACTIVE post created before [cutoff] (and scrubs its contact). Returns the count. */
     fun expireOlderThan(cutoff: LocalDateTime): Int
 }

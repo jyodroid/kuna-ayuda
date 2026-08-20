@@ -82,6 +82,23 @@ class ResourceBoardRepositoryImpl : ResourceBoardRepository {
         } > 0
     }
 
+    override fun restore(
+        id: Int,
+        status: String,
+        contactPhone: String?,
+        contactEmail: String?,
+        contactName: String?,
+        ownerSecret: String?,
+    ): Boolean = transaction {
+        ResourcePosts.update({ ResourcePosts.id eq id }) {
+            it[ResourcePosts.status] = status
+            it[ResourcePosts.contactPhone] = contactPhone
+            it[ResourcePosts.contactEmail] = contactEmail
+            it[ResourcePosts.contactName] = contactName
+            it[ResourcePosts.ownerSecret] = ownerSecret
+        } > 0
+    }
+
     override fun expireOlderThan(cutoff: LocalDateTime): Int {
         if (!DatabaseFactory.initialized) return 0
         // Bulk version of close(): closes stale ACTIVE posts and scrubs their contact + owner token.

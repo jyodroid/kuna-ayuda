@@ -6,4 +6,5 @@ data class AdminUser(
     val email: String,
     val passwordHash: String,
     val role: String, // ADMIN
+    val enabled: Boolean = true,
 )

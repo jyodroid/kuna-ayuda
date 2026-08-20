@@ -9,6 +9,12 @@ interface SearchRepository {
     fun create(report: NewSearchReport): SearchReport
     fun close(id: Int): Boolean
 
+    /** Any report by id, active or not (for the audit before-snapshot). */
+    fun find(id: Int): SearchReport?
+
+    /** Re-open a closed report (revert of an admin delete). True if the row existed. */
+    fun reopen(id: Int): Boolean
+
     /** Closes every ACTIVE report created before [cutoff]. Returns the count. */
     fun expireOlderThan(cutoff: LocalDateTime): Int
 }

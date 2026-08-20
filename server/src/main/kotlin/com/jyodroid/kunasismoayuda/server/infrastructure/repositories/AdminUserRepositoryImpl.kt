@@ -10,6 +10,7 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import java.time.LocalDateTime
 
 class AdminUserRepositoryImpl : AdminUserRepository {
@@ -73,10 +74,25 @@ class AdminUserRepositoryImpl : AdminUserRepository {
         }
     }
 
+    override fun updatePassword(id: Int, passwordHash: String): Boolean {
+        if (!DatabaseFactory.initialized) return false
+        return transaction {
+            AdminUsers.update({ AdminUsers.id eq id }) { it[AdminUsers.passwordHash] = passwordHash } > 0
+        }
+    }
+
+    override fun setEnabled(id: Int, enabled: Boolean): Boolean {
+        if (!DatabaseFactory.initialized) return false
+        return transaction {
+            AdminUsers.update({ AdminUsers.id eq id }) { it[AdminUsers.enabled] = enabled } > 0
+        }
+    }
+
     private fun ResultRow.toAdminUser() = AdminUser(
         id = this[AdminUsers.id],
         email = this[AdminUsers.email],
         passwordHash = this[AdminUsers.passwordHash],
         role = this[AdminUsers.role],
+        enabled = this[AdminUsers.enabled],
     )
 }

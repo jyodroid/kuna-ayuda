@@ -210,6 +210,9 @@ class ResourceBoardService(
     fun listPending(): List<ResourcePostResponse> =
         repository.listByStatus(STATUS_PENDING).map { it.toResponse() }
 
+    /** The raw domain post by id (for the audit before-snapshot); null if absent. */
+    fun find(id: Int): ResourcePost? = repository.find(id)
+
     /** Admin: publish a pending post. */
     fun approve(id: Int): Boolean = repository.setStatus(id, STATUS_ACTIVE)
 

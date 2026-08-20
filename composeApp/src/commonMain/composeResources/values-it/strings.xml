@@ -25,6 +25,7 @@
     <string name="overview_network_title">Rete di aiuto</string>
     <string name="overview_network_counts">%1$d offerte · %2$d richieste</string>
     <string name="overview_affected_title">Zone colpite</string>
+    <string name="overview_affected_subtitle">Distanza dall'epicentro del sisma</string>
     <string name="overview_affected_none">Nessuna zona colpita nelle vicinanze.</string>
     <!-- Wildfires (second hazard) -->
     <string name="overview_fire_title">Incendi boschivi</string>

@@ -25,6 +25,7 @@
     <string name="overview_network_title">Aid network</string>
     <string name="overview_network_counts">%1$d offers · %2$d requests</string>
     <string name="overview_affected_title">Affected places</string>
+    <string name="overview_affected_subtitle">Distance from the earthquake epicenter</string>
     <string name="overview_affected_none">No nearby affected places.</string>
     <!-- Wildfires (second hazard) -->
     <string name="overview_fire_title">Wildfires</string>

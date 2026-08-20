@@ -25,6 +25,7 @@
     <string name="overview_network_title">Red de ayuda</string>
     <string name="overview_network_counts">%1$d ofertas · %2$d solicitudes</string>
     <string name="overview_affected_title">Lugares afectados</string>
+    <string name="overview_affected_subtitle">Distancia al epicentro del sismo</string>
     <string name="overview_affected_none">Sin lugares afectados cercanos.</string>
     <!-- Wildfires (second hazard) -->
     <string name="overview_fire_title">Incendios forestales</string>

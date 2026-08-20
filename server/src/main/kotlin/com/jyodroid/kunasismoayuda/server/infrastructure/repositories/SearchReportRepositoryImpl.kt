@@ -51,6 +51,17 @@ class SearchReportRepositoryImpl : SearchRepository {
         SearchReports.update({ SearchReports.id eq id }) { it[status] = "CLOSED" } > 0
     }
 
+    override fun find(id: Int): SearchReport? {
+        if (!DatabaseFactory.initialized) return null
+        return transaction {
+            SearchReports.selectAll().where { SearchReports.id eq id }.singleOrNull()?.toReport()
+        }
+    }
+
+    override fun reopen(id: Int): Boolean = transaction {
+        SearchReports.update({ SearchReports.id eq id }) { it[status] = "ACTIVE" } > 0
+    }
+
     override fun expireOlderThan(cutoff: LocalDateTime): Int {
         if (!DatabaseFactory.initialized) return 0
         return transaction {

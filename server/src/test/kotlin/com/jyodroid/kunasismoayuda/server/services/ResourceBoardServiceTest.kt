@@ -78,6 +78,25 @@ class ResourceBoardServiceTest {
             return true
         }
 
+        override fun restore(
+            id: Int,
+            status: String,
+            contactPhone: String?,
+            contactEmail: String?,
+            contactName: String?,
+            ownerSecret: String?,
+        ): Boolean {
+            val i = posts.indexOfFirst { it.id == id }.takeIf { it >= 0 } ?: return false
+            posts[i] = posts[i].copy(
+                status = status,
+                contactPhone = contactPhone,
+                contactEmail = contactEmail,
+                contactName = contactName,
+                ownerSecret = ownerSecret,
+            )
+            return true
+        }
+
         override fun expireOlderThan(cutoff: LocalDateTime) = 0
     }
 

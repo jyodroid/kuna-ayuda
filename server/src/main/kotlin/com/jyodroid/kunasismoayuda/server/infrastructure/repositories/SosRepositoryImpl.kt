@@ -33,6 +33,13 @@ class SosRepositoryImpl : SosRepository {
         SosReports.selectAll().where { SosReports.id eq id }.single().toReport()
     }
 
+    override fun find(id: Int): SosReport? {
+        if (!DatabaseFactory.initialized) return null
+        return transaction {
+            SosReports.selectAll().where { SosReports.id eq id }.singleOrNull()?.toReport()
+        }
+    }
+
     override fun list(status: String?, archived: Boolean?): List<SosReport> {
         if (!DatabaseFactory.initialized) return emptyList()
         return transaction {

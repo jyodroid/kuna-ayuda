@@ -40,6 +40,9 @@ class SearchService(private val repository: SearchRepository) {
 
     fun close(id: Int): Boolean = repository.close(id)
 
+    /** The raw domain report by id (for the audit before-snapshot); null if absent. */
+    fun find(id: Int): SearchReport? = repository.find(id)
+
     private fun validate(request: SearchReportRequest) {
         fun bad(message: String): Nothing =
             throw appError(ErrorCode.VALIDATION, message, HttpStatusCode.BadRequest)

@@ -5,6 +5,14 @@ import { resolve } from "node:path";
 // src/main/resources/web (see server/build.gradle.kts buildLanding task) so the fat jar serves it.
 export default defineConfig({
   base: "/",
+  // Dev-only: the console lives on the Ktor server. Proxy /console (and /api) to :8080 so the footer
+  // "Moderadores" link works while running the landing dev server. In production both are same-origin.
+  server: {
+    proxy: {
+      "/console": "http://localhost:8080",
+      "/api": "http://localhost:8080",
+    },
+  },
   build: {
     outDir: "dist",
     emptyOutDir: true,

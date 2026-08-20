@@ -3,6 +3,7 @@ package com.jyodroid.kunasismoayuda.server.routes
 import com.jyodroid.kunasismoayuda.server.error.ErrorCode
 import com.jyodroid.kunasismoayuda.server.error.appError
 import com.jyodroid.kunasismoayuda.server.routes.dto.SosRequest
+import com.jyodroid.kunasismoayuda.server.services.AuditService
 import com.jyodroid.kunasismoayuda.server.services.SosService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
@@ -19,7 +20,7 @@ import io.ktor.server.routing.route
  * we never want to block someone in danger. Everything else is the moderator responder view:
  * listing, dashboard stats, and the attended/notified lifecycle (archive / reopen / delete).
  */
-fun Route.sosRoutes(service: SosService) = route("/api/sos") {
+fun Route.sosRoutes(service: SosService, audit: AuditService) = route("/api/sos") {
     post {
         val request = call.receive<SosRequest>()
         if (request.status.uppercase() !in SosService.STATUSES) {
@@ -51,7 +52,9 @@ fun Route.sosRoutes(service: SosService) = route("/api/sos") {
         post("/{id}/handle") {
             requireAdmin()
             val id = pathId()
+            val before = service.find(id)
             if (!service.markHandled(id, callerEmail())) notFound(id)
+            before?.let { audit.sosHandled(actor(), it) }
             call.respond(HttpStatusCode.NoContent)
         }
 
@@ -59,7 +62,9 @@ fun Route.sosRoutes(service: SosService) = route("/api/sos") {
         post("/{id}/reopen") {
             requireAdmin()
             val id = pathId()
+            val before = service.find(id)
             if (!service.reopen(id)) notFound(id)
+            before?.let { audit.sosReopened(actor(), it) }
             call.respond(HttpStatusCode.NoContent)
         }
 
@@ -67,7 +72,9 @@ fun Route.sosRoutes(service: SosService) = route("/api/sos") {
         delete("/{id}") {
             requireAdmin()
             val id = pathId()
+            val before = service.find(id)
             if (!service.delete(id)) notFound(id)
+            before?.let { audit.sosDeleted(actor(), it) }
             call.respond(HttpStatusCode.NoContent)
         }
     }

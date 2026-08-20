@@ -4,6 +4,12 @@ All notable changes to Kuna Ayuda. Format based on [Keep a Changelog](https://ke
 this project uses [Semantic Versioning](https://semver.org/). The version lives in
 `gradle/libs.versions.toml` (`desktopPackageVersion`) and is enforced against the git tag by CI.
 
+## [1.1.1] — 2026-08-20
+
+### Changed
+- Overview: the "Affected places" list now shows a subtitle — "Distance from the earthquake epicenter" —
+  so it's clear the list relates to the earthquake (not wildfires) and what the distance measures.
+
 ## [1.1.0] — 2026-08-20
 
 ### Added

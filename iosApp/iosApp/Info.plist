@@ -10,6 +10,10 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Kuna Ayuda usa tu ubicación para adjuntar coordenadas precisas a tu alerta SOS y ayudarte a encontrar refugios cercanos. / Kuna Ayuda uses your location to attach precise coordinates to your SOS alert and help you find nearby shelters.</string>
+	<!-- Required by Apple (ITMS-90683): a linked SDK references the "Always" location API, so the
+	     purpose string is required even though Kuna only ever requests when-in-use location. -->
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Kuna Ayuda usa tu ubicación para adjuntar coordenadas precisas a tu alerta SOS y ayudarte a encontrar refugios cercanos. / Kuna Ayuda uses your location to attach precise coordinates to your SOS alert and help you find nearby shelters.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Kuna Ayuda usa la cámara para tomar una foto de una mascota o persona perdida o encontrada. / Kuna Ayuda uses the camera to take a photo of a lost or found pet or person.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

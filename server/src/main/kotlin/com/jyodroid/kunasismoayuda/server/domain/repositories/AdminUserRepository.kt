@@ -15,4 +15,10 @@ interface AdminUserRepository {
 
     /** Delete by id. Returns true if a row was removed. */
     fun deleteById(id: Int): Boolean
+
+    /** Replace the bcrypt password hash. Returns true if the account existed. */
+    fun updatePassword(id: Int, passwordHash: String): Boolean
+
+    /** Enable/disable an account (a disabled moderator can no longer act). True if the account existed. */
+    fun setEnabled(id: Int, enabled: Boolean): Boolean
 }

@@ -9,6 +9,7 @@ object AdminUsers : Table("admin_users") {
     val email = varchar("email", 160).uniqueIndex()
     val passwordHash = varchar("password_hash", 100)
     val role = varchar("role", 20)
+    val enabled = bool("enabled").default(true)
     val createdAt = datetime("created_at")
 
     override val primaryKey = PrimaryKey(id)

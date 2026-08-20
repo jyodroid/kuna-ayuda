@@ -4,6 +4,7 @@ import com.jyodroid.kunasismoayuda.server.config.BoardRateLimit
 import com.jyodroid.kunasismoayuda.server.error.ErrorCode
 import com.jyodroid.kunasismoayuda.server.error.appError
 import com.jyodroid.kunasismoayuda.server.routes.dto.SearchReportRequest
+import com.jyodroid.kunasismoayuda.server.services.AuditService
 import com.jyodroid.kunasismoayuda.server.services.SearchService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
@@ -21,7 +22,7 @@ import io.ktor.server.routing.route
  * report a lost pet/person or a found one. Posts publish directly (no moderation), rate-limited +
  * validated; administrators can close abusive entries. Photos are uploaded separately via `/api/photos`.
  */
-fun Route.searchRoutes(service: SearchService) = route("/api/search") {
+fun Route.searchRoutes(service: SearchService, audit: AuditService) = route("/api/search") {
     get {
         val subject = call.request.queryParameters["subject"]?.uppercase()
         val state = call.request.queryParameters["state"]?.uppercase()
@@ -42,7 +43,9 @@ fun Route.searchRoutes(service: SearchService) = route("/api/search") {
             requireAdmin()
             val id = call.parameters["id"]?.toIntOrNull()
                 ?: throw appError(ErrorCode.VALIDATION, "Report id must be an integer", HttpStatusCode.BadRequest)
+            val before = service.find(id)
             service.close(id)
+            before?.let { audit.searchDeleted(actor(), it) }
             call.respond(HttpStatusCode.NoContent)
         }
     }

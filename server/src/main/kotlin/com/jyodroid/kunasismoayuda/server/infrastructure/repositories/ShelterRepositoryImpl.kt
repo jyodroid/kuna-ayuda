@@ -68,6 +68,17 @@ class ShelterRepositoryImpl : com.jyodroid.kunasismoayuda.server.domain.reposito
         Shelters.update({ Shelters.id eq id }) { it[active] = false } > 0
     }
 
+    override fun find(id: Int): Shelter? {
+        if (!DatabaseFactory.initialized) return null
+        return transaction {
+            Shelters.selectAll().where { Shelters.id eq id }.singleOrNull()?.toShelter()
+        }
+    }
+
+    override fun reactivate(id: Int): Boolean = transaction {
+        Shelters.update({ Shelters.id eq id }) { it[active] = true } > 0
+    }
+
     private fun ResultRow.toShelter() = Shelter(
         id = this[Shelters.id],
         name = this[Shelters.name],

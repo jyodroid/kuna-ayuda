@@ -98,4 +98,30 @@ tasks {
         from(landingDist)
         into(webResources)
     }
+
+    // --- Super-admin console (React + Vite + Tailwind) ---
+    // Mirrors buildLanding: a MANUAL dev task (needs Node/npm) that builds console/ and copies its dist
+    // into src/main/resources/console (served by the server at /console, bundled by the jar). NOT wired
+    // into processResources — Heroku packages whatever console/ is already present.
+    val consoleDir = rootProject.layout.projectDirectory.dir("console")
+    val consoleDist = consoleDir.dir("dist")
+    val consoleResources = layout.projectDirectory.dir("src/main/resources/console")
+
+    register<Exec>("buildConsoleNpm") {
+        group = "console"
+        description = "Build the React console (npm)."
+        workingDir = consoleDir.asFile
+        commandLine("bash", "-c", "npm ci || npm install; npm run build")
+        inputs.dir(consoleDir.dir("src"))
+        inputs.files(consoleDir.file("index.html"), consoleDir.file("package.json"))
+        outputs.dir(consoleDist)
+    }
+
+    register<Copy>("buildConsole") {
+        group = "console"
+        description = "Build the console and copy it into resources/console (bundled by the jar)."
+        dependsOn("buildConsoleNpm")
+        from(consoleDist)
+        into(consoleResources)
+    }
 }

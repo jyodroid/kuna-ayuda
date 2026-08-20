@@ -11,7 +11,8 @@ const STORAGE_KEY = "kuna_lang";
 function currentLang(): Lang {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved === "es" || saved === "en") return saved;
-  return (navigator.language || "es").toLowerCase().startsWith("en") ? "en" : "es";
+  // Default to Spanish for everyone (regardless of browser language); EN only if the user picks it.
+  return "es";
 }
 
 function applyLang(lang: Lang): void {

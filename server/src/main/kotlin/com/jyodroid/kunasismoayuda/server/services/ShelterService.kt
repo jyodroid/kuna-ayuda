@@ -42,6 +42,9 @@ class ShelterService(private val repository: ShelterRepository) {
 
     fun deactivate(id: Int): Boolean = repository.deactivate(id)
 
+    /** The raw domain shelter by id (for the audit before-snapshot); null if absent. */
+    fun find(id: Int): Shelter? = repository.find(id)
+
     private fun Shelter.toResponse() = ShelterResponse(
         id = id,
         name = name,

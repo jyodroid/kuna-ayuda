@@ -3,6 +3,7 @@ package com.jyodroid.kunasismoayuda.server.di
 import com.jyodroid.kunasismoayuda.server.ai.AnthropicClient
 import com.jyodroid.kunasismoayuda.server.domain.repositories.AdminUserRepository
 import com.jyodroid.kunasismoayuda.server.domain.repositories.ApiUsageRepository
+import com.jyodroid.kunasismoayuda.server.domain.repositories.AuditRepository
 import com.jyodroid.kunasismoayuda.server.domain.repositories.ClassifyCacheRepository
 import com.jyodroid.kunasismoayuda.server.domain.repositories.DisasterRepository
 import com.jyodroid.kunasismoayuda.server.domain.repositories.PhotoRepository
@@ -13,6 +14,7 @@ import com.jyodroid.kunasismoayuda.server.domain.repositories.ShelterRepository
 import com.jyodroid.kunasismoayuda.server.domain.repositories.SosRepository
 import com.jyodroid.kunasismoayuda.server.infrastructure.repositories.AdminUserRepositoryImpl
 import com.jyodroid.kunasismoayuda.server.infrastructure.repositories.ApiUsageRepositoryImpl
+import com.jyodroid.kunasismoayuda.server.infrastructure.repositories.AuditRepositoryImpl
 import com.jyodroid.kunasismoayuda.server.infrastructure.repositories.ClassifyCacheRepositoryImpl
 import com.jyodroid.kunasismoayuda.server.infrastructure.repositories.DisasterRepositoryImpl
 import com.jyodroid.kunasismoayuda.server.infrastructure.repositories.PhotoRepositoryImpl
@@ -22,6 +24,7 @@ import com.jyodroid.kunasismoayuda.server.infrastructure.repositories.SearchRepo
 import com.jyodroid.kunasismoayuda.server.infrastructure.repositories.ShelterRepositoryImpl
 import com.jyodroid.kunasismoayuda.server.infrastructure.repositories.SosRepositoryImpl
 import com.jyodroid.kunasismoayuda.server.services.AdminService
+import com.jyodroid.kunasismoayuda.server.services.AuditService
 import com.jyodroid.kunasismoayuda.server.services.AuthService
 import com.jyodroid.kunasismoayuda.server.services.DisasterIngestionService
 import com.jyodroid.kunasismoayuda.server.services.ExpiryService
@@ -80,6 +83,7 @@ val repositoryModule = module {
     single<ReportRepository> { ReportRepositoryImpl() }
     single<ApiUsageRepository> { ApiUsageRepositoryImpl() }
     single<ClassifyCacheRepository> { ClassifyCacheRepositoryImpl() }
+    single<AuditRepository> { AuditRepositoryImpl() }
 }
 
 val serviceModule = module {
@@ -102,6 +106,8 @@ val serviceModule = module {
     single { SosService(get()) }
     single { AuthService(get(), get()) }
     single { AdminService(get()) }
+    // AuditService(audit, adminUsers, shelters, board, sos, search) — resolved by type.
+    single { AuditService(get(), get(), get(), get(), get(), get()) }
     single { DisasterIngestionService(get(), get(), get(), get()) }
     single { ExpiryService(get(), get()) }
 }

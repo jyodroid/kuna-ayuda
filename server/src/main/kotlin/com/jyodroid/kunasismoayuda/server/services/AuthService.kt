@@ -41,6 +41,20 @@ class AuthService(
         return LoginResult(token = issueToken(user), role = user.role)
     }
 
+    /**
+     * Self-service password change (any moderator, via the web console). Verifies the current password
+     * before replacing it. Throws 401 on a wrong current password, 400 on a too-short new one.
+     */
+    fun changeOwnPassword(email: String, currentPassword: String, newPassword: String) {
+        val user = repository.findByEmail(email.trim().lowercase())
+            ?: throw appError(ErrorCode.UNAUTHORIZED, "Invalid credentials", HttpStatusCode.Unauthorized)
+        if (!BCrypt.checkpw(currentPassword, user.passwordHash)) {
+            throw appError(ErrorCode.UNAUTHORIZED, "Current password is incorrect", HttpStatusCode.Unauthorized)
+        }
+        PasswordPolicy.requireStrong(newPassword)
+        repository.updatePassword(user.id, PasswordPolicy.hash(newPassword))
+    }
+
     private fun issueToken(user: AdminUser): String =
         JWT.create()
             .withIssuer(jwtConfig.domain)
@@ -54,6 +68,6 @@ class AuthService(
         // A moderator's working session; they re-login when it lapses.
         private const val TOKEN_TTL_MS = 12L * 60 * 60 * 1000 // 12 hours
         // A fixed valid bcrypt hash of a throwaway value, used only to equalize timing on unknown emails.
-        private val DUMMY_HASH = BCrypt.hashpw("timing-equalizer", BCrypt.gensalt())
+        private val DUMMY_HASH = PasswordPolicy.hash("timing-equalizer")
     }
 }

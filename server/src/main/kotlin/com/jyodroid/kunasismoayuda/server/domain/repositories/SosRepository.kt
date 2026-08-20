@@ -7,6 +7,9 @@ import com.jyodroid.kunasismoayuda.server.domain.models.SosStats
 interface SosRepository {
     fun create(report: NewSosReport): SosReport
 
+    /** A single report by id (for the audit before-snapshot). */
+    fun find(id: Int): SosReport?
+
     /**
      * Reports for the responder view, newest first.
      * @param status "SOS" or "SAFE" to filter; null returns both.

@@ -3,6 +3,7 @@ package com.jyodroid.kunasismoayuda.server.routes
 import com.jyodroid.kunasismoayuda.server.error.ErrorCode
 import com.jyodroid.kunasismoayuda.server.error.appError
 import com.jyodroid.kunasismoayuda.server.routes.dto.ShelterRequest
+import com.jyodroid.kunasismoayuda.server.services.AuditService
 import com.jyodroid.kunasismoayuda.server.services.ShelterService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
@@ -20,7 +21,7 @@ import io.ktor.server.routing.route
  * requires an authenticated ADMIN token. This is the anti-fraud guarantee — the public cannot add
  * or edit locations, only administrators (us) can.
  */
-fun Route.shelterRoutes(service: ShelterService) = route("/api/shelters") {
+fun Route.shelterRoutes(service: ShelterService, audit: AuditService) = route("/api/shelters") {
     get {
         val country = call.request.queryParameters["country"] ?: "CO"
         call.respond(service.listActive(country))
@@ -30,16 +31,21 @@ fun Route.shelterRoutes(service: ShelterService) = route("/api/shelters") {
         post {
             requireAdmin()
             val request = call.receive<ShelterRequest>()
-            call.respond(HttpStatusCode.Created, service.create(request))
+            val created = service.create(request)
+            service.find(created.id)?.let { audit.shelterCreated(actor(), it) }
+            call.respond(HttpStatusCode.Created, created)
         }
 
         put("/{id}") {
             requireAdmin()
             val id = call.parameters["id"]?.toIntOrNull()
                 ?: throw appError(ErrorCode.VALIDATION, "Shelter id must be an integer", HttpStatusCode.BadRequest)
+            val before = service.find(id)
             val request = call.receive<ShelterRequest>()
             val updated = service.update(id, request)
                 ?: throw appError(ErrorCode.NOT_FOUND, "Shelter $id not found", HttpStatusCode.NotFound)
+            val after = service.find(id)
+            if (before != null && after != null) audit.shelterUpdated(actor(), before, after)
             call.respond(updated)
         }
 
@@ -47,7 +53,9 @@ fun Route.shelterRoutes(service: ShelterService) = route("/api/shelters") {
             requireAdmin()
             val id = call.parameters["id"]?.toIntOrNull()
                 ?: throw appError(ErrorCode.VALIDATION, "Shelter id must be an integer", HttpStatusCode.BadRequest)
+            val before = service.find(id)
             service.deactivate(id)
+            before?.let { audit.shelterDeleted(actor(), it) }
             call.respond(HttpStatusCode.NoContent)
         }
     }

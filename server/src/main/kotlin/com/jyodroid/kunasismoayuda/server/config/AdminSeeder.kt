@@ -2,9 +2,9 @@ package com.jyodroid.kunasismoayuda.server.config
 
 import com.jyodroid.kunasismoayuda.server.domain.models.Roles
 import com.jyodroid.kunasismoayuda.server.domain.repositories.AdminUserRepository
+import com.jyodroid.kunasismoayuda.server.services.PasswordPolicy
 import io.ktor.server.application.Application
 import org.koin.ktor.ext.inject
-import org.mindrot.jbcrypt.BCrypt
 
 /**
  * Bootstraps the first moderator from env vars so a fresh deployment has someone who can log in.
@@ -21,7 +21,7 @@ fun Application.seedAdminUser() {
     }
     val repository by inject<AdminUserRepository>()
     // The env-seeded owner account is the SUPERADMIN — the only role that can manage other admins.
-    val created = repository.createIfAbsent(email, BCrypt.hashpw(password, BCrypt.gensalt()), Roles.SUPERADMIN)
+    val created = repository.createIfAbsent(email, PasswordPolicy.hash(password), Roles.SUPERADMIN)
     if (created) {
         environment.log.info("Seeded super-admin account: $email")
     } else {

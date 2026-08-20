@@ -9,6 +9,7 @@ data class AdminDto(
     val id: Int,
     val email: String,
     val role: String,
+    val enabled: Boolean = true,
 )
 
 @Serializable
@@ -17,4 +18,10 @@ data class CreateAdminRequest(
     val password: String,
 )
 
-fun AdminUser.toDto() = AdminDto(id = id, email = email, role = role)
+/** Super-admin reset of another account's password. */
+@Serializable
+data class ResetPasswordRequest(
+    val newPassword: String,
+)
+
+fun AdminUser.toDto() = AdminDto(id = id, email = email, role = role, enabled = enabled)

@@ -25,6 +25,7 @@
     <string name="overview_network_title">Jaringan bantuan</string>
     <string name="overview_network_counts">%1$d tawaran · %2$d permintaan</string>
     <string name="overview_affected_title">Tempat terdampak</string>
+    <string name="overview_affected_subtitle">Jarak dari pusat gempa</string>
     <string name="overview_affected_none">Tidak ada tempat terdampak di dekat Anda.</string>
     <!-- Wildfires (second hazard) -->
     <string name="overview_fire_title">Kebakaran hutan</string>

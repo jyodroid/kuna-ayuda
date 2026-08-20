@@ -6,7 +6,6 @@ import com.jyodroid.kunasismoayuda.server.domain.repositories.AdminUserRepositor
 import com.jyodroid.kunasismoayuda.server.error.ErrorCode
 import com.jyodroid.kunasismoayuda.server.error.appError
 import io.ktor.http.HttpStatusCode
-import org.mindrot.jbcrypt.BCrypt
 
 /**
  * Admin-account management, reachable only by a SUPERADMIN (enforced at the route). Created accounts
@@ -22,10 +21,8 @@ class AdminService(private val repository: AdminUserRepository) {
         if (normalized.isBlank() || !normalized.contains("@")) {
             throw appError(ErrorCode.VALIDATION, "A valid email is required", HttpStatusCode.BadRequest)
         }
-        if (password.length < 8) {
-            throw appError(ErrorCode.VALIDATION, "Password must be at least 8 characters", HttpStatusCode.BadRequest)
-        }
-        val hash = BCrypt.hashpw(password, BCrypt.gensalt())
+        PasswordPolicy.requireStrong(password)
+        val hash = PasswordPolicy.hash(password)
         return repository.create(normalized, hash, Roles.ADMIN)
             ?: throw appError(ErrorCode.VALIDATION, "An admin with that email already exists", HttpStatusCode.Conflict)
     }
@@ -41,5 +38,28 @@ class AdminService(private val repository: AdminUserRepository) {
             throw appError(ErrorCode.FORBIDDEN, "You can't delete your own account", HttpStatusCode.Forbidden)
         }
         repository.deleteById(id)
+    }
+
+    /** Enable/disable an account. Guards: can't disable yourself or the SUPERADMIN owner. Returns the target. */
+    fun setEnabled(id: Int, enabled: Boolean, callerEmail: String?): AdminUser {
+        val target = repository.findById(id)
+            ?: throw appError(ErrorCode.NOT_FOUND, "Admin not found", HttpStatusCode.NotFound)
+        if (!enabled && Roles.isSuperAdmin(target.role)) {
+            throw appError(ErrorCode.FORBIDDEN, "The super-admin account can't be disabled", HttpStatusCode.Forbidden)
+        }
+        if (!enabled && callerEmail != null && target.email.equals(callerEmail, ignoreCase = true)) {
+            throw appError(ErrorCode.FORBIDDEN, "You can't disable your own account", HttpStatusCode.Forbidden)
+        }
+        repository.setEnabled(id, enabled)
+        return target.copy(enabled = enabled)
+    }
+
+    /** Super-admin reset of another account's password (no current password required). Returns the target. */
+    fun resetPassword(id: Int, newPassword: String): AdminUser {
+        val target = repository.findById(id)
+            ?: throw appError(ErrorCode.NOT_FOUND, "Admin not found", HttpStatusCode.NotFound)
+        PasswordPolicy.requireStrong(newPassword)
+        repository.updatePassword(id, PasswordPolicy.hash(newPassword))
+        return target
     }
 }

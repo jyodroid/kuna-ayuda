@@ -35,6 +35,9 @@ class SosService(private val repository: SosRepository) {
         return repository.list(normalized, archived).map { it.toResponse() }
     }
 
+    /** The raw domain report by id (for the audit before-snapshot); null if absent. */
+    fun find(id: Int): SosReport? = repository.find(id)
+
     /** Archive a report as attended/notified. Returns false if the id doesn't exist. */
     fun markHandled(id: Int, by: String?): Boolean = repository.markHandled(id, by)
 

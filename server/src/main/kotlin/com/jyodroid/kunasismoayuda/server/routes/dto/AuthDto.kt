@@ -13,3 +13,10 @@ data class LoginResponse(
     val token: String,
     val role: String,
 )
+
+/** Self-service password change (any moderator, via the web console). */
+@Serializable
+data class ChangePasswordRequest(
+    val currentPassword: String,
+    val newPassword: String,
+)

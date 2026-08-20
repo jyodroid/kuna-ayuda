@@ -128,6 +128,32 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   admin-account management. `GET/POST/DELETE /api/admins` (**super-admin only**, `AdminService` +
   `AdminRoutes`) list/create/delete moderators — created accounts are always plain ADMIN (the API can't
   mint another superadmin), and delete refuses self-deletion and the SUPERADMIN owner.
+- **Oversight console ("monitor the monitors")** — server + a web console, **apps untouched**. Flyway
+  **V19** adds `admin_audit` (append-only: actor/action/entity/`before_json`/`after_json`/ip/timestamps/
+  `reverted_at`+`by`) and `admin_users.enabled`. `services/AuditService` (+ `AuditRepository`,
+  `AuditSnapshots` @Serializable DTOs) **records every moderator mutation** — shelters create/update/
+  delete, board approve/reject, SOS handle/reopen/delete, search delete, admin create/delete/disable/
+  enable, password change/reset, login success/failure — from the **route layer** via `routes/RouteSecurity.kt`
+  `actor()` (callerEmail + role + `X-Forwarded-For` IP). **Revert** (single + `revert-all` by a moderator,
+  **conflict-aware**: skips an entity a *different* mod changed later) restores from the snapshots (repo
+  additions: `Shelter.find/reactivate`, `Board.restore`, `Search.find/reopen`, `Sos.find`; SOS/search
+  deletes are re-created from the snapshot). **Disable** neutralises a rogue mod instantly: `requireAdmin`/
+  `requireSuperAdmin` also verify `enabled` (one DB lookup), so a disabled account's still-valid 12h JWT
+  stops working. **Passwords:** self-service `POST /api/auth/password` (current+new, any moderator) +
+  super-admin `POST /api/admins/{id}/password` (reset). **Super-admin read/act API** (all
+  `requireSuperAdmin`): `GET /api/audit` (filters actor/action/entity/reverted, paginated),
+  `GET /api/audit/moderators` (per-mod activity), `POST /api/audit/{id}/revert`,
+  `POST /api/audit/revert-all?moderator=`. `AuditServiceTest` (mockk) covers revert inverses + conflict
+  skip. The **web console** lives at **`console/`** (React 19 + Vite + Tailwind, mirroring the herrajes
+  `main-landing/frontend` stack — the vanilla-TS `landing/` is unchanged); Vite `base:'/console/'`, served
+  by `staticResources("/console","console")` (registered before the `/` catch-all; non-`/api` so ungated),
+  built via **`:server:buildConsole`** (manual, like `:server:buildLanding`) into
+  `server/src/main/resources/console/`. Login → JWT in `sessionStorage`; `src/api.ts` attaches `Bearer` +
+  `X-App-Key` (same baked deterrent as the app) and signs out on 401. **Role-gated:** any moderator sees
+  only "Change my password"; SUPERADMIN sees Audit (filter table + before/after diff + revert), Moderators
+  (activity, disable/enable, reset password, revert-all), and Moderation (board approve/reject, shelters,
+  SOS). The landing footer has a discreet **"Moderadores" → /console** link (regular mods use it for the
+  password change too). **No app-side moderator self-service** (deliberate). Deferred: CSV export, alerts, 2FA.
 - **App-only gate** (`config/AppGate.kt`) — optional `APP_CLIENT_KEY` env. When set, every `/api/**`
   request must carry an `X-App-Key` header matching it (constant-time compare; `OPTIONS`/non-`/api`
   exempt); the KMP client sends it automatically from `core:data` `ServerConfig.APP_CLIENT_KEY` via

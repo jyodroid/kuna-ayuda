@@ -11,6 +11,7 @@ import com.jyodroid.kunasismoayuda.server.services.UsageLimitReachedException
 import com.jyodroid.kunasismoayuda.server.routes.dto.ClassifyRequest
 import com.jyodroid.kunasismoayuda.server.routes.dto.ResolveRequest
 import com.jyodroid.kunasismoayuda.server.routes.dto.ResourcePostRequest
+import com.jyodroid.kunasismoayuda.server.services.AuditService
 import com.jyodroid.kunasismoayuda.server.services.ResolveOutcome
 import com.jyodroid.kunasismoayuda.server.services.ResourceBoardService
 import com.jyodroid.kunasismoayuda.server.services.UnclassifiableTextException
@@ -31,7 +32,7 @@ import io.ktor.server.routing.route
  * abusive entries. `POST /classify` turns a pasted social-media post into a **PENDING** entry
  * (Claude-classified) that an admin reviews before it goes live — see the admin routes below.
  */
-fun Route.resourceBoardRoutes(service: ResourceBoardService) = route("/api/board") {
+fun Route.resourceBoardRoutes(service: ResourceBoardService, audit: AuditService) = route("/api/board") {
     get {
         val kind = call.request.queryParameters["kind"]?.uppercase()
         val region = call.request.queryParameters["region"]
@@ -95,7 +96,9 @@ fun Route.resourceBoardRoutes(service: ResourceBoardService) = route("/api/board
             requireAdmin()
             val id = call.parameters["id"]?.toIntOrNull()
                 ?: throw appError(ErrorCode.VALIDATION, "Post id must be an integer", HttpStatusCode.BadRequest)
+            val before = service.find(id)
             service.approve(id)
+            before?.let { audit.boardApproved(actor(), it) }
             call.respond(HttpStatusCode.NoContent)
         }
 
@@ -103,7 +106,9 @@ fun Route.resourceBoardRoutes(service: ResourceBoardService) = route("/api/board
             requireAdmin()
             val id = call.parameters["id"]?.toIntOrNull()
                 ?: throw appError(ErrorCode.VALIDATION, "Post id must be an integer", HttpStatusCode.BadRequest)
+            val before = service.find(id)
             service.close(id)
+            before?.let { audit.boardRejected(actor(), it) }
             call.respond(HttpStatusCode.NoContent)
         }
     }

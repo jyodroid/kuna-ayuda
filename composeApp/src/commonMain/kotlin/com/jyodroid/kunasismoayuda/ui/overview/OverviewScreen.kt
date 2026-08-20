@@ -52,6 +52,7 @@ import com.jyodroid.kunasismoayuda.resources.error_generic
 import com.jyodroid.kunasismoayuda.resources.loading
 import com.jyodroid.kunasismoayuda.resources.no_quakes
 import com.jyodroid.kunasismoayuda.resources.overview_affected_none
+import com.jyodroid.kunasismoayuda.resources.overview_affected_subtitle
 import com.jyodroid.kunasismoayuda.resources.overview_affected_title
 import com.jyodroid.kunasismoayuda.resources.overview_fire_hint
 import com.jyodroid.kunasismoayuda.resources.overview_fire_none
@@ -319,7 +320,11 @@ private fun NetworkSummary(summary: BoardSummary, onClick: () -> Unit) {
 
 @Composable
 private fun AffectedPlaces(affected: List<AffectedRegion>) {
-    SummaryCard(title = stringResource(Res.string.overview_affected_title), subtitle = null) {
+    SummaryCard(
+        title = stringResource(Res.string.overview_affected_title),
+        // Clarify what these places relate to and what the distance means (from the quake epicenter).
+        subtitle = if (affected.isEmpty()) null else stringResource(Res.string.overview_affected_subtitle),
+    ) {
         if (affected.isEmpty()) {
             Text(
                 stringResource(Res.string.overview_affected_none),
@@ -354,7 +359,9 @@ private fun SummaryCard(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.semantics { heading() },
             )
-            subtitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+            subtitle?.let {
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             content()
         }
     }
