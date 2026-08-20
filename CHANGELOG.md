@@ -4,6 +4,18 @@ All notable changes to Kuna Ayuda. Format based on [Keep a Changelog](https://ke
 this project uses [Semantic Versioning](https://semver.org/). The version lives in
 `gradle/libs.versions.toml` (`desktopPackageVersion`) and is enforced against the git tag by CI.
 
+## [1.1.0] — 2026-08-20
+
+### Added
+- **Peru (PE)** as the 5th supported country — live earthquake + wildfire feeds, help-points map, aid
+  board, SOS and guide. Peruvian emergency numbers (105 Policía / 116 Bomberos / 106 SAMU / 115 INDECI
+  + Línea 113 for mental health) and official seeded help points (INDECI, Cruz Roja Peruana, CGBVP).
+- Moderator sessions now **sign out automatically when the token expires** (a 401 on an authenticated
+  request), returning to the login screen with a "session expired" message instead of a generic error.
+
+### Fixed
+- Landing page: the "Kuna Ayuda" wordmark no longer overlaps the nav on small mobile screens.
+
 ## [1.0.1] — 2026-08-19
 
 ### Fixed
