@@ -12,6 +12,9 @@ interface AuthRepository {
     /** The current moderator session, or null when nobody is logged in. */
     val session: StateFlow<Session?>
 
+    /** True when the session was dropped by an expired/revoked token (401), not an explicit sign-out. */
+    val sessionExpired: StateFlow<Boolean>
+
     /** Verify credentials against the backend and open a session. Throws on failure. */
     suspend fun login(email: String, password: String)
 

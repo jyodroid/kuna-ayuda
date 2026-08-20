@@ -25,6 +25,9 @@ class AuthViewModel(
 
     val session: StateFlow<Session?> = repository.session
 
+    /** True when the moderator was auto-logged-out by an expired token; drives the login-screen hint. */
+    val sessionExpired: StateFlow<Boolean> = repository.sessionExpired
+
     private val _form = MutableStateFlow(LoginFormState())
     val form: StateFlow<LoginFormState> = _form.asStateFlow()
 

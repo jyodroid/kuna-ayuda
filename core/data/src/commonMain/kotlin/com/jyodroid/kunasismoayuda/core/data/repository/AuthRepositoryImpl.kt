@@ -13,6 +13,8 @@ class AuthRepositoryImpl(
 
     override val session: StateFlow<Session?> = sessionManager.session
 
+    override val sessionExpired: StateFlow<Boolean> = sessionManager.sessionExpired
+
     override suspend fun login(email: String, password: String) {
         val response = api.login(email.trim(), password)
         sessionManager.set(token = response.token, role = response.role)

@@ -6,7 +6,7 @@ Guidance for Claude Code when working in this repository.
 
 **Kuna Ayuda** (user-facing display name; the repo, package `com.jyodroid.kunasismoayuda`, modules and
 DB names stay `kunasismoayuda`/`kuna-sismo-ayuda`) is a disaster-relief resource network, starting with
-earthquakes and prioritizing affected regions. It is **multi-country** — **Colombia (CO)**, **Indonesia (ID)**, **Spain (ES)** and **Italy (IT)** —
+earthquakes and prioritizing affected regions. It is **multi-country** — **Colombia (CO)**, **Indonesia (ID)**, **Spain (ES)**, **Italy (IT)** and **Peru (PE)** —
 with a first-run country picker (persisted) and a country switcher on the Overview tab. It is a Kotlin Multiplatform monorepo:
 
 - **Client** — Compose Multiplatform app targeting **Android, iOS, and Desktop (JVM)**. Shows a
@@ -17,17 +17,17 @@ with a first-run country picker (persisted) and a country switcher on the Overvi
   sources (SGC primary for CO, USGS fallback/primary elsewhere), normalizes it, and owns moderated
   data (shelters/acopios, help & SOS requests) plus push fan-out in later milestones.
 
-**Multi-country design:** the client sends `?country=CO|ID|ES|IT` on `GET /api/quakes`, `/api/shelters`
+**Multi-country design:** the client sends `?country=CO|ID|ES|IT|PE` on `GET /api/quakes`, `/api/shelters`
 and `/api/board`; **the server owns the quake bounding box** (`upstream/CountryBBoxes`) and filters
 shelters/board by a `country` column. **The client owns the per-country region lists** (major cities)
-in `core/domain` (`ColombiaRegions`/`IndonesiaRegions`/`SpainRegions`/`ItalyRegions`, dispatched by `CountryRegions.of`)
+in `core/domain` (`ColombiaRegions`/`IndonesiaRegions`/`SpainRegions`/`ItalyRegions`/`PeruRegions`, dispatched by `CountryRegions.of`)
 used for affected-place logic + map centering, plus the `Country` enum (code, localized names, flag,
 map centroid/zoom). The chosen country persists via `core/data` `settings/CountryStore` (okio JSON,
 per-platform path in `settings/SettingsStorage.*`; in-memory fallback). The **Guide** (emergency
 channels + the mental-health line in the tips) and the **SOS "call" number** are country-specific too,
 driven by `core/domain` `CountryEmergency` (verified per-country numbers — CO 123/119/132/144/192;
 ID 112/110/113/119/115/129 + SEJIWA; ES 112/061/091/062/080/024 + Cruz Roja; IT 112/118/115/113/1530
-+ Telefono Amico); Colombia-only community
++ Telefono Amico; PE 105/116/106/115 + Línea 113 opción 5); Colombia-only community
 tips (IG handles, local animal foundations) are hidden for other countries. SOS stays **global** (emergency,
 responder-facing) — it has a `country` column but the responder view isn't scoped yet. GDACS/ReliefWeb
 **ingestion is still Colombia-only** (feeds the disasters tables, not the quake feed).
@@ -84,7 +84,9 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   Rome and the seismic Apennine/southern cities, mirroring `core/domain ItalyRegions.kt`;
   `V17__factcheck_and_usage.sql` adds `resource_posts.fact_check` (Google Fact Check note) + the
   `api_usage` (monthly spend-cap counter) and `classify_cache` (memoized classify+fact-check result)
-  tables.)
+  tables; `V18__seed_pe_points.sql` seeds real official **Peruvian** help points — INDECI, Cruz Roja
+  Peruana (national + filiales), CGBVP (bomberos) — in Lima and the seismic capitals, mirroring
+  `core/domain PeruRegions.kt`.)
 - **Flyway + fat jar (FIXED):** the shaded fat jar (`:server:shadowJar` → `java -jar`, the
   `:server:stage`/Heroku path) previously applied **0 migrations** — Flyway 11 registers its SQL
   resolvers + the config extensions that define the `V__`/`R__`/`U__` naming via
@@ -155,7 +157,7 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   `AuthService` + `AdminUserRepository`); `GET/POST/DELETE /api/admins` (**super-admin only** —
   moderator-account management, `AdminService` + `AdminRoutes`); `GET /api/quakes` (public, `?country=CO|ID|ES` picks the
   bbox via `CountryBBoxes`; SGC primary only for CO, else USGS); `GET /api/fires` (public,
-  `?country=CO|ID|ES|IT` — active wildfires, FIRMS primary when `FIRMS_MAP_KEY` set else GDACS fallback);
+  `?country=CO|ID|ES|IT|PE` — active wildfires, FIRMS primary when `FIRMS_MAP_KEY` set else GDACS fallback);
   `GET /api/shelters` (public,
   moderated, `?country=` filtered) + `POST/PUT/DELETE /api/shelters` (**admin-only**, anti-fraud; POST
   carries `country`; `PUT /{id}` edits an active point → 200 / 404); `GET /api/board` (public, `?country=` +
@@ -277,7 +279,15 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   holds the moderator's bearer token **in memory only** (never on disk — a token doesn't survive an app
   kill); `AuthApi`/`AuthRepositoryImpl` log in and set it, and `ResourceBoardRepositoryImpl` reads it
   (`requireToken()`, throws `NotAuthenticatedException` if absent) to attach `bearerAuth` on the
-  moderator-only `listPending`/`approve`/`reject` calls.
+  moderator-only `listPending`/`approve`/`reject` calls. **Auto-logout on token expiry:** the shared
+  Ktor client (`HttpClientFactory.create(onUnauthorized)`) installs an `HttpResponseValidator` that,
+  on a **401 to a request carrying an `Authorization` header** (expired/revoked JWT — the 12h token
+  ran out), calls `SessionManager.expire()` (DI wires `onUnauthorized = { get<SessionManager>().expire() }`).
+  `expire()` clears the token/session and raises `sessionExpired`, so the UI drops straight back to
+  `LoginScreen` (which shows a "session expired" hint via `AuthViewModel.sessionExpired`) and every
+  pushed moderator route pops (they already guard `if (session == null) popBackStack()`). Gating on the
+  Authorization header means a public-endpoint 401 (bad login creds, app-gate) never nukes a session.
+  Covered by `HttpClientAuthTest` (MockEngine).
 - `:core:location` — `expect fun createLocationProvider(): LocationProvider` returning
   `Granted(lat,lon)` / `PermissionRequired` / `Unavailable`. Android actual uses `LocationManager`
   (context set via `AndroidLocationContext` in `MainActivity`, which also requests the runtime

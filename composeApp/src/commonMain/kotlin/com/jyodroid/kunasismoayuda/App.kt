@@ -621,7 +621,8 @@ private fun AppContent(
                 // Moderator-only. Show the login form until there's a session, then the queue.
                 if (session == null) {
                     val formState by authViewModel.form.collectAsStateWithLifecycle()
-                    LoginScreen(state = formState, onSubmit = authViewModel::login)
+                    val sessionExpired by authViewModel.sessionExpired.collectAsStateWithLifecycle()
+                    LoginScreen(state = formState, onSubmit = authViewModel::login, sessionExpired = sessionExpired)
                 } else {
                     val moderationViewModel: ModerationViewModel = koinViewModel()
                     val moderationState by moderationViewModel.state.collectAsStateWithLifecycle()

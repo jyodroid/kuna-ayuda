@@ -34,6 +34,7 @@ import com.jyodroid.kunasismoayuda.resources.mod_login_intro
 import com.jyodroid.kunasismoayuda.resources.mod_login_submit
 import com.jyodroid.kunasismoayuda.resources.mod_login_submitting
 import com.jyodroid.kunasismoayuda.resources.mod_password
+import com.jyodroid.kunasismoayuda.resources.session_expired
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -41,6 +42,7 @@ fun LoginScreen(
     state: LoginFormState,
     onSubmit: (email: String, password: String) -> Unit,
     modifier: Modifier = Modifier,
+    sessionExpired: Boolean = false,
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -57,6 +59,16 @@ fun LoginScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+
+        // Shown only when the moderator was auto-logged-out by an expired token (not a fresh visit).
+        if (sessionExpired) {
+            Text(
+                text = stringResource(Res.string.session_expired),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
+        }
 
         OutlinedTextField(
             value = email,

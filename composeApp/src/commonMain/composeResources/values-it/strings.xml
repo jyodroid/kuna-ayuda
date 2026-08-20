@@ -16,6 +16,7 @@
     <string name="country_indonesia">Indonesia</string>
     <string name="country_spain">Spagna</string>
     <string name="country_italy">Italia</string>
+    <string name="country_peru">Perù</string>
 
     <!-- Overview tab -->
     <string name="overview_quake_hint">Tocca per vedere i dettagli e le scosse di assestamento</string>
@@ -204,6 +205,7 @@
     <string name="mod_login_submit">Accedi</string>
     <string name="mod_login_submitting">Accesso in corso…</string>
     <string name="mod_login_error">Credenziali non valide. Controlla email e password.</string>
+    <string name="session_expired">La tua sessione è scaduta. Accedi di nuovo.</string>
     <string name="mod_title">Coda di moderazione</string>
     <string name="mod_loading">Caricamento in sospeso…</string>
     <string name="mod_error">Caricamento non riuscito. Riprova.</string>

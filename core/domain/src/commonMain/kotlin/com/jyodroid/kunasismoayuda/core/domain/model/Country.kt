@@ -20,7 +20,8 @@ enum class Country(
     COLOMBIA("CO", "Colombia", "Colombia", "🇨🇴", 4.6, -74.1, 5.0),
     INDONESIA("ID", "Indonesia", "Indonesia", "🇮🇩", -2.5, 118.0, 4.0),
     SPAIN("ES", "España", "Spain", "🇪🇸", 40.0, -3.7, 5.0),
-    ITALY("IT", "Italia", "Italy", "🇮🇹", 42.5, 12.5, 5.0);
+    ITALY("IT", "Italia", "Italy", "🇮🇹", 42.5, 12.5, 5.0),
+    PERU("PE", "Perú", "Peru", "🇵🇪", -9.2, -75.0, 5.0);
 
     companion object {
         val DEFAULT: Country = COLOMBIA

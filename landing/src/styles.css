@@ -62,6 +62,12 @@ img { max-width: 100%; height: auto; }
 .nav a { color: var(--text-muted); text-decoration: none; font-size: 0.95rem; }
 .nav a:hover { color: var(--teal); }
 
+/* On narrow screens the header wordmark wraps and collides with the nav links — hide the text in the
+   header only (the logo stays; the footer wordmark is untouched) so the nav has room. */
+@media (max-width: 560px) {
+  .site-header .brand .name { display: none; }
+}
+
 .lang-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
 .lang-toggle button {
   border: 0; background: transparent; color: var(--text-muted);

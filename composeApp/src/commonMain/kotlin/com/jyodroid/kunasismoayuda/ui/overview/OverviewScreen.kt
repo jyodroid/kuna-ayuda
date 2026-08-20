@@ -46,6 +46,7 @@ import com.jyodroid.kunasismoayuda.resources.country_change
 import com.jyodroid.kunasismoayuda.resources.country_colombia
 import com.jyodroid.kunasismoayuda.resources.country_indonesia
 import com.jyodroid.kunasismoayuda.resources.country_italy
+import com.jyodroid.kunasismoayuda.resources.country_peru
 import com.jyodroid.kunasismoayuda.resources.country_spain
 import com.jyodroid.kunasismoayuda.resources.error_generic
 import com.jyodroid.kunasismoayuda.resources.loading
@@ -211,6 +212,7 @@ private fun Country.labelRes() = when (this) {
     Country.INDONESIA -> Res.string.country_indonesia
     Country.SPAIN -> Res.string.country_spain
     Country.ITALY -> Res.string.country_italy
+    Country.PERU -> Res.string.country_peru
 }
 
 @Composable

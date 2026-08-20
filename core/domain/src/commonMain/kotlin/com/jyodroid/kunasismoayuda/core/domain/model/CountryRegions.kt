@@ -7,5 +7,6 @@ object CountryRegions {
         Country.INDONESIA -> IndonesiaRegions.all
         Country.SPAIN -> SpainRegions.all
         Country.ITALY -> ItalyRegions.all
+        Country.PERU -> PeruRegions.all
     }
 }

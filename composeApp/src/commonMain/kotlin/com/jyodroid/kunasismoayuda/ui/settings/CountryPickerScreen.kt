@@ -27,6 +27,7 @@ import com.jyodroid.kunasismoayuda.resources.Res
 import com.jyodroid.kunasismoayuda.resources.country_colombia
 import com.jyodroid.kunasismoayuda.resources.country_indonesia
 import com.jyodroid.kunasismoayuda.resources.country_italy
+import com.jyodroid.kunasismoayuda.resources.country_peru
 import com.jyodroid.kunasismoayuda.resources.country_picker_subtitle
 import com.jyodroid.kunasismoayuda.resources.country_picker_title
 import com.jyodroid.kunasismoayuda.resources.country_spain
@@ -102,4 +103,5 @@ private fun Country.labelRes(): StringResource = when (this) {
     Country.INDONESIA -> Res.string.country_indonesia
     Country.SPAIN -> Res.string.country_spain
     Country.ITALY -> Res.string.country_italy
+    Country.PERU -> Res.string.country_peru
 }

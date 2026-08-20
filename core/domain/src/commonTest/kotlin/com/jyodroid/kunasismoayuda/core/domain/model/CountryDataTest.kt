@@ -10,6 +10,7 @@ class CountryDataTest {
     fun country_from_code_is_case_insensitive_with_fallback() {
         assertEquals(Country.SPAIN, Country.fromCode("ES"))
         assertEquals(Country.SPAIN, Country.fromCode("es"))
+        assertEquals(Country.PERU, Country.fromCode("PE"))
         assertEquals(Country.DEFAULT, Country.fromCode("zz"))
     }
 
@@ -19,6 +20,7 @@ class CountryDataTest {
         assertEquals("112", CountryEmergency.generalNumber(Country.INDONESIA))
         assertEquals("112", CountryEmergency.generalNumber(Country.SPAIN))
         assertEquals("112", CountryEmergency.generalNumber(Country.ITALY))
+        assertEquals("105", CountryEmergency.generalNumber(Country.PERU))
     }
 
     @Test

@@ -16,6 +16,7 @@
     <string name="country_indonesia">Indonesia</string>
     <string name="country_spain">Spanyol</string>
     <string name="country_italy">Italia</string>
+    <string name="country_peru">Peru</string>
 
     <!-- Overview tab -->
     <string name="overview_quake_hint">Ketuk untuk melihat detail dan gempa susulan</string>
@@ -204,6 +205,7 @@
     <string name="mod_login_submit">Masuk</string>
     <string name="mod_login_submitting">Masuk…</string>
     <string name="mod_login_error">Kredensial tidak valid. Periksa email dan kata sandi.</string>
+    <string name="session_expired">Sesi Anda berakhir. Silakan masuk lagi.</string>
     <string name="mod_title">Antrean moderasi</string>
     <string name="mod_loading">Memuat yang tertunda…</string>
     <string name="mod_error">Tidak dapat memuat. Coba lagi.</string>

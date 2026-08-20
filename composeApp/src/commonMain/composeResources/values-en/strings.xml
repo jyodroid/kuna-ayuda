@@ -16,6 +16,7 @@
     <string name="country_indonesia">Indonesia</string>
     <string name="country_spain">Spain</string>
     <string name="country_italy">Italy</string>
+    <string name="country_peru">Peru</string>
 
     <!-- Overview tab -->
     <string name="overview_quake_hint">Tap to see detail and aftershocks</string>
@@ -204,6 +205,7 @@
     <string name="mod_login_submit">Sign in</string>
     <string name="mod_login_submitting">Signing in…</string>
     <string name="mod_login_error">Invalid credentials. Check the email and password.</string>
+    <string name="session_expired">Your session expired. Please sign in again.</string>
     <string name="mod_title">Moderation queue</string>
     <string name="mod_loading">Loading pending…</string>
     <string name="mod_error">Couldn’t load. Retry.</string>

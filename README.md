@@ -6,7 +6,7 @@
 
 **A disaster-relief resource network for your community — earthquakes and wildfires first.**
 
-Kotlin Multiplatform (Android · iOS · Desktop) + a Ktor backend. Multi-country: 🇨🇴 🇮🇩 🇪🇸 🇮🇹
+Kotlin Multiplatform (Android · iOS · Desktop) + a Ktor backend. Multi-country: 🇨🇴 🇮🇩 🇪🇸 🇮🇹 🇵🇪
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-0F5E66.svg)](LICENSE)
 

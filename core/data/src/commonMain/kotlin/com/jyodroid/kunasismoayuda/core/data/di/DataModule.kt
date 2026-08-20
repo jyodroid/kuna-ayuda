@@ -40,7 +40,8 @@ import org.koin.dsl.module
  * reference Ktor types directly.
  */
 val dataModule = module {
-    single { HttpClientFactory.create() }
+    // A 401 on any token-bearing request expires the moderator session (auto-logout on JWT expiry).
+    single { HttpClientFactory.create(onUnauthorized = { get<SessionManager>().expire() }) }
     // Persists the chosen country (survives restarts); null until the first-run picker resolves.
     single { CountryStore() }
     // Device-local record of board posts this device owns (post id → owner secret), for #4 resolve.

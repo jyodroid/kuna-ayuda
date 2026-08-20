@@ -28,11 +28,13 @@ object CountryBBoxes {
     val INDONESIA = BBox(minLat = -11.0, maxLat = 6.0, minLon = 95.0, maxLon = 141.0)
     val SPAIN = BBox(minLat = 35.0, maxLat = 44.0, minLon = -9.5, maxLon = 4.5)
     val ITALY = BBox(minLat = 35.4, maxLat = 47.1, minLon = 6.6, maxLon = 18.6)
+    val PERU = BBox(minLat = -18.5, maxLat = 0.0, minLon = -81.5, maxLon = -68.5)
 
     fun of(code: String?): BBox = when (code?.uppercase()) {
         "ID" -> INDONESIA
         "ES" -> SPAIN
         "IT" -> ITALY
+        "PE" -> PERU
         else -> COLOMBIA
     }
 }

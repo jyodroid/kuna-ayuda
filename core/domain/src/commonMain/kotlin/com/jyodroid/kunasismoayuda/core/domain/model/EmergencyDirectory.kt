@@ -26,6 +26,9 @@ data class EmergencyContact(
  * - **Italy:** 112 (NUE, numero unico di emergenza), 118 (emergenza sanitaria), 115 (Vigili del
  *   Fuoco), 113 (Polizia di Stato), 1530 (Guardia Costiera), 1515 (emergenze ambientali / incendi
  *   boschivi), Telefono Amico Italia 02 2327 2327 (supporto emotivo).
+ * - **Peru:** 105 (Policía Nacional del Perú, emergencias), 116 (Bomberos — Cuerpo General de
+ *   Bomberos Voluntarios del Perú), 106 (SAMU, emergencias médicas), 115 (INDECI, Defensa Civil /
+ *   desastres), Línea 113 opción 5 (MINSA, salud mental).
  */
 object CountryEmergency {
 
@@ -35,6 +38,7 @@ object CountryEmergency {
         Country.INDONESIA -> "112"
         Country.SPAIN -> "112"
         Country.ITALY -> "112"
+        Country.PERU -> "105"
     }
 
     /** The national mental-health / crisis line for [country]. */
@@ -43,6 +47,7 @@ object CountryEmergency {
         Country.INDONESIA -> EmergencyContact(EmergencyCategory.MENTAL_HEALTH, "SEJIWA (119 ext. 8)", "119")
         Country.SPAIN -> EmergencyContact(EmergencyCategory.MENTAL_HEALTH, "Línea 024", "024")
         Country.ITALY -> EmergencyContact(EmergencyCategory.MENTAL_HEALTH, "Telefono Amico Italia", "0223272327")
+        Country.PERU -> EmergencyContact(EmergencyCategory.MENTAL_HEALTH, "Línea 113 (opción 5) — MINSA", "113")
     }
 
     /** The full official directory for [country] (general line first, mental-health last). */
@@ -78,6 +83,13 @@ object CountryEmergency {
             EmergencyContact(EmergencyCategory.FIRE, "Vigili del Fuoco", "115"),
             EmergencyContact(EmergencyCategory.POLICE, "Polizia di Stato", "113"),
             EmergencyContact(EmergencyCategory.SAR, "Guardia Costiera", "1530"),
+            mentalHealth(country),
+        )
+        Country.PERU -> listOf(
+            EmergencyContact(EmergencyCategory.GENERAL, "Policía Nacional del Perú", "105"),
+            EmergencyContact(EmergencyCategory.FIRE, "Bomberos", "116"),
+            EmergencyContact(EmergencyCategory.MEDICAL, "SAMU (emergencias médicas)", "106"),
+            EmergencyContact(EmergencyCategory.CIVIL_DEFENSE, "INDECI — Defensa Civil", "115"),
             mentalHealth(country),
         )
     }
