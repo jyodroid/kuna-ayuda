@@ -385,6 +385,13 @@ depends on everything KMP; `:server` is independent.
   automatically (not by the selected
   country — a Spanish-locale device browsing Indonesia keeps a Spanish UI; tying language to country is
   a deferred follow-up). Generated accessors live under `com.jyodroid.kunasismoayuda.resources.Res`.
+  ⚠️ **Build gotcha:** after adding a *batch* of resources (enough to change the number of generated
+  `String`/`Drawable` chunks), a compile can fail with `Unresolved reference '_collectCommonMain*Resources'`
+  in the generated `ActualResourceCollectors.kt` — the incremental resource generation left the
+  expect/actual collectors out of sync. It is **not** a code error. Fix: `./gradlew :composeApp:clean`,
+  then build the targets **serially / `--no-parallel`** (a parallel multi-target build races the
+  generators and re-breaks it) — or just build one target first so the shared `commonMain` collectors
+  are generated once. Xcode archives build a single target, so **Clean Build Folder → Archive** is fine.
 - **Theme & branding.** `ui/theme/KunaTheme.kt` wraps `MaterialTheme` with harmonic **light AND dark**
   color schemes seeded from the **logo teal `#0F5E66`** (primary); teal-family secondary, a harmonic blue
   tertiary, teal-tinted neutrals, and a **strong red `error`** kept for SOS/danger in BOTH modes (never

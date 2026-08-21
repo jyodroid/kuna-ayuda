@@ -366,6 +366,9 @@
     <string name="story_children_1">Abbraccia e rassicura</string>
     <string name="story_children_2">Ascolta con calma</string>
     <string name="story_children_3">Mantieni la routine insieme</string>
+    <string name="story_outdoor_1">Vai in uno spazio aperto</string>
+    <string name="story_outdoor_2">Ferma l'auto e resta dentro</string>
+    <string name="story_outdoor_3">Copriti finché non finisce</string>
 
     <string name="tip_before_1_title">Prepara un kit di emergenza</string>
     <string name="tip_before_1_body">Acqua, cibo non deperibile, torcia, radio, kit di pronto soccorso, documenti e un fischietto.</string>

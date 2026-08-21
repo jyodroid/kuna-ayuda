@@ -366,6 +366,9 @@
     <string name="story_children_1">Abrázalo y tranquilízalo</string>
     <string name="story_children_2">Escúchalo con calma</string>
     <string name="story_children_3">Mantén la rutina juntos</string>
+    <string name="story_outdoor_1">Ve a un espacio abierto</string>
+    <string name="story_outdoor_2">Detén el auto y quédate dentro</string>
+    <string name="story_outdoor_3">Cúbrete hasta que pare</string>
 
     <string name="tip_before_1_title">Prepara un kit de emergencia</string>
     <string name="tip_before_1_body">Agua, alimentos no perecederos, linterna, radio, botiquín, documentos y un silbato.</string>

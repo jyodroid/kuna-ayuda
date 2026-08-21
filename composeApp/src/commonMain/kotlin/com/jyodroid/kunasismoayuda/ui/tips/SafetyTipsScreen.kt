@@ -123,6 +123,9 @@ import com.jyodroid.kunasismoayuda.resources.story_calm_3
 import com.jyodroid.kunasismoayuda.resources.story_children_1
 import com.jyodroid.kunasismoayuda.resources.story_children_2
 import com.jyodroid.kunasismoayuda.resources.story_children_3
+import com.jyodroid.kunasismoayuda.resources.story_outdoor_1
+import com.jyodroid.kunasismoayuda.resources.story_outdoor_2
+import com.jyodroid.kunasismoayuda.resources.story_outdoor_3
 import com.jyodroid.kunasismoayuda.core.domain.model.Country
 import com.jyodroid.kunasismoayuda.core.domain.model.CountryEmergency
 import com.jyodroid.kunasismoayuda.core.domain.util.tipSpeechText
@@ -186,6 +189,11 @@ private val supportingChildrenSteps = listOf(
     StoryStep(Res.drawable.story_children_2, Res.string.story_children_2),
     StoryStep(Res.drawable.story_children_3, Res.string.story_children_3),
 )
+private val outdoorDrivingSteps = listOf(
+    StoryStep(Res.drawable.story_outdoor_1, Res.string.story_outdoor_1),
+    StoryStep(Res.drawable.story_outdoor_2, Res.string.story_outdoor_2),
+    StoryStep(Res.drawable.story_outdoor_3, Res.string.story_outdoor_3),
+)
 
 private val tips = listOf(
     Tip(Res.string.tip_before_1_title, Res.string.tip_before_1_body, Phase.BEFORE, Res.drawable.tip_kit, steps = beforeQuakeSteps),
@@ -193,7 +201,7 @@ private val tips = listOf(
     Tip(Res.string.tip_before_3_title, Res.string.tip_before_3_body, Phase.BEFORE, Res.drawable.tip_place),
     Tip(Res.string.tip_during_1_title, Res.string.tip_during_1_body, Phase.DURING, Res.drawable.tip_shield, steps = duringQuakeSteps),
     Tip(Res.string.tip_during_2_title, Res.string.tip_during_2_body, Phase.DURING, Res.drawable.tip_warning),
-    Tip(Res.string.tip_during_3_title, Res.string.tip_during_3_body, Phase.DURING, Res.drawable.tip_car),
+    Tip(Res.string.tip_during_3_title, Res.string.tip_during_3_body, Phase.DURING, Res.drawable.tip_car, steps = outdoorDrivingSteps),
     Tip(Res.string.tip_after_1_title, Res.string.tip_after_1_body, Phase.AFTER, Res.drawable.tip_medical, steps = afterQuakeSteps),
     Tip(Res.string.tip_after_2_title, Res.string.tip_after_2_body, Phase.AFTER, Res.drawable.tip_fire),
     Tip(Res.string.tip_after_3_title, Res.string.tip_after_3_body, Phase.AFTER, Res.drawable.tip_message),

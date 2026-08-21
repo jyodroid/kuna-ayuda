@@ -21,6 +21,13 @@ masters kept in `~/Documents/kuna-ayuda/storyboard/`).
 | `story_during_2.png` | Cover your head under a sturdy table |
 | `story_during_3.png` | Hold on to the table leg until the shaking stops |
 
+### Outdoors / driving — attached to the "if you're outdoors or driving" tip (`tip_during_3`)
+| File | Step |
+|------|------|
+| `story_outdoor_1.png` | Move to an open space, away from buildings, trees and power lines |
+| `story_outdoor_2.png` | Pull the car over and stay inside (seatbelt on) |
+| `story_outdoor_3.png` | Crouch and cover your head until the shaking stops |
+
 ### Before / preparedness — attached to the "Before" tip (`tip_before_1`)
 | File | Step |
 |------|------|

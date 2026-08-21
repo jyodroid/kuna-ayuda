@@ -366,6 +366,9 @@
     <string name="story_children_1">Comfort and reassure</string>
     <string name="story_children_2">Listen calmly</string>
     <string name="story_children_3">Keep a routine together</string>
+    <string name="story_outdoor_1">Move to an open space</string>
+    <string name="story_outdoor_2">Pull over and stay inside</string>
+    <string name="story_outdoor_3">Cover your head until it stops</string>
 
     <string name="tip_before_1_title">Prepare an emergency kit</string>
     <string name="tip_before_1_body">Water, non-perishable food, flashlight, radio, first-aid kit, documents and a whistle.</string>

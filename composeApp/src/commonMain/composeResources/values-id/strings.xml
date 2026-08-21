@@ -366,6 +366,9 @@
     <string name="story_children_1">Peluk dan tenangkan</string>
     <string name="story_children_2">Dengarkan dengan tenang</string>
     <string name="story_children_3">Jaga rutinitas bersama</string>
+    <string name="story_outdoor_1">Menuju area terbuka</string>
+    <string name="story_outdoor_2">Berhenti dan tetap di mobil</string>
+    <string name="story_outdoor_3">Lindungi kepala sampai berhenti</string>
 
     <string name="tip_before_1_title">Siapkan tas siaga</string>
     <string name="tip_before_1_body">Air, makanan tahan lama, senter, radio, kotak P3K, dokumen, dan peluit.</string>
