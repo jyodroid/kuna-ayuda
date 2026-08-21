@@ -86,7 +86,9 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   `api_usage` (monthly spend-cap counter) and `classify_cache` (memoized classify+fact-check result)
   tables; `V18__seed_pe_points.sql` seeds real official **Peruvian** help points — INDECI, Cruz Roja
   Peruana (national + filiales), CGBVP (bomberos) — in Lima and the seismic capitals, mirroring
-  `core/domain PeruRegions.kt`.)
+  `core/domain PeruRegions.kt`. `V19__admin_audit_and_accounts.sql` — see the oversight-console note.
+  `V20__collection_points.sql` adds a `collection_points` TEXT (JSON array of `{name,address,hours}`) to
+  `resource_posts` **and** `classify_cache` for the classified-post **drop-off/collection points** feature.)
 - **Flyway + fat jar (FIXED):** the shaded fat jar (`:server:shadowJar` → `java -jar`, the
   `:server:stage`/Heroku path) previously applied **0 migrations** — Flyway 11 registers its SQL
   resolvers + the config extensions that define the `V__`/`R__`/`U__` naming via
@@ -197,7 +199,13 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   confirm makes no new paid call). Both share `classifyToEntry` in `ResourceBoardService` (link-only
   guard **before** any paid call + empty-extraction guard after → **422** `UnclassifiableTextException`
   with "paste the text, not a link" guidance, so a bare URL/screenshot never becomes an empty post) and
-  the same error mapping (`classifyGuarded`). Then `POST /api/board/{id}/resolve`
+  the same error mapping (`classifyGuarded`). **Drop-off/collection points:** the classify also extracts a
+  structured `collectionPoints` list (`CollectionPoint{name,address,hours}`, JSON-schema array in
+  `ai/AnthropicClient`) — the places to bring/pick up resources — persisted on the post + memoized in
+  `classify_cache` (`collection_points` TEXT via `infrastructure/CollectionPointsJson`, V20); shown on the
+  board card / classify preview (`ui/board`) as "Puntos de recepción" and in the console board queue. They
+  stay post content (not official map points). Bumping the extraction prompt bumped `PROMPT_VERSION`→`v4`.
+  Then `POST /api/board/{id}/resolve`
   (**public, device-gated** — the creating device closes its own post by presenting the `owner_secret`
   the server issued at creation and returned once in the create response; no auth, the secret IS the
   identity; constant-time compare; RESOLVED→204 / not-owner→403 / missing→404) + `GET /api/board/pending`
@@ -286,6 +294,12 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   "Notificado" (SAFE) which archive via `POST /{id}/handle`; archived cards show "Restaurar" (`reopen`)
   and "Eliminar" (`DELETE`, behind a confirm dialog) and display who handled it. Soft-archive is the
   default (reversible, audit trail); hard delete is the escape hatch for spam/false alarms.
+  **Proximity grouping:** an "Ordenar por cercanía" button requests the moderator's location
+  (`core:location`, on-demand); the active list then groups reports under **Cerca / Misma zona / Lejos
+  (delegar) / Sin ubicación** headers with a per-card "a N km" distance, via pure `core/domain`
+  `SosProximity` + `SosReport.proximityFrom(lat,lon)` over `Geo.distanceKm` (NEAR ≤2 km, SAME_CITY ≤25 km,
+  FAR >25 km; no-coords ⇒ NO_LOCATION — that's where empty test taps land). Client-only (no server change);
+  covered by `SosProximityTest`.
   **Add help point** (`ui/shelters` — `ShelterAdminViewModel` + `ShelterCreateScreen`): `ModerationScreen`
   shows an "Agregar punto de ayuda" entry (any logged-in moderator) → `shelter_create` route, a form
   (name, type chips, address, optional accepts/hours/phone) with a **map-tap location picker**
@@ -505,7 +519,19 @@ Channels and safety Tips — merged so we stay at 5 tabs). Nav labels are center
   section — line 192 opción 4 / 106 / 123, normal reactions, calming techniques, supporting children,
   and a community IG account flagged as *not* an official line — and an **Animals** section —
   evacuating with pets, foundations receiving aid, vet care, lost-pet finder; community channels
-  flagged as *not* official).
+  flagged as *not* official). **Accessible tips (for low-vision / non-readers):** tapping a `TipCard`
+  opens a `ModalBottomSheet` detail — larger title/body, plus (for the highest-value life-safety tips:
+  Before/During/After earthquake **and the Animals "evacuate with pets" tip**) a **wordless
+  step-by-step illustration storyboard** (numbered `story_*.png` — custom **project-owned** flat-teal
+  art generated with Gemini, rendered full-color via `Image` not tinted `Icon`; see
+  `composeResources/drawable/STORYBOARD_ASSETS.md` for provenance) with a short localized caption per
+  step that doubles as the illustration's `contentDescription`. Each card and the sheet also carry an
+  **"Escuchar" / Listen** button that reads the tip aloud via device **text-to-speech** — `ui/platform`
+  `Speaker` (`expect/actual`, mirroring `PhoneCaller`): Android `TextToSpeech` (Context from
+  `LocalContext`, shut down via `DisposableEffect`), iOS `AVSpeechSynthesizer` (device speech language),
+  Desktop = none so `isAvailable=false` hides the button. Speech text is built by pure
+  `core/domain util tipSpeechText(title, body)` (unit-tested). Storyboards default empty
+  (`Tip.steps`), so tips without one still get the readable + Listen sheet.
 - The board has two pushed routes (not tabs): `board_create` (manual "new post" form — contact is
   opt-in with a public-contact disclaimer, #3) and `board_classify` (**"Pegar publicación"** — paste a
   social-media post's **text** → Claude structures it → the poster **reviews a preview and confirms**

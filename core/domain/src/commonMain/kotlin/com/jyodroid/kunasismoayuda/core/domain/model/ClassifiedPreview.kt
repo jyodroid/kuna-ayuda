@@ -12,4 +12,5 @@ data class ClassifiedPreview(
     val contactPhone: String?,
     val contactName: String?,
     val factCheck: String?,
+    val collectionPoints: List<CollectionPoint> = emptyList(),
 )

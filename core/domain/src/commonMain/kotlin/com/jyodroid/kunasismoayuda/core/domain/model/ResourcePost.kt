@@ -15,6 +15,7 @@ data class ResourcePost(
     val rawText: String? = null,   // original pasted text (classified posts), shown to moderators
     val factCheck: String? = null, // Google Fact Check note (classified posts), shown to moderators
     val ownerSecret: String? = null, // device ownership token — only present on the create response (#4)
+    val collectionPoints: List<CollectionPoint> = emptyList(), // drop-off/collection points (classified)
 )
 
 /** Fields a user provides to publish a post. */

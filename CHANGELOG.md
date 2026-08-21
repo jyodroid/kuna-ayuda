@@ -4,6 +4,32 @@ All notable changes to Kuna Ayuda. Format based on [Keep a Changelog](https://ke
 this project uses [Semantic Versioning](https://semver.org/). The version lives in
 `gradle/libs.versions.toml` (`desktopPackageVersion`) and is enforced against the git tag by CI.
 
+## [1.2.0] — 2026-08-21
+
+### Added
+- **Accessible safety tips.** Tapping a Guide tip now opens a detail sheet with:
+  - a **"Escuchar" / Listen** button that reads the tip aloud via device text-to-speech (Android
+    `TextToSpeech`, iOS `AVSpeechSynthesizer`; hidden on desktop), for low-vision and non-reading users;
+  - **wordless step-by-step illustration storyboards** for six high-value tips — *Before*, *During*,
+    *After* an earthquake, plus *Pets*, *Calming techniques*, and *Supporting children* — with a short
+    localized caption per step (ES/EN/ID/IT) that doubles as the image's accessible description.
+- **Drop-off / collection points** in classified aid-board posts: the paste-and-classify flow now
+  extracts a structured list of where to bring or pick up resources (name / address / hours) and shows
+  it as a clear "Puntos de recepción" block on the board card, classify preview, and moderation queue.
+- **SOS proximity grouping** in the moderator responder view: with the moderator's location, submitted
+  SOS reports group under **Cerca (≤2 km) / Misma zona (≤25 km) / Lejos — delegar (>25 km) / Sin
+  ubicación**, each with a per-card distance, so nearby alerts stand out and far ones can be delegated
+  (empty test taps land in "Sin ubicación").
+
+### Changed
+- Landing site: added `canonical` + Open Graph `og:url`/`og:image` (a 1200×630 card) + Twitter card so
+  shared links show a proper preview; set the canonical domain to `kunaayuda.org` across home/privacy/terms.
+
+### Server
+- Migration **V20** adds `collection_points` to `resource_posts` and `classify_cache`; the classify
+  prompt version bumped to `v4` (a previously-pasted post re-extracts, now with drop-off points). Runs
+  automatically on deploy.
+
 ## [1.1.1] — 2026-08-20
 
 ### Changed

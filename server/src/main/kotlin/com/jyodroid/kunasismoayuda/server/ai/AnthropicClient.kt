@@ -7,6 +7,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
+import com.jyodroid.kunasismoayuda.server.domain.models.CollectionPoint
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
@@ -32,6 +33,7 @@ data class ClassifiedPost(
     val description: String,
     val contactPhone: String,
     val contactName: String,
+    val collectionPoints: List<CollectionPoint> = emptyList(),
 )
 
 class AnthropicMissingKeyException : RuntimeException("ANTHROPIC_API_KEY is not configured")
@@ -123,10 +125,23 @@ class AnthropicClient(
             putJsonObject("description") { put("type", "string") }
             putJsonObject("contactPhone") { put("type", "string") }
             putJsonObject("contactName") { put("type", "string") }
+            putJsonObject("collectionPoints") {
+                put("type", "array")
+                putJsonObject("items") {
+                    put("type", "object")
+                    put("additionalProperties", false)
+                    putJsonObject("properties") {
+                        putJsonObject("name") { put("type", "string") }
+                        putJsonObject("address") { put("type", "string") }
+                        putJsonObject("hours") { put("type", "string") }
+                    }
+                    putJsonArray("required") { add("name"); add("address"); add("hours") }
+                }
+            }
         }
         putJsonArray("required") {
             add("kind"); add("resourceType"); add("region")
-            add("description"); add("contactPhone"); add("contactName")
+            add("description"); add("contactPhone"); add("contactName"); add("collectionPoints")
         }
     }
 
@@ -148,6 +163,11 @@ class AnthropicClient(
           Drop only greetings, hashtags spam, and emojis. It may be several sentences or a short list.
         - contactPhone: a phone number if present, else "".
         - contactName: a person/organization name if present, else "".
+        - collectionPoints: a list of the specific drop-off / collection / distribution points named in the
+          post — the places where people bring or pick up the resources. Each item is
+          {name, address, hours}: name = the place ("Parroquia San José", "Colegio Central"); address = its
+          street/area if given, else ""; hours = opening hours if given, else "". Return [] when the post
+          names none. Do NOT invent points, and do NOT treat a general city/region as a collection point.
 
         Do not invent details. Only extract what is actually in the text.
 

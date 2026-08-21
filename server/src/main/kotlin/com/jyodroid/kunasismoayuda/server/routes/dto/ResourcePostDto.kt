@@ -1,5 +1,6 @@
 package com.jyodroid.kunasismoayuda.server.routes.dto
 
+import com.jyodroid.kunasismoayuda.server.domain.models.CollectionPoint
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -19,6 +20,7 @@ data class ResourcePostResponse(
     val createdAt: String, // ISO-8601
     // Returned ONLY in the create response, to the poster's own device (never in list/pending).
     val ownerSecret: String? = null,
+    val collectionPoints: List<CollectionPoint> = emptyList(), // drop-off/collection points (classified)
 )
 
 /** Body for `POST /api/board/{id}/resolve` — the device's ownership token for the post. */
@@ -64,4 +66,5 @@ data class ClassifyPreviewResponse(
     val contactPhone: String? = null,
     val contactName: String? = null,
     val factCheck: String? = null,
+    val collectionPoints: List<CollectionPoint> = emptyList(),
 )

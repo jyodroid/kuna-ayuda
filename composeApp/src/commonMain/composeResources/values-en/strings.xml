@@ -107,6 +107,14 @@
     <string name="sos_resp_badge_safe">Safe</string>
     <string name="sos_resp_directions">View on map</string>
     <string name="sos_resp_no_location">No precise location</string>
+    <string name="sos_prox_near_me">Sort by distance</string>
+    <string name="sos_prox_refresh">Refresh my location</string>
+    <string name="sos_prox_location_hint">Enable location to sort reports by how close they are.</string>
+    <string name="sos_prox_distance">%1$s away</string>
+    <string name="sos_prox_near">Nearby</string>
+    <string name="sos_prox_same_city">Same area</string>
+    <string name="sos_prox_far">Far — consider delegating</string>
+    <string name="sos_prox_no_location_group">No location</string>
     <string name="sos_resp_call">Call</string>
     <string name="sos_resp_received">Received %1$s</string>
     <string name="sos_resp_view_active">Active</string>
@@ -185,6 +193,7 @@
     <string name="board_paste_error">Couldn’t process it. Please try again later.</string>
     <string name="board_kind_request">I need help</string>
     <string name="board_kind_offer">I’m offering help</string>
+    <string name="board_collection_points">Drop-off points</string>
     <string name="board_field_region">Region or city</string>
     <string name="board_field_description">Description</string>
     <string name="board_field_phone">Contact phone (optional)</string>
@@ -333,6 +342,30 @@
     <string name="phase_mental">Mental health</string>
     <string name="phase_animals">Animals</string>
     <string name="tips_source_note">Based on guidance from UNGRD, the Red Cross and Civil Defense.</string>
+
+    <!-- Accessible tips: listen (TTS) + step-by-step pictograms -->
+    <string name="tip_listen">Listen</string>
+    <string name="tip_listen_a11y">Listen to this tip aloud</string>
+    <string name="tip_open_details_a11y">Open the tip with pictures and audio</string>
+    <string name="tip_story_heading">Step by step</string>
+    <string name="story_during_1">Drop down</string>
+    <string name="story_during_2">Cover your head</string>
+    <string name="story_during_3">Hold on until it stops</string>
+    <string name="story_before_1">Build a kit</string>
+    <string name="story_before_2">Make a family plan</string>
+    <string name="story_before_3">Agree on a meeting point</string>
+    <string name="story_after_1">Check for injuries</string>
+    <string name="story_after_2">Avoid hazards</string>
+    <string name="story_after_3">Evacuate calmly</string>
+    <string name="story_pets_1">Pet emergency kit</string>
+    <string name="story_pets_2">Keep your pet close</string>
+    <string name="story_pets_3">Leash it before going out</string>
+    <string name="story_calm_1">Breathe in slowly</string>
+    <string name="story_calm_2">Breathe out slowly</string>
+    <string name="story_calm_3">Feel your feet on the ground</string>
+    <string name="story_children_1">Comfort and reassure</string>
+    <string name="story_children_2">Listen calmly</string>
+    <string name="story_children_3">Keep a routine together</string>
 
     <string name="tip_before_1_title">Prepare an emergency kit</string>
     <string name="tip_before_1_body">Water, non-perishable food, flashlight, radio, first-aid kit, documents and a whistle.</string>

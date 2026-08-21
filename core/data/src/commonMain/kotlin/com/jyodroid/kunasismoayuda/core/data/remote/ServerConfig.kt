@@ -35,10 +35,7 @@ const val APP_CLIENT_KEY: String = "b7e2d40915a86c3f0e1d7942bc63f58a2049e1cd76b8
 /**
  * Public website that hosts the Privacy Policy and Terms (the same Ktor server serves them at
  * `/privacy` and `/terms`). The app links here from the Guide screen, and the app-store listings point
- * their required Privacy-Policy URL here too.
- *
- * TODO: set to the real registered domain (e.g. https://kunaayuda.org) once DNS is set up. For now it
- * points at the live Heroku server, which serves /privacy and /terms, so the in-app links work today.
+ * their required Privacy-Policy URL here too. Uses the custom domain [PROD_BASE_URL] (kunaayuda.org).
  */
 const val SITE_BASE_URL: String = PROD_BASE_URL
 const val PRIVACY_URL: String = "$SITE_BASE_URL/privacy"

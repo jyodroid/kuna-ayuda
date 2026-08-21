@@ -6,6 +6,8 @@ import com.jyodroid.kunasismoayuda.core.domain.model.SosReport
 import com.jyodroid.kunasismoayuda.core.domain.model.SosStats
 import com.jyodroid.kunasismoayuda.core.domain.model.SosStatus
 import com.jyodroid.kunasismoayuda.core.domain.repository.SosRepository
+import com.jyodroid.kunasismoayuda.core.location.LocationProvider
+import com.jyodroid.kunasismoayuda.core.location.LocationResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +22,10 @@ data class SosResponderUiState(
     val showArchived: Boolean = false,      // false = active/pending list; true = archived list
     val stats: SosStats? = null,
     val actioningId: Int? = null,           // a report whose archive/reopen/delete is in flight
+    // Moderator location, for grouping reports by proximity (Cerca / Misma zona / Lejos / Sin ubicación).
+    val moderatorLat: Double? = null,
+    val moderatorLon: Double? = null,
+    val locationDenied: Boolean = false,    // set if the moderator denied/blocked location
 )
 
 /**
@@ -29,10 +35,22 @@ data class SosResponderUiState(
  */
 class SosResponderViewModel(
     private val repository: SosRepository,
+    private val locationProvider: LocationProvider,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SosResponderUiState())
     val state: StateFlow<SosResponderUiState> = _state.asStateFlow()
+
+    /** Ask for the moderator's location so reports can be grouped by distance (on-demand permission). */
+    fun requestLocation() {
+        viewModelScope.launch {
+            when (val r = locationProvider.current()) {
+                is LocationResult.Granted ->
+                    _state.update { it.copy(moderatorLat = r.coordinates.latitude, moderatorLon = r.coordinates.longitude, locationDenied = false) }
+                else -> _state.update { it.copy(locationDenied = true) }
+            }
+        }
+    }
 
     fun setFilter(filter: SosStatus?) {
         if (filter == _state.value.filter) return

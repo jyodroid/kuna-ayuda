@@ -35,14 +35,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import com.jyodroid.kunasismoayuda.ui.platform.rememberPhoneCaller
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.jyodroid.kunasismoayuda.core.domain.model.SosProximity
 import com.jyodroid.kunasismoayuda.core.domain.model.SosReport
 import com.jyodroid.kunasismoayuda.core.domain.model.SosStats
 import com.jyodroid.kunasismoayuda.core.domain.model.SosStatus
+import com.jyodroid.kunasismoayuda.core.domain.model.distanceKmFrom
+import com.jyodroid.kunasismoayuda.core.domain.model.proximityFrom
+import kotlin.math.roundToInt
 import com.jyodroid.kunasismoayuda.resources.Res
 import com.jyodroid.kunasismoayuda.resources.admin_cancel
 import com.jyodroid.kunasismoayuda.resources.retry
@@ -65,6 +70,14 @@ import com.jyodroid.kunasismoayuda.resources.sos_resp_handled_by
 import com.jyodroid.kunasismoayuda.resources.sos_resp_loading
 import com.jyodroid.kunasismoayuda.resources.sos_resp_no_location
 import com.jyodroid.kunasismoayuda.resources.sos_resp_received
+import com.jyodroid.kunasismoayuda.resources.sos_prox_distance
+import com.jyodroid.kunasismoayuda.resources.sos_prox_far
+import com.jyodroid.kunasismoayuda.resources.sos_prox_location_hint
+import com.jyodroid.kunasismoayuda.resources.sos_prox_near
+import com.jyodroid.kunasismoayuda.resources.sos_prox_near_me
+import com.jyodroid.kunasismoayuda.resources.sos_prox_no_location_group
+import com.jyodroid.kunasismoayuda.resources.sos_prox_refresh
+import com.jyodroid.kunasismoayuda.resources.sos_prox_same_city
 import com.jyodroid.kunasismoayuda.resources.sos_resp_stat_attended
 import com.jyodroid.kunasismoayuda.resources.sos_resp_stat_safe_pending
 import com.jyodroid.kunasismoayuda.resources.sos_resp_stat_sos_pending
@@ -81,6 +94,7 @@ fun SosResponderScreen(
     onReopen: (Int) -> Unit,
     onDelete: (Int) -> Unit,
     onRetry: () -> Unit,
+    onRequestLocation: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LaunchedEffect(Unit) { onRetry() }
@@ -92,6 +106,10 @@ fun SosResponderScreen(
         state.stats?.let { StatsRow(it) }
         ViewToggle(showArchived = state.showArchived, onViewChange = onViewChange)
         FilterRow(selected = state.filter, onFilterChange = onFilterChange)
+        // Proximity grouping is for the active list (who to respond to now).
+        if (!state.showArchived) {
+            NearMeBar(hasLocation = state.moderatorLat != null, denied = state.locationDenied, onRequestLocation = onRequestLocation)
+        }
 
         when {
             state.isLoading -> Centered {
@@ -112,22 +130,45 @@ fun SosResponderScreen(
 
             state.reports.isEmpty() -> Centered { Text(stringResource(Res.string.sos_resp_empty)) }
 
-            else -> LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                items(state.reports, key = { it.id }) { report ->
-                    ReportCard(
-                        report = report,
-                        isActioning = state.actioningId == report.id,
-                        actionsEnabled = state.actioningId == null,
-                        onArchive = { onArchive(report.id) },
-                        onReopen = { onReopen(report.id) },
-                        onDeleteRequest = { pendingDeleteId = report.id },
-                        modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth(),
-                    )
+            else -> {
+                val lat = state.moderatorLat
+                val lon = state.moderatorLon
+                val grouped = lat != null && lon != null && !state.showArchived
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    @Composable
+                    fun card(report: SosReport) {
+                        ReportCard(
+                            report = report,
+                            distanceKm = report.distanceKmFrom(lat, lon),
+                            isActioning = state.actioningId == report.id,
+                            actionsEnabled = state.actioningId == null,
+                            onArchive = { onArchive(report.id) },
+                            onReopen = { onReopen(report.id) },
+                            onDeleteRequest = { pendingDeleteId = report.id },
+                            modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth(),
+                        )
+                    }
+                    if (!grouped) {
+                        items(state.reports, key = { it.id }) { card(it) }
+                    } else {
+                        val byBucket = state.reports.groupBy { it.proximityFrom(lat, lon) }
+                        // NEAR first, then wider rings, then the location-less ones (incl. empty test taps).
+                        listOf(SosProximity.NEAR, SosProximity.SAME_CITY, SosProximity.FAR, SosProximity.NO_LOCATION)
+                            .forEach { bucket ->
+                                val list = byBucket[bucket].orEmpty()
+                                if (list.isNotEmpty()) {
+                                    item(key = "hdr-$bucket") {
+                                        ProximityHeader(bucket, list.size, Modifier.widthIn(max = 640.dp).fillMaxWidth())
+                                    }
+                                    items(list, key = { it.id }) { card(it) }
+                                }
+                            }
+                    }
                 }
             }
         }
@@ -244,6 +285,7 @@ private fun FilterRow(selected: SosStatus?, onFilterChange: (SosStatus?) -> Unit
 @Composable
 private fun ReportCard(
     report: SosReport,
+    distanceKm: Double?,
     isActioning: Boolean,
     actionsEnabled: Boolean,
     onArchive: () -> Unit,
@@ -273,6 +315,13 @@ private fun ReportCard(
             )
             report.region?.takeIf { it.isNotBlank() }?.let {
                 Text(it, style = MaterialTheme.typography.bodyLarge)
+            }
+            distanceKm?.let {
+                Text(
+                    text = stringResource(Res.string.sos_prox_distance, formatDistanceKm(it)),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
             }
             report.message?.takeIf { it.isNotBlank() }?.let {
                 Text(it, style = MaterialTheme.typography.bodyMedium)
@@ -359,6 +408,45 @@ private fun ReportCard(
         }
     }
 }
+
+@Composable
+private fun NearMeBar(hasLocation: Boolean, denied: Boolean, onRequestLocation: () -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+        OutlinedButton(onClick = onRequestLocation, modifier = Modifier.heightIn(min = 44.dp)) {
+            Text(stringResource(if (hasLocation) Res.string.sos_prox_refresh else Res.string.sos_prox_near_me))
+        }
+        if (denied && !hasLocation) {
+            Text(
+                stringResource(Res.string.sos_prox_location_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProximityHeader(bucket: SosProximity, count: Int, modifier: Modifier = Modifier) {
+    val label = stringResource(
+        when (bucket) {
+            SosProximity.NEAR -> Res.string.sos_prox_near
+            SosProximity.SAME_CITY -> Res.string.sos_prox_same_city
+            SosProximity.FAR -> Res.string.sos_prox_far
+            SosProximity.NO_LOCATION -> Res.string.sos_prox_no_location_group
+        },
+    )
+    Text(
+        text = "$label ($count)",
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.Bold,
+        modifier = modifier.semantics { heading() },
+    )
+}
+
+/** "5 km" for whole km, "<1 km" for very near. Unit is universal enough across the 4 locales. */
+private fun formatDistanceKm(km: Double): String =
+    if (km < 1.0) "<1 km" else "${km.roundToInt()} km"
 
 @Composable
 private fun Centered(content: @Composable () -> Unit) {

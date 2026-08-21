@@ -107,6 +107,14 @@
     <string name="sos_resp_badge_safe">Selamat</string>
     <string name="sos_resp_directions">Lihat di peta</string>
     <string name="sos_resp_no_location">Tanpa lokasi presisi</string>
+    <string name="sos_prox_near_me">Urutkan berdasarkan jarak</string>
+    <string name="sos_prox_refresh">Perbarui lokasi saya</string>
+    <string name="sos_prox_location_hint">Aktifkan lokasi untuk mengurutkan laporan berdasarkan kedekatan.</string>
+    <string name="sos_prox_distance">%1$s dari Anda</string>
+    <string name="sos_prox_near">Dekat</string>
+    <string name="sos_prox_same_city">Area yang sama</string>
+    <string name="sos_prox_far">Jauh — pertimbangkan delegasi</string>
+    <string name="sos_prox_no_location_group">Tanpa lokasi</string>
     <string name="sos_resp_call">Hubungi</string>
     <string name="sos_resp_received">Diterima %1$s</string>
     <string name="sos_resp_view_active">Aktif</string>
@@ -185,6 +193,7 @@
     <string name="board_paste_error">Tidak dapat memproses. Coba lagi nanti.</string>
     <string name="board_kind_request">Saya butuh bantuan</string>
     <string name="board_kind_offer">Saya menawarkan bantuan</string>
+    <string name="board_collection_points">Titik pengumpulan</string>
     <string name="board_field_region">Wilayah atau kota</string>
     <string name="board_field_description">Deskripsi</string>
     <string name="board_field_phone">Telepon kontak (opsional)</string>
@@ -333,6 +342,30 @@
     <string name="phase_mental">Kesehatan mental</string>
     <string name="phase_animals">Hewan</string>
     <string name="tips_source_note">Berdasarkan panduan UNGRD, Palang Merah, dan Pertahanan Sipil.</string>
+
+    <!-- Accessible tips: listen (TTS) + step-by-step pictograms -->
+    <string name="tip_listen">Dengarkan</string>
+    <string name="tip_listen_a11y">Dengarkan tips ini dengan suara</string>
+    <string name="tip_open_details_a11y">Buka tips dengan gambar dan audio</string>
+    <string name="tip_story_heading">Langkah demi langkah</string>
+    <string name="story_during_1">Merunduk ke bawah</string>
+    <string name="story_during_2">Lindungi kepala</string>
+    <string name="story_during_3">Berpegangan sampai berhenti</string>
+    <string name="story_before_1">Siapkan tas siaga</string>
+    <string name="story_before_2">Buat rencana keluarga</string>
+    <string name="story_before_3">Sepakati titik kumpul</string>
+    <string name="story_after_1">Periksa korban luka</string>
+    <string name="story_after_2">Hindari bahaya</string>
+    <string name="story_after_3">Mengungsi dengan tenang</string>
+    <string name="story_pets_1">Perlengkapan darurat hewan</string>
+    <string name="story_pets_2">Jaga hewan tetap dekat</string>
+    <string name="story_pets_3">Pasang tali sebelum keluar</string>
+    <string name="story_calm_1">Tarik napas perlahan</string>
+    <string name="story_calm_2">Buang napas perlahan</string>
+    <string name="story_calm_3">Rasakan kakimu di lantai</string>
+    <string name="story_children_1">Peluk dan tenangkan</string>
+    <string name="story_children_2">Dengarkan dengan tenang</string>
+    <string name="story_children_3">Jaga rutinitas bersama</string>
 
     <string name="tip_before_1_title">Siapkan tas siaga</string>
     <string name="tip_before_1_body">Air, makanan tahan lama, senter, radio, kotak P3K, dokumen, dan peluit.</string>

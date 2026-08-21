@@ -107,6 +107,14 @@
     <string name="sos_resp_badge_safe">Al sicuro</string>
     <string name="sos_resp_directions">Vedi sulla mappa</string>
     <string name="sos_resp_no_location">Nessuna posizione precisa</string>
+    <string name="sos_prox_near_me">Ordina per vicinanza</string>
+    <string name="sos_prox_refresh">Aggiorna la mia posizione</string>
+    <string name="sos_prox_location_hint">Attiva la posizione per ordinare le segnalazioni per vicinanza.</string>
+    <string name="sos_prox_distance">a %1$s</string>
+    <string name="sos_prox_near">Vicino</string>
+    <string name="sos_prox_same_city">Stessa zona</string>
+    <string name="sos_prox_far">Lontano — valuta di delegare</string>
+    <string name="sos_prox_no_location_group">Senza posizione</string>
     <string name="sos_resp_call">Chiama</string>
     <string name="sos_resp_received">Ricevuta %1$s</string>
     <string name="sos_resp_view_active">Attive</string>
@@ -185,6 +193,7 @@
     <string name="board_paste_error">Elaborazione non riuscita. Riprova più tardi.</string>
     <string name="board_kind_request">Ho bisogno di aiuto</string>
     <string name="board_kind_offer">Offro aiuto</string>
+    <string name="board_collection_points">Punti di raccolta</string>
     <string name="board_field_region">Regione o città</string>
     <string name="board_field_description">Descrizione</string>
     <string name="board_field_phone">Telefono di contatto (facoltativo)</string>
@@ -333,6 +342,30 @@
     <string name="phase_mental">Salute mentale</string>
     <string name="phase_animals">Animali</string>
     <string name="tips_source_note">Basato sulle indicazioni di UNGRD, Croce Rossa e Protezione Civile.</string>
+
+    <!-- Accessible tips: listen (TTS) + step-by-step pictograms -->
+    <string name="tip_listen">Ascolta</string>
+    <string name="tip_listen_a11y">Ascolta questo consiglio ad alta voce</string>
+    <string name="tip_open_details_a11y">Apri il consiglio con immagini e audio</string>
+    <string name="tip_story_heading">Passo dopo passo</string>
+    <string name="story_during_1">Abbassati</string>
+    <string name="story_during_2">Copriti la testa</string>
+    <string name="story_during_3">Tieniti finché non finisce</string>
+    <string name="story_before_1">Prepara un kit</string>
+    <string name="story_before_2">Fai un piano familiare</string>
+    <string name="story_before_3">Concorda un punto d'incontro</string>
+    <string name="story_after_1">Controlla se ci sono feriti</string>
+    <string name="story_after_2">Evita i pericoli</string>
+    <string name="story_after_3">Evacua con calma</string>
+    <string name="story_pets_1">Kit per l'animale</string>
+    <string name="story_pets_2">Tieni vicino l'animale</string>
+    <string name="story_pets_3">Al guinzaglio prima di uscire</string>
+    <string name="story_calm_1">Inspira lentamente</string>
+    <string name="story_calm_2">Espira lentamente</string>
+    <string name="story_calm_3">Senti i piedi a terra</string>
+    <string name="story_children_1">Abbraccia e rassicura</string>
+    <string name="story_children_2">Ascolta con calma</string>
+    <string name="story_children_3">Mantieni la routine insieme</string>
 
     <string name="tip_before_1_title">Prepara un kit di emergenza</string>
     <string name="tip_before_1_body">Acqua, cibo non deperibile, torcia, radio, kit di pronto soccorso, documenti e un fischietto.</string>

@@ -3,6 +3,13 @@ package com.jyodroid.kunasismoayuda.core.data.remote
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class CollectionPointDto(
+    val name: String = "",
+    val address: String = "",
+    val hours: String = "",
+)
+
+@Serializable
 data class ResourcePostDto(
     val id: Int,
     val kind: String,
@@ -18,6 +25,7 @@ data class ResourcePostDto(
     val factCheck: String? = null,
     val createdAt: String,
     val ownerSecret: String? = null,
+    val collectionPoints: List<CollectionPointDto> = emptyList(),
 )
 
 @Serializable
@@ -50,6 +58,7 @@ data class ClassifyPreviewDto(
     val contactPhone: String? = null,
     val contactName: String? = null,
     val factCheck: String? = null,
+    val collectionPoints: List<CollectionPointDto> = emptyList(),
 )
 
 /** Body for `POST /api/board/{id}/resolve` — the device's ownership token. */

@@ -1,5 +1,7 @@
 package com.jyodroid.kunasismoayuda.server.domain.repositories
 
+import com.jyodroid.kunasismoayuda.server.domain.models.CollectionPoint
+
 /** A memoized classify + fact-check result for a given pasted-text hash. */
 data class ClassifyCacheEntry(
     val kind: String,
@@ -10,6 +12,7 @@ data class ClassifyCacheEntry(
     val contactName: String?,
     val factCheck: String?,
     val checked: Boolean,
+    val collectionPoints: List<CollectionPoint> = emptyList(),
 )
 
 /** Stores classify/fact-check results keyed by content hash so a repeat paste skips the paid calls. */

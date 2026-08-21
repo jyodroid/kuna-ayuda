@@ -4,6 +4,7 @@ import com.jyodroid.kunasismoayuda.server.config.DatabaseFactory
 import com.jyodroid.kunasismoayuda.server.domain.models.NewResourcePost
 import com.jyodroid.kunasismoayuda.server.domain.models.ResourcePost
 import com.jyodroid.kunasismoayuda.server.domain.repositories.ResourceBoardRepository
+import com.jyodroid.kunasismoayuda.server.infrastructure.CollectionPointsJson
 import com.jyodroid.kunasismoayuda.server.infrastructure.tables.ResourcePosts
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
@@ -53,6 +54,7 @@ class ResourceBoardRepositoryImpl : ResourceBoardRepository {
             it[rawText] = post.rawText
             it[factCheck] = post.factCheck
             it[country] = post.country.uppercase()
+            it[collectionPoints] = CollectionPointsJson.encode(post.collectionPoints)
             it[createdAt] = LocalDateTime.now()
         } get ResourcePosts.id
 
@@ -131,5 +133,6 @@ class ResourceBoardRepositoryImpl : ResourceBoardRepository {
         country = this[ResourcePosts.country],
         ownerSecret = this[ResourcePosts.ownerSecret],
         createdAt = this[ResourcePosts.createdAt],
+        collectionPoints = CollectionPointsJson.decode(this[ResourcePosts.collectionPoints]),
     )
 }

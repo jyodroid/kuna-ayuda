@@ -93,6 +93,8 @@ export type ModeratorActivity = {
 
 export type Admin = { id: number; email: string; role: string; enabled: boolean };
 
+export type CollectionPoint = { name: string; address: string; hours: string };
+
 export type BoardPost = {
   id: number;
   kind: string;
@@ -105,6 +107,7 @@ export type BoardPost = {
   rawText: string | null;
   factCheck: string | null;
   createdAt: string;
+  collectionPoints?: CollectionPoint[];
 };
 
 export type Shelter = {

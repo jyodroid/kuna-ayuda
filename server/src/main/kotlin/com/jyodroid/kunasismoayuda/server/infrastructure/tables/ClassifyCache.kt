@@ -14,6 +14,7 @@ object ClassifyCache : Table("classify_cache") {
     val contactName = varchar("contact_name", 120).nullable()
     val factCheck = text("fact_check").nullable()
     val checked = bool("checked")
+    val collectionPoints = text("collection_points").nullable() // JSON array of {name,address,hours}
     val createdAt = datetime("created_at")
 
     override val primaryKey = PrimaryKey(contentHash)

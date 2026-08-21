@@ -41,6 +41,7 @@ import com.jyodroid.kunasismoayuda.resources.board_paste_ai_note
 import com.jyodroid.kunasismoayuda.resources.board_paste_error
 import com.jyodroid.kunasismoayuda.resources.board_paste_field
 import com.jyodroid.kunasismoayuda.resources.board_paste_howto
+import com.jyodroid.kunasismoayuda.resources.board_collection_points
 import com.jyodroid.kunasismoayuda.resources.board_paste_intro
 import com.jyodroid.kunasismoayuda.resources.board_paste_sending
 import com.jyodroid.kunasismoayuda.resources.board_paste_sent
@@ -219,6 +220,21 @@ private fun PreviewSection(state: ClassifyState, onConfirm: () -> Unit, onEdit: 
 
             if (preview.description.isNotBlank()) {
                 Text(preview.description, style = MaterialTheme.typography.bodyMedium)
+            }
+            if (preview.collectionPoints.isNotEmpty()) {
+                Text(
+                    stringResource(Res.string.board_collection_points),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                preview.collectionPoints.take(8).forEach { p ->
+                    val line = buildString {
+                        append(p.name)
+                        if (p.address.isNotBlank()) append(" — ${p.address}")
+                        if (p.hours.isNotBlank()) append(" · ${p.hours}")
+                    }
+                    Text("•  $line", style = MaterialTheme.typography.bodyMedium)
+                }
             }
             preview.contactName?.takeIf { it.isNotBlank() }?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

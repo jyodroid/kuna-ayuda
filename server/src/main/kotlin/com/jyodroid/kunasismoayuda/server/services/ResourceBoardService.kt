@@ -39,7 +39,7 @@ class ResourceBoardService(
         const val STATUS_ACTIVE = "ACTIVE"
         const val STATUS_PENDING = "PENDING"
         // Bump when the extraction prompt changes, to invalidate the classify_cache (keyed on this).
-        private const val PROMPT_VERSION = "v3"
+        private const val PROMPT_VERSION = "v4"
         private val random = SecureRandom()
     }
 
@@ -100,6 +100,7 @@ class ResourceBoardService(
             contactPhone = entry.contactPhone,
             contactName = entry.contactName,
             factCheck = entry.factCheck,
+            collectionPoints = entry.collectionPoints,
         )
     }
 
@@ -124,6 +125,7 @@ class ResourceBoardService(
                 rawText = text.trim(),
                 factCheck = entry.factCheck,
                 country = country,
+                collectionPoints = entry.collectionPoints,
             ),
         ).toResponse()
     }
@@ -164,6 +166,7 @@ class ResourceBoardService(
                 contactName = classified.contactName.trim().ifBlank { null },
                 factCheck = factCheckNote,
                 checked = checked,
+                collectionPoints = classified.collectionPoints.cleaned(),
             ).also { classifyCache.put(hash, it) }
         }
 
@@ -235,5 +238,14 @@ class ResourceBoardService(
         factCheck = factCheck,
         createdAt = createdAt.toString(),
         ownerSecret = if (includeSecret) ownerSecret else null,
+        collectionPoints = collectionPoints,
     )
+
+    /** Drop blank/garbage points and trim; keeps only entries that name a place. */
+    private fun List<com.jyodroid.kunasismoayuda.server.domain.models.CollectionPoint>.cleaned() =
+        mapNotNull { p ->
+            val name = p.name.trim()
+            if (name.isBlank()) return@mapNotNull null
+            com.jyodroid.kunasismoayuda.server.domain.models.CollectionPoint(name, p.address.trim(), p.hours.trim())
+        }.take(12)
 }

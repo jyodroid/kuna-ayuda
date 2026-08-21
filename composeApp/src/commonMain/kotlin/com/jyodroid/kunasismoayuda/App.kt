@@ -713,6 +713,7 @@ private fun AppContent(
                         onReopen = responderViewModel::reopen,
                         onDelete = responderViewModel::delete,
                         onRetry = responderViewModel::load,
+                        onRequestLocation = responderViewModel::requestLocation,
                     )
                 }
             }

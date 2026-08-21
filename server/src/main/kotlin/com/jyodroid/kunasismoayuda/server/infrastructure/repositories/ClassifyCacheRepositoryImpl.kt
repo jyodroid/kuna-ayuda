@@ -3,6 +3,7 @@ package com.jyodroid.kunasismoayuda.server.infrastructure.repositories
 import com.jyodroid.kunasismoayuda.server.config.DatabaseFactory
 import com.jyodroid.kunasismoayuda.server.domain.repositories.ClassifyCacheEntry
 import com.jyodroid.kunasismoayuda.server.domain.repositories.ClassifyCacheRepository
+import com.jyodroid.kunasismoayuda.server.infrastructure.CollectionPointsJson
 import com.jyodroid.kunasismoayuda.server.infrastructure.tables.ClassifyCache
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.insertIgnore
@@ -25,6 +26,7 @@ class ClassifyCacheRepositoryImpl : ClassifyCacheRepository {
                     contactName = it[ClassifyCache.contactName],
                     factCheck = it[ClassifyCache.factCheck],
                     checked = it[ClassifyCache.checked],
+                    collectionPoints = CollectionPointsJson.decode(it[ClassifyCache.collectionPoints]),
                 )
             }
         }
@@ -44,6 +46,7 @@ class ClassifyCacheRepositoryImpl : ClassifyCacheRepository {
                 it[contactName] = entry.contactName
                 it[factCheck] = entry.factCheck
                 it[checked] = entry.checked
+                it[collectionPoints] = CollectionPointsJson.encode(entry.collectionPoints)
                 it[createdAt] = LocalDateTime.now()
             }
         }

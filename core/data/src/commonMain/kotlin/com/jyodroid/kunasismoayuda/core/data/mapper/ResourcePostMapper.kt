@@ -2,8 +2,10 @@ package com.jyodroid.kunasismoayuda.core.data.mapper
 
 import com.jyodroid.kunasismoayuda.core.data.remote.ClassifyPreviewDto
 import com.jyodroid.kunasismoayuda.core.data.remote.NewResourcePostDto
+import com.jyodroid.kunasismoayuda.core.data.remote.CollectionPointDto
 import com.jyodroid.kunasismoayuda.core.data.remote.ResourcePostDto
 import com.jyodroid.kunasismoayuda.core.domain.model.ClassifiedPreview
+import com.jyodroid.kunasismoayuda.core.domain.model.CollectionPoint
 import com.jyodroid.kunasismoayuda.core.domain.model.NewResourcePost
 import com.jyodroid.kunasismoayuda.core.domain.model.PostKind
 import com.jyodroid.kunasismoayuda.core.domain.model.ResourcePost
@@ -23,7 +25,10 @@ fun ResourcePostDto.toDomain(): ResourcePost = ResourcePost(
     rawText = rawText,
     factCheck = factCheck,
     ownerSecret = ownerSecret,
+    collectionPoints = collectionPoints.map { it.toDomain() },
 )
+
+fun CollectionPointDto.toDomain(): CollectionPoint = CollectionPoint(name = name, address = address, hours = hours)
 
 fun ClassifyPreviewDto.toDomain(): ClassifiedPreview = ClassifiedPreview(
     kind = PostKind.fromRaw(kind),
@@ -33,6 +38,7 @@ fun ClassifyPreviewDto.toDomain(): ClassifiedPreview = ClassifiedPreview(
     contactPhone = contactPhone,
     contactName = contactName,
     factCheck = factCheck,
+    collectionPoints = collectionPoints.map { it.toDomain() },
 )
 
 fun NewResourcePost.toDto(): NewResourcePostDto = NewResourcePostDto(

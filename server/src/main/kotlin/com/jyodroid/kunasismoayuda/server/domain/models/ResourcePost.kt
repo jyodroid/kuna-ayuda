@@ -19,6 +19,7 @@ data class ResourcePost(
     val country: String,       // CO | ID | ES
     val ownerSecret: String?,  // device-local ownership token (#4); null for classified/legacy
     val createdAt: LocalDateTime,
+    val collectionPoints: List<CollectionPoint> = emptyList(), // drop-off/collection points (classified)
 )
 
 data class NewResourcePost(
@@ -35,4 +36,5 @@ data class NewResourcePost(
     val factCheck: String? = null,
     val country: String = "CO",
     val ownerSecret: String? = null,
+    val collectionPoints: List<CollectionPoint> = emptyList(),
 )

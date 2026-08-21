@@ -374,6 +374,16 @@ function BoardMod() {
         <div key={p.id} className="bg-white rounded-lg shadow p-3">
           <div className="text-sm font-medium">{p.kind} · {p.resourceType} · {p.region}</div>
           <div className="text-sm text-neutral-700">{p.description}</div>
+          {p.collectionPoints && p.collectionPoints.length > 0 && (
+            <div className="mt-1 text-sm">
+              <div className="font-medium text-primary">Puntos de recepción</div>
+              <ul className="list-disc pl-5 text-neutral-700">
+                {p.collectionPoints.map((c, i) => (
+                  <li key={i}>{[c.name, c.address, c.hours].filter(Boolean).join(" · ")}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           {p.rawText && <div className="text-xs text-neutral-500 mt-1">Original: {p.rawText}</div>}
           {p.factCheck && <div className="text-xs text-danger mt-1">Fact-check: {p.factCheck}</div>}
           <div className="mt-2 space-x-3">

@@ -19,6 +19,7 @@ object ResourcePosts : Table("resource_posts") {
     val rawText = text("raw_text").nullable()
     val factCheck = text("fact_check").nullable() // moderator-facing Google Fact Check note (V17)
     val country = varchar("country", 2)
+    val collectionPoints = text("collection_points").nullable() // JSON array of {name,address,hours}
     val createdAt = datetime("created_at")
 
     override val primaryKey = PrimaryKey(id)

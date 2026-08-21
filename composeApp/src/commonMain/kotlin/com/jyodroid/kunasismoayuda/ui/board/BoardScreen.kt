@@ -38,14 +38,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import com.jyodroid.kunasismoayuda.ui.platform.rememberPhoneCaller
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.jyodroid.kunasismoayuda.core.domain.model.CollectionPoint
 import com.jyodroid.kunasismoayuda.core.domain.model.PostKind
 import com.jyodroid.kunasismoayuda.core.domain.model.ResourcePost
 import com.jyodroid.kunasismoayuda.core.domain.model.ResourceType
+import com.jyodroid.kunasismoayuda.resources.board_collection_points
 import androidx.compose.material3.Icon
 import org.jetbrains.compose.resources.painterResource
 import com.jyodroid.kunasismoayuda.resources.Res
@@ -210,6 +213,7 @@ private fun PostCard(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+            CollectionPoints(post.collectionPoints, full = false)
             post.contactName?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -244,6 +248,7 @@ private fun PostCard(
                     // Full text, no truncation.
                     Text(post.description, style = MaterialTheme.typography.bodyLarge)
                 }
+                CollectionPoints(post.collectionPoints, full = true)
                 post.contactName?.let {
                     Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -303,6 +308,33 @@ private fun PostActions(
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
         ) {
             Text(stringResource(Res.string.board_resolve))
+        }
+    }
+}
+
+/**
+ * Drop-off/collection points extracted from a classified post. On the compact card ([full] = false) only a
+ * "Puntos de recepción (N)" header shows; the detail sheet ([full] = true) lists each point.
+ */
+@Composable
+private fun CollectionPoints(points: List<CollectionPoint>, full: Boolean) {
+    if (points.isEmpty()) return
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            "${stringResource(Res.string.board_collection_points)} (${points.size})",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.semantics { heading() },
+        )
+        if (full) {
+            points.take(8).forEach { p ->
+                val line = buildString {
+                    append(p.name)
+                    if (p.address.isNotBlank()) append(" — ${p.address}")
+                    if (p.hours.isNotBlank()) append(" · ${p.hours}")
+                }
+                Text("•  $line", style = MaterialTheme.typography.bodyMedium)
+            }
         }
     }
 }
