@@ -1,43 +1,69 @@
 name: Release
 
-# Cut a release by pushing a version tag, e.g.:
-#   git tag v1.0.0 && git push origin v1.0.0
-# This builds the native desktop installers (macOS .dmg, Windows .msi, Linux .deb) AND the server fat
-# jar (with the landing bundled), renames each to a STABLE, version-less name, and attaches them to the
-# GitHub Release for that tag. The stable names matter: the landing page links to
+# Two ways to cut a release — both produce the same GitHub Release with stable, version-less asset names
+# (macOS .dmg, Windows .msi, Linux .deb, server fat jar). The landing page links to
 #   https://github.com/<owner>/kuna-ayuda/releases/latest/download/<stable-name>
-# which always resolves to the latest release's asset — so the download links never need updating.
+# so the download links never need updating once a release exists.
+#
+#  1. AUTOMATIC (recommended): bump `desktopPackageVersion` in gradle/libs.versions.toml and push to main.
+#     The `check` job notices the version has no matching `vX.Y.Z` tag yet and cuts the release, creating
+#     the tag itself — so version bump + release stay consistent with no manual tagging.
+#  2. MANUAL: `git tag vX.Y.Z && git push origin vX.Y.Z` (the tag must match desktopPackageVersion).
+#
+# Note: this covers the DESKTOP installers + SERVER jar only. Android (Play) and iOS (TestFlight) are
+# separate manual uploads that need signing/store credentials and review.
 on:
   push:
+    branches: [main]
     tags: ['v*']
 
 permissions:
-  contents: write # create the Release and upload assets
+  contents: write # create the tag + Release and upload assets
 
 jobs:
+  # Decide whether this push should release, and at what version. On a tag push it always releases (and
+  # verifies the tag matches the catalog). On a main push it releases only when desktopPackageVersion has
+  # no existing vX.Y.Z tag yet — i.e. the version was just bumped — so ordinary commits do nothing.
+  check:
+    name: Decide release
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.decide.outputs.should_release }}
+      version: ${{ steps.decide.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 } # need full tag history to know what's already released
+      - id: decide
+        run: |
+          VERSION="$(sed -nE 's/^desktopPackageVersion[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' gradle/libs.versions.toml)"
+          if [ -z "$VERSION" ]; then
+            echo "::error::Could not read desktopPackageVersion from gradle/libs.versions.toml"; exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            TAG_VERSION="${GITHUB_REF_NAME#v}"
+            if [ "$TAG_VERSION" != "$VERSION" ]; then
+              echo "::error::Tag v$TAG_VERSION does not match desktopPackageVersion $VERSION — bump the catalog or retag."
+              exit 1
+            fi
+            echo "Tag push for v$VERSION — releasing."
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          elif git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+            echo "v$VERSION is already tagged/released — nothing to do."
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "New version v$VERSION detected on main — will build and release."
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          fi
+
   # Fast correctness gate before we spend minutes on 3-OS installer builds.
   test:
     name: Tests
+    needs: check
+    if: needs.check.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      # Guard against version drift: the pushed tag (vX.Y.Z) must match desktopPackageVersion in the
-      # version catalog, which drives the installer version AND the in-app AppInfo.VERSION. If they
-      # disagree, abort the whole release before anything is built or published.
-      - name: Verify tag matches desktopPackageVersion
-        run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          CATALOG_VERSION="$(sed -nE 's/^desktopPackageVersion[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' gradle/libs.versions.toml)"
-          echo "tag=$TAG_VERSION  catalog=$CATALOG_VERSION"
-          if [ -z "$CATALOG_VERSION" ]; then
-            echo "::error::Could not read desktopPackageVersion from gradle/libs.versions.toml"; exit 1
-          fi
-          if [ "$TAG_VERSION" != "$CATALOG_VERSION" ]; then
-            echo "::error::Tag v$TAG_VERSION does not match desktopPackageVersion $CATALOG_VERSION — bump the catalog (and AppInfo/installer follow it) or retag."
-            exit 1
-          fi
-
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '17', cache: gradle }
       - run: chmod +x ./gradlew
@@ -49,7 +75,8 @@ jobs:
   # macOS + Linux + server release — whatever built gets attached.
   desktop:
     name: Desktop installer (${{ matrix.os }})
-    needs: test
+    needs: [check, test]
+    if: needs.check.outputs.should_release == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -111,7 +138,8 @@ jobs:
   # Server fat jar (landing bundled) — same artifact the deploy path ships.
   server:
     name: Server fat jar
-    needs: test
+    needs: [check, test]
+    if: needs.check.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -132,11 +160,14 @@ jobs:
           path: server/build/libs/server*all.jar
           if-no-files-found: error
 
-  # Gather every built artifact and publish the Release.
+  # Gather every built artifact and publish the Release. On a main push this also CREATES the tag
+  # `v<version>` (via tag_name) — so the version bump and the tag stay in lockstep automatically.
   release:
     name: Publish GitHub Release
-    needs: [desktop, server]
-    if: always() && needs.server.result == 'success' # server jar is the floor; installers are best-effort
+    needs: [check, desktop, server]
+    # server jar is the floor; installers are best-effort. Guard on should_release so a normal main push
+    # (no version bump) never publishes.
+    if: always() && needs.check.outputs.should_release == 'true' && needs.server.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -147,6 +178,7 @@ jobs:
       - name: Create/Update the Release with all assets
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ needs.check.outputs.version }} # creates the tag on a main push; matches it on a tag push
           files: |
             artifacts/**/*.dmg
             artifacts/**/*.msi
