@@ -20,8 +20,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
@@ -55,7 +59,10 @@ import org.jetbrains.compose.resources.painterResource
 import com.jyodroid.kunasismoayuda.resources.Res
 import com.jyodroid.kunasismoayuda.resources.ic_add
 import com.jyodroid.kunasismoayuda.resources.board_filter_all
+import com.jyodroid.kunasismoayuda.resources.action_cancel
 import com.jyodroid.kunasismoayuda.resources.help_call
+import com.jyodroid.kunasismoayuda.resources.mod_delete
+import com.jyodroid.kunasismoayuda.resources.mod_delete_confirm
 import com.jyodroid.kunasismoayuda.resources.retry
 import com.jyodroid.kunasismoayuda.resources.search_empty
 import com.jyodroid.kunasismoayuda.resources.search_error
@@ -79,6 +86,8 @@ fun SearchScreen(
     onRetry: () -> Unit,
     onNew: () -> Unit,
     modifier: Modifier = Modifier,
+    // Non-null only for a logged-in moderator — shows a delete affordance on each report. Null hides it.
+    onDelete: ((Int) -> Unit)? = null,
 ) {
     // Photo currently shown full-screen (id + a description for accessibility); null = none.
     var fullscreen by remember { mutableStateOf<Pair<Int, String>?>(null) }
@@ -153,7 +162,11 @@ fun SearchScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     items(state.reports, key = { it.id }) { report ->
-                        SearchCard(report, onPhotoClick = { pid -> fullscreen = pid to report.title })
+                        SearchCard(
+                            report = report,
+                            onPhotoClick = { pid -> fullscreen = pid to report.title },
+                            onDelete = onDelete?.let { del -> { del(report.id) } },
+                        )
                     }
                 }
             }
@@ -228,8 +241,9 @@ private fun FullScreenPhoto(photoId: Int, description: String, onDismiss: () -> 
 }
 
 @Composable
-private fun SearchCard(report: SearchReport, onPhotoClick: (Int) -> Unit) {
+private fun SearchCard(report: SearchReport, onPhotoClick: (Int) -> Unit, onDelete: (() -> Unit)? = null) {
     val caller = rememberPhoneCaller()
+    var confirming by remember { mutableStateOf(false) }
     Card(Modifier.fillMaxWidth()) {
         Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             ReportThumbnail(report = report, onPhotoClick = onPhotoClick)
@@ -260,8 +274,36 @@ private fun SearchCard(report: SearchReport, onPhotoClick: (Int) -> Unit) {
                 ) {
                     Text("${stringResource(Res.string.help_call)}  ${report.contactPhone}")
                 }
+                // Moderator-only delete (anti-abuse) — shown only when a delete handler is provided.
+                if (onDelete != null) {
+                    OutlinedButton(
+                        onClick = { confirming = true },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier.heightIn(min = 48.dp),
+                    ) {
+                        Text(stringResource(Res.string.mod_delete))
+                    }
+                }
             }
         }
+    }
+
+    if (confirming && onDelete != null) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            title = { Text(stringResource(Res.string.mod_delete)) },
+            text = { Text(stringResource(Res.string.mod_delete_confirm)) },
+            confirmButton = {
+                TextButton(onClick = { confirming = false; onDelete() }) {
+                    Text(stringResource(Res.string.mod_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirming = false }) {
+                    Text(stringResource(Res.string.action_cancel))
+                }
+            },
+        )
     }
 }
 

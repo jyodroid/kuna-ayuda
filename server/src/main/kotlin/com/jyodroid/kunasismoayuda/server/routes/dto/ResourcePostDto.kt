@@ -21,6 +21,7 @@ data class ResourcePostResponse(
     // Returned ONLY in the create response, to the poster's own device (never in list/pending).
     val ownerSecret: String? = null,
     val collectionPoints: List<CollectionPoint> = emptyList(), // drop-off/collection points (classified)
+    val riskFlags: List<String> = emptyList(), // moderator caution flags (classified) — signal only
 )
 
 /** Body for `POST /api/board/{id}/resolve` — the device's ownership token for the post. */
@@ -54,6 +55,17 @@ data class ClassifyRequest(
 )
 
 /**
+ * Confirm-by-handle for the IMAGE intake: after `POST /classify/image` returns a preview with a
+ * `cacheRef`, the poster confirms with that handle (no image re-upload; served from the classify cache).
+ */
+@Serializable
+data class ConfirmRefRequest(
+    val cacheRef: String,
+    val country: String = "CO",
+    val kind: String? = null,
+)
+
+/**
  * What Claude extracted from a paste, shown back to the poster to review BEFORE it's sent to a
  * moderator. Nothing is persisted yet — the poster confirms via `POST /api/board/classify/confirm`.
  */
@@ -67,4 +79,8 @@ data class ClassifyPreviewResponse(
     val contactName: String? = null,
     val factCheck: String? = null,
     val collectionPoints: List<CollectionPoint> = emptyList(),
+    val riskFlags: List<String> = emptyList(),
+    // Opaque handle to the cached classify result, so the poster can confirm without re-uploading the
+    // image (image intake) — see POST /api/board/classify/confirm-ref.
+    val cacheRef: String? = null,
 )

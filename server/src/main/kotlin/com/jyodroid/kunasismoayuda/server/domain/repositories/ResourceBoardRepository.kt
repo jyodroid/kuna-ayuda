@@ -27,4 +27,7 @@ interface ResourceBoardRepository {
 
     /** Closes every ACTIVE post created before [cutoff] (and scrubs its contact). Returns the count. */
     fun expireOlderThan(cutoff: LocalDateTime): Int
+
+    /** Permanently deletes every post created before [cutoff], any status (60-day purge). Returns the count. */
+    fun deleteOlderThan(cutoff: LocalDateTime): Int
 }

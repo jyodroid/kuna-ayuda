@@ -35,7 +35,9 @@ fun Application.configureRequestSizeLimit() {
         if (method != HttpMethod.Post && method != HttpMethod.Put) return@intercept
 
         val path = request.path()
-        if (!path.startsWith("/api/") || path.startsWith("/api/photos")) return@intercept
+        // Multipart image uploads are exempt (they self-limit to 3 MB in their handlers): the Lost & Found
+        // photo endpoint and the board image-classify (screenshot vision) endpoint.
+        if (!path.startsWith("/api/") || path.startsWith("/api/photos") || path == "/api/board/classify/image") return@intercept
 
         val length = request.contentLength()
         if (length != null && length > MAX_JSON_BODY_BYTES) {

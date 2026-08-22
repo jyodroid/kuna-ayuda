@@ -108,6 +108,7 @@ export type BoardPost = {
   factCheck: string | null;
   createdAt: string;
   collectionPoints?: CollectionPoint[];
+  riskFlags?: string[];
 };
 
 export type Shelter = {
@@ -171,8 +172,28 @@ export const admins = {
 
 export const board = {
   pending: () => api<BoardPost[]>("/api/board/pending"),
+  active: () => api<BoardPost[]>("/api/board/active"),
   approve: (id: number) => api<void>(`/api/board/${id}/approve`, { method: "POST" }),
   reject: (id: number) => api<void>(`/api/board/${id}`, { method: "DELETE" }),
+};
+
+export type SearchReport = {
+  id: number;
+  subject: string;
+  state: string;
+  title: string;
+  lastSeen: string;
+  description: string;
+  contactPhone: string | null;
+  contactName: string | null;
+  photoId: number | null;
+  country: string;
+};
+
+export const search = {
+  // Public read is ACTIVE-only, scoped by country; delete is admin-gated.
+  list: (country: string) => api<SearchReport[]>(`/api/search?country=${country}`),
+  remove: (id: number) => api<void>(`/api/search/${id}`, { method: "DELETE" }),
 };
 
 export const shelters = {

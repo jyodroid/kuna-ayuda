@@ -182,6 +182,12 @@
     <string name="board_paste_howto">Come copiare il testo: apri il post su Instagram o Facebook, tieni premuto il testo della didascalia, tocca “Copia” e incollalo qui. I link e gli screenshot non funzionano.</string>
     <string name="board_paste_unreadable">Non siamo riusciti a leggere un post lì. Copia le parole del post (la sua didascalia) e incollale — i link e gli screenshot non funzionano.</string>
     <string name="board_paste_submit">Analizza</string>
+    <string name="board_paste_image">Carica uno screenshot</string>
+    <string name="board_paste_image_hint">Non riesci a copiare il testo? Carica uno screenshot del post e lo leggiamo noi.</string>
+    <string name="risk_flags_title">Segnali di attenzione</string>
+    <string name="risk_flag_money">Chiede denaro</string>
+    <string name="risk_flag_claim">Affermazione non verificata</string>
+    <string name="risk_flag_source">Nessuna fonte identificabile</string>
     <string name="board_preview_title">Rivedi ciò che abbiamo capito</string>
     <string name="board_preview_note">Se è corretto, verrà inviato a un moderatore per l’approvazione prima della pubblicazione.</string>
     <string name="board_preview_confirm">Invia per la revisione</string>
@@ -204,6 +210,9 @@
     <string name="board_email">Email</string>
     <string name="board_resolve">Segna come risolto</string>
     <string name="board_submit">Pubblica</string>
+    <string name="preview_action">Anteprima</string>
+    <string name="preview_edit">Modifica</string>
+    <string name="preview_heading">Anteprima</string>
     <string name="board_submitting">Pubblicazione…</string>
     <string name="board_submit_error">Pubblicazione non riuscita. Riprova.</string>
     <!-- Moderation (moderators only) -->
@@ -224,6 +233,12 @@
     <string name="mod_fact_check">Verifica dei fatti (Google)</string>
     <string name="mod_approve">Approva</string>
     <string name="mod_reject">Rifiuta</string>
+    <string name="mod_tab_pending">In attesa</string>
+    <string name="mod_tab_published">Pubblicati</string>
+    <string name="mod_published_empty">Nessun post attivo.</string>
+    <string name="mod_delete">Elimina</string>
+    <string name="mod_delete_confirm">Eliminare questo post? Verrà rimosso subito dalla bacheca.</string>
+    <string name="action_cancel">Annulla</string>
     <string name="mod_logout">Esci</string>
 
     <string name="admin_title">Moderatori</string>

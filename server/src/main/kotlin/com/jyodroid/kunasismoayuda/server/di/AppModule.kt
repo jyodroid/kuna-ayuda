@@ -28,6 +28,7 @@ import com.jyodroid.kunasismoayuda.server.services.AuditService
 import com.jyodroid.kunasismoayuda.server.services.AuthService
 import com.jyodroid.kunasismoayuda.server.services.DisasterIngestionService
 import com.jyodroid.kunasismoayuda.server.services.ExpiryService
+import com.jyodroid.kunasismoayuda.server.services.PurgeService
 import com.jyodroid.kunasismoayuda.server.services.FireService
 import com.jyodroid.kunasismoayuda.server.services.UsageLimiter
 import com.jyodroid.kunasismoayuda.server.services.QuakeService
@@ -110,6 +111,7 @@ val serviceModule = module {
     single { AuditService(get(), get(), get(), get(), get(), get()) }
     single { DisasterIngestionService(get(), get(), get(), get()) }
     single { ExpiryService(get(), get()) }
+    single { PurgeService(get(), get(), get(), get()) }
 }
 
 val appModules = listOf(networkModule, upstreamModule, repositoryModule, serviceModule)

@@ -9,22 +9,30 @@ import com.jyodroid.kunasismoayuda.server.error.ErrorCode
 import com.jyodroid.kunasismoayuda.server.error.appError
 import com.jyodroid.kunasismoayuda.server.services.UsageLimitReachedException
 import com.jyodroid.kunasismoayuda.server.routes.dto.ClassifyRequest
+import com.jyodroid.kunasismoayuda.server.routes.dto.ConfirmRefRequest
 import com.jyodroid.kunasismoayuda.server.routes.dto.ResolveRequest
 import com.jyodroid.kunasismoayuda.server.routes.dto.ResourcePostRequest
 import com.jyodroid.kunasismoayuda.server.services.AuditService
+import com.jyodroid.kunasismoayuda.server.services.ClassifyExpiredException
 import com.jyodroid.kunasismoayuda.server.services.ResolveOutcome
 import com.jyodroid.kunasismoayuda.server.services.ResourceBoardService
 import com.jyodroid.kunasismoayuda.server.services.UnclassifiableTextException
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.PartData
+import io.ktor.http.content.forEachPart
 import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.ratelimit.rateLimit
 import io.ktor.server.request.receive
+import io.ktor.server.request.receiveMultipart
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.RoutingContext
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
+import io.ktor.utils.io.readRemaining
+import kotlinx.io.readByteArray
 
 /**
  * Peer mutual-aid board. Reading and posting are public (that's the point — anyone can ask or
@@ -68,6 +76,33 @@ fun Route.resourceBoardRoutes(service: ResourceBoardService, audit: AuditService
             call.respond(HttpStatusCode.Created, created)
         }
 
+        // Image intake — classify a SCREENSHOT/photo via vision (Instagram blocks copying text). Returns
+        // a preview with a `cacheRef`; the poster confirms via /classify/confirm-ref (no image re-upload).
+        post("/classify/image") {
+            if (!service.classifyEnabled) {
+                throw appError(
+                    ErrorCode.UPSTREAM_UNAVAILABLE,
+                    "AI classification is not configured (set ANTHROPIC_API_KEY)",
+                    HttpStatusCode.ServiceUnavailable,
+                )
+            }
+            val (bytes, mime) = readImagePart()
+            val country = call.request.queryParameters["country"] ?: "CO"
+            val kind = call.request.queryParameters["kind"]
+            val preview = classifyGuarded { service.classifyImagePreview(bytes, mime, country, kind) }
+            call.respond(preview)
+        }
+
+        // Image intake step 2 — confirm the previewed classify by its cacheRef (served from cache).
+        post("/classify/confirm-ref") {
+            val req = call.receive<ConfirmRefRequest>()
+            if (req.cacheRef.isBlank()) {
+                throw appError(ErrorCode.VALIDATION, "cacheRef is required", HttpStatusCode.BadRequest)
+            }
+            val created = classifyGuarded { service.confirmFromCache(req.cacheRef, req.country, req.kind) }
+            call.respond(HttpStatusCode.Created, created)
+        }
+
         // Device-gated resolve (#4): the creating device closes its own post by presenting the
         // owner_secret it received at creation. No auth — the secret IS the identity.
         post("/{id}/resolve") {
@@ -90,6 +125,12 @@ fun Route.resourceBoardRoutes(service: ResourceBoardService, audit: AuditService
         get("/pending") {
             requireAdmin()
             call.respond(service.listPending())
+        }
+
+        // Published (ACTIVE) posts — lets a moderator find and delete an abusive live post (DELETE below).
+        get("/active") {
+            requireAdmin()
+            call.respond(service.listActivePosts())
         }
 
         post("/{id}/approve") {
@@ -131,13 +172,44 @@ private fun validateClassifyText(text: String, classifyEnabled: Boolean) {
     }
 }
 
-/** Runs a classify call and maps the service/AI failures to clean HTTP errors (shared by both steps). */
+/** Reads a single image part from a multipart request (allowlisted type, ≤3 MB). Returns (bytes, mime). */
+private suspend fun RoutingContext.readImagePart(): Pair<ByteArray, String> {
+    var bytes: ByteArray? = null
+    var contentType: String? = null
+    call.receiveMultipart().forEachPart { part ->
+        if (part is PartData.FileItem && bytes == null) {
+            contentType = part.contentType?.let { "${it.contentType}/${it.contentSubtype}" }
+            bytes = part.provider().readRemaining().readByteArray()
+        }
+        part.dispose()
+    }
+    val data = bytes ?: throw appError(ErrorCode.VALIDATION, "No image file provided", HttpStatusCode.BadRequest)
+    val type = contentType?.lowercase()
+    if (type == null || type !in ALLOWED_IMAGE_TYPES) {
+        throw appError(ErrorCode.VALIDATION, "Unsupported image type (use JPEG/PNG/WebP)", HttpStatusCode.BadRequest)
+    }
+    if (data.size > MAX_IMAGE_BYTES) {
+        throw appError(ErrorCode.VALIDATION, "Image too large (max 3 MB)", HttpStatusCode.PayloadTooLarge)
+    }
+    return data to type
+}
+
+private const val MAX_IMAGE_BYTES = 3 * 1024 * 1024 // 3 MB
+private val ALLOWED_IMAGE_TYPES = setOf("image/jpeg", "image/png", "image/webp")
+
+/** Runs a classify call and maps the service/AI failures to clean HTTP errors (shared by all steps). */
 private suspend fun <T> classifyGuarded(block: suspend () -> T): T = try {
     block()
 } catch (e: UnclassifiableTextException) {
     throw appError(
         ErrorCode.VALIDATION,
-        "We couldn't read a post there. Paste the TEXT of the post (its words), not a link or a screenshot.",
+        "We couldn't read a post there. Paste the post's TEXT (its words), or upload a clearer screenshot of it — not just a link.",
+        HttpStatusCode.UnprocessableEntity,
+    )
+} catch (e: ClassifyExpiredException) {
+    throw appError(
+        ErrorCode.VALIDATION,
+        "That analysis expired. Please analyze the post again before sending it.",
         HttpStatusCode.UnprocessableEntity,
     )
 } catch (e: UsageLimitReachedException) {

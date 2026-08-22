@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { admins, audit, auth, board, session, shelters, sos } from "./api";
-import type { Admin, AuditEntry, BoardPost, ModeratorActivity, Shelter, Sos } from "./api";
+import { admins, audit, auth, board, search, session, shelters, sos } from "./api";
+import type { Admin, AuditEntry, BoardPost, ModeratorActivity, SearchReport, Shelter, Sos } from "./api";
 
 type Tab = "audit" | "moderators" | "moderation" | "password";
 
@@ -345,31 +345,55 @@ function ModeratorsPanel() {
 // ---- moderation -------------------------------------------------------------------------------
 
 function ModerationPanel() {
-  const [sub, setSub] = useState<"board" | "shelters" | "sos">("board");
+  const [sub, setSub] = useState<"board" | "search" | "shelters" | "sos">("board");
+  const label = (s: string) =>
+    s === "board" ? "Red de ayuda" : s === "search" ? "Búsqueda" : s === "shelters" ? "Puntos de ayuda" : "SOS";
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
-        {(["board", "shelters", "sos"] as const).map((s) => (
+        {(["board", "search", "shelters", "sos"] as const).map((s) => (
           <button key={s} onClick={() => setSub(s)}
             className={`px-3 py-1.5 rounded text-sm ${sub === s ? "bg-primary text-white" : "bg-white border"}`}>
-            {s === "board" ? "Red de ayuda" : s === "shelters" ? "Puntos de ayuda" : "SOS"}
+            {label(s)}
           </button>
         ))}
       </div>
       {sub === "board" && <BoardMod />}
+      {sub === "search" && <SearchMod />}
       {sub === "shelters" && <ShelterMod />}
       {sub === "sos" && <SosMod />}
     </div>
   );
 }
 
+function riskFlagLabel(code: string): string {
+  switch (code) {
+    case "ASKS_FOR_MONEY": return "Pide dinero";
+    case "UNVERIFIED_CLAIM": return "Sin verificar";
+    case "NO_SOURCE": return "Sin fuente";
+    default: return code;
+  }
+}
+
 function BoardMod() {
-  const { data, error, loading, reload } = useAsync<BoardPost[]>(() => board.pending(), []);
+  const [view, setView] = useState<"pending" | "active">("pending");
+  const { data, error, loading, reload } = useAsync<BoardPost[]>(
+    () => (view === "pending" ? board.pending() : board.active()), [view]);
   const act = async (fn: () => Promise<unknown>) => { try { await fn(); reload(); } catch (e: any) { alert(e?.message); } };
   return (
     <div className="space-y-2">
+      <div className="flex gap-2">
+        {(["pending", "active"] as const).map((v) => (
+          <button key={v} onClick={() => setView(v)}
+            className={`px-3 py-1 rounded text-sm ${view === v ? "bg-primary text-white" : "bg-white border"}`}>
+            {v === "pending" ? "Pendientes" : "Publicados"}
+          </button>
+        ))}
+      </div>
       <Msg error={error} loading={loading} />
-      {data?.length === 0 && <p className="text-neutral-500 text-sm">Nada pendiente.</p>}
+      {data?.length === 0 && (
+        <p className="text-neutral-500 text-sm">{view === "pending" ? "Nada pendiente." : "Sin publicaciones activas."}</p>
+      )}
       {data?.map((p) => (
         <div key={p.id} className="bg-white rounded-lg shadow p-3">
           <div className="text-sm font-medium">{p.kind} · {p.resourceType} · {p.region}</div>
@@ -386,9 +410,43 @@ function BoardMod() {
           )}
           {p.rawText && <div className="text-xs text-neutral-500 mt-1">Original: {p.rawText}</div>}
           {p.factCheck && <div className="text-xs text-danger mt-1">Fact-check: {p.factCheck}</div>}
+          {p.riskFlags && p.riskFlags.length > 0 && (
+            <div className="text-xs text-danger mt-1">Señales: {p.riskFlags.map(riskFlagLabel).join(" · ")}</div>
+          )}
           <div className="mt-2 space-x-3">
-            <button className="btn-primary" onClick={() => act(() => board.approve(p.id))}>Aprobar</button>
-            <button className="text-danger underline" onClick={() => act(() => board.reject(p.id))}>Rechazar</button>
+            {view === "pending" && (
+              <button className="btn-primary" onClick={() => act(() => board.approve(p.id))}>Aprobar</button>
+            )}
+            <button className="text-danger underline"
+              onClick={() => confirm("¿Eliminar esta publicación?") && act(() => board.reject(p.id))}>
+              {view === "pending" ? "Rechazar" : "Eliminar"}
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SearchMod() {
+  const [country, setCountry] = useState("CO");
+  const { data, error, loading, reload } = useAsync<SearchReport[]>(() => search.list(country), [country]);
+  const act = async (fn: () => Promise<unknown>) => { try { await fn(); reload(); } catch (e: any) { alert(e?.message); } };
+  return (
+    <div className="space-y-2">
+      <select className="input w-32" value={country} onChange={(e) => setCountry(e.target.value)}>
+        {["CO", "ID", "ES", "IT", "PE"].map((c) => <option key={c}>{c}</option>)}
+      </select>
+      <Msg error={error} loading={loading} />
+      {data?.length === 0 && <p className="text-neutral-500 text-sm">Sin reportes.</p>}
+      {data?.map((r) => (
+        <div key={r.id} className="bg-white rounded-lg shadow p-3">
+          <div className="text-sm font-medium">{r.subject} · {r.state} · {r.title}</div>
+          <div className="text-sm text-neutral-700">{r.lastSeen}</div>
+          {r.description && <div className="text-sm text-neutral-700">{r.description}</div>}
+          <div className="mt-2">
+            <button className="text-danger underline"
+              onClick={() => confirm(`¿Eliminar "${r.title}"?`) && act(() => search.remove(r.id))}>Eliminar</button>
           </div>
         </div>
       ))}

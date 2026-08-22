@@ -571,6 +571,7 @@ private fun AppContent(
                 ClassifyPostScreen(
                     state = classifyState,
                     onSubmit = boardViewModel::classify,
+                    onSubmitImage = boardViewModel::classifyImage,
                     onConfirm = boardViewModel::confirmClassified,
                     onEdit = boardViewModel::editClassified,
                     onKindChange = boardViewModel::setClassifyKind,
@@ -586,6 +587,9 @@ private fun AppContent(
                         searchViewModel.resetCreateState()
                         navController.navigate(ROUTE_SEARCH_CREATE)
                     },
+                    // A logged-in moderator can remove abusive Lost & Found reports (anti-abuse); regular
+                    // users never see the delete affordance.
+                    onDelete = if (session != null) searchViewModel::delete else null,
                 )
             }
             composable(ROUTE_SEARCH_CREATE) {
@@ -631,6 +635,7 @@ private fun AppContent(
                         onApprove = moderationViewModel::approve,
                         onReject = moderationViewModel::reject,
                         onLoad = moderationViewModel::load,
+                        onSelectTab = moderationViewModel::selectTab,
                         // The admin-account console is SUPERADMIN-only; plain ADMINs never see the entry.
                         onManageAdmins = if (session?.role == AdminAccount.ROLE_SUPERADMIN) {
                             { navController.navigate(ROUTE_ADMINS) }

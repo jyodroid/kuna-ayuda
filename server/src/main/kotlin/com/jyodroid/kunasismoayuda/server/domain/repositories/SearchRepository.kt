@@ -17,4 +17,11 @@ interface SearchRepository {
 
     /** Closes every ACTIVE report created before [cutoff]. Returns the count. */
     fun expireOlderThan(cutoff: LocalDateTime): Int
+
+    /**
+     * Permanently deletes every report created before [cutoff] (any status) **and their photos**
+     * (the FK is ON DELETE SET NULL, not cascade, so photo bytea must be removed explicitly). Returns
+     * the number of reports deleted.
+     */
+    fun deleteOlderThan(cutoff: LocalDateTime): Int
 }

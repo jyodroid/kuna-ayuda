@@ -42,8 +42,17 @@ class ResourceBoardRepositoryImpl(
     override suspend fun confirmClassification(text: String, country: String, kind: PostKind?): ResourcePost =
         api.confirmClassify(text, country, kind?.name).toDomain()
 
+    override suspend fun previewClassificationImage(bytes: ByteArray, mime: String, country: String, kind: PostKind?): ClassifiedPreview =
+        api.classifyImage(bytes, mime, country, kind?.name).toDomain()
+
+    override suspend fun confirmClassificationImage(cacheRef: String, country: String, kind: PostKind?): ResourcePost =
+        api.confirmRef(cacheRef, country, kind?.name).toDomain()
+
     override suspend fun listPending(): List<ResourcePost> =
         api.listPending(sessionManager.requireToken()).map { it.toDomain() }
+
+    override suspend fun listActive(): List<ResourcePost> =
+        api.listActive(sessionManager.requireToken()).map { it.toDomain() }
 
     override suspend fun approve(id: Int) = api.approve(id, sessionManager.requireToken())
 

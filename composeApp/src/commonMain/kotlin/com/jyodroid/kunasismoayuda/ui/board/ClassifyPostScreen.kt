@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jyodroid.kunasismoayuda.core.domain.model.ClassifiedPreview
 import com.jyodroid.kunasismoayuda.core.domain.model.PostKind
+import com.jyodroid.kunasismoayuda.media.rememberImagePicker
 import com.jyodroid.kunasismoayuda.resources.Res
 import com.jyodroid.kunasismoayuda.resources.board_kind_offer
 import com.jyodroid.kunasismoayuda.resources.board_kind_request
@@ -41,6 +42,9 @@ import com.jyodroid.kunasismoayuda.resources.board_paste_ai_note
 import com.jyodroid.kunasismoayuda.resources.board_paste_error
 import com.jyodroid.kunasismoayuda.resources.board_paste_field
 import com.jyodroid.kunasismoayuda.resources.board_paste_howto
+import com.jyodroid.kunasismoayuda.resources.board_paste_image
+import com.jyodroid.kunasismoayuda.resources.board_paste_image_hint
+import com.jyodroid.kunasismoayuda.resources.search_photo_camera
 import com.jyodroid.kunasismoayuda.resources.board_collection_points
 import com.jyodroid.kunasismoayuda.resources.board_paste_intro
 import com.jyodroid.kunasismoayuda.resources.board_paste_sending
@@ -66,6 +70,7 @@ import org.jetbrains.compose.resources.stringResource
 fun ClassifyPostScreen(
     state: ClassifyState,
     onSubmit: (String) -> Unit,
+    onSubmitImage: (ByteArray, String) -> Unit,
     onConfirm: () -> Unit,
     onEdit: () -> Unit,
     onKindChange: (PostKind) -> Unit,
@@ -95,6 +100,7 @@ fun ClassifyPostScreen(
                 state = state,
                 onKindChange = onKindChange,
                 onSubmit = { onSubmit(text) },
+                onSubmitImage = onSubmitImage,
             )
         }
     }
@@ -107,8 +113,10 @@ private fun InputSection(
     state: ClassifyState,
     onKindChange: (PostKind) -> Unit,
     onSubmit: () -> Unit,
+    onSubmitImage: (ByteArray, String) -> Unit,
 ) {
     val busy = state.isSubmitting
+    val picker = rememberImagePicker { picked -> picked?.let { onSubmitImage(it.bytes, it.mime) } }
 
     Text(stringResource(Res.string.board_paste_intro), style = MaterialTheme.typography.bodyLarge)
 
@@ -161,6 +169,31 @@ private fun InputSection(
         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
     ) {
         Text(stringResource(Res.string.board_paste_submit))
+    }
+
+    // Image intake — for platforms (Instagram) where the text can't be copied, submit a screenshot/photo.
+    Text(
+        text = stringResource(Res.string.board_paste_image_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(
+            onClick = { picker.pickFromGallery() },
+            enabled = !busy,
+            modifier = Modifier.heightIn(min = 48.dp),
+        ) {
+            Text("🖼️ ${stringResource(Res.string.board_paste_image)}")
+        }
+        if (picker.cameraAvailable) {
+            OutlinedButton(
+                onClick = { picker.captureFromCamera() },
+                enabled = !busy,
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) {
+                Text("📷 ${stringResource(Res.string.search_photo_camera)}")
+            }
+        }
     }
 
     Text(
@@ -264,6 +297,9 @@ private fun PreviewSection(state: ClassifyState, onConfirm: () -> Unit, onEdit: 
                     }
                 }
             }
+
+            // AI-extracted moderator caution flags (scam / unverified / no-source) — a signal, not a verdict.
+            RiskFlagsBlock(preview.riskFlags, modifier = Modifier.padding(top = 6.dp))
         }
     }
 

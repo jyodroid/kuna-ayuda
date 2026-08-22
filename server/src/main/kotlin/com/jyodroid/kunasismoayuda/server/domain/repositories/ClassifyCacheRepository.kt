@@ -13,6 +13,7 @@ data class ClassifyCacheEntry(
     val factCheck: String?,
     val checked: Boolean,
     val collectionPoints: List<CollectionPoint> = emptyList(),
+    val riskFlags: List<String> = emptyList(),
 )
 
 /** Stores classify/fact-check results keyed by content hash so a repeat paste skips the paid calls. */

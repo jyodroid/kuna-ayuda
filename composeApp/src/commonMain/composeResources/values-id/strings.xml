@@ -182,6 +182,12 @@
     <string name="board_paste_howto">Cara menyalin teks: buka kiriman di Instagram atau Facebook, tekan dan tahan teks keterangan, ketuk “Salin”, lalu tempel di sini. Tautan dan tangkapan layar tidak berfungsi.</string>
     <string name="board_paste_unreadable">Kami tidak dapat membaca kiriman di sana. Salin kata-kata kiriman (keterangannya) dan tempel — tautan dan tangkapan layar tidak berfungsi.</string>
     <string name="board_paste_submit">Analisis</string>
+    <string name="board_paste_image">Unggah tangkapan layar</string>
+    <string name="board_paste_image_hint">Tidak bisa menyalin teks? Unggah tangkapan layar postingan dan kami bacakan untukmu.</string>
+    <string name="risk_flags_title">Sinyal kehati-hatian</string>
+    <string name="risk_flag_money">Meminta uang</string>
+    <string name="risk_flag_claim">Klaim belum terverifikasi</string>
+    <string name="risk_flag_source">Tanpa sumber yang jelas</string>
     <string name="board_preview_title">Tinjau yang kami pahami</string>
     <string name="board_preview_note">Jika sudah benar, ini akan dikirim ke moderator untuk disetujui sebelum dipublikasikan.</string>
     <string name="board_preview_confirm">Kirim untuk ditinjau</string>
@@ -204,6 +210,9 @@
     <string name="board_email">Email</string>
     <string name="board_resolve">Tandai sebagai selesai</string>
     <string name="board_submit">Kirim</string>
+    <string name="preview_action">Pratinjau</string>
+    <string name="preview_edit">Ubah</string>
+    <string name="preview_heading">Pratinjau</string>
     <string name="board_submitting">Mengirim…</string>
     <string name="board_submit_error">Tidak dapat mengirim. Coba lagi.</string>
     <!-- Moderation (moderators only) -->
@@ -224,6 +233,12 @@
     <string name="mod_fact_check">Pemeriksaan fakta (Google)</string>
     <string name="mod_approve">Setujui</string>
     <string name="mod_reject">Tolak</string>
+    <string name="mod_tab_pending">Menunggu</string>
+    <string name="mod_tab_published">Terbit</string>
+    <string name="mod_published_empty">Tidak ada kiriman aktif.</string>
+    <string name="mod_delete">Hapus</string>
+    <string name="mod_delete_confirm">Hapus kiriman ini? Akan langsung dihapus dari papan.</string>
+    <string name="action_cancel">Batal</string>
     <string name="mod_logout">Keluar</string>
 
     <string name="admin_title">Moderator</string>

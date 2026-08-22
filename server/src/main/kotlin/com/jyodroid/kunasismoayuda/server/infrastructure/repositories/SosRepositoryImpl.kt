@@ -9,6 +9,7 @@ import com.jyodroid.kunasismoayuda.server.infrastructure.tables.SosReports
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
@@ -78,6 +79,13 @@ class SosRepositoryImpl : SosRepository {
         if (!DatabaseFactory.initialized) return false
         return transaction {
             SosReports.deleteWhere { SosReports.id eq id } > 0
+        }
+    }
+
+    override fun deleteOlderThan(cutoff: LocalDateTime): Int {
+        if (!DatabaseFactory.initialized) return 0
+        return transaction {
+            SosReports.deleteWhere { SosReports.createdAt less cutoff }
         }
     }
 

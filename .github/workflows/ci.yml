@@ -70,7 +70,7 @@ jobs:
           # GITLEAKS_LICENSE is only required for GitHub *organizations*; not needed for a personal repo.
 
   package:
-    name: Build landing + server fat jar
+    name: Build landing + console + server fat jar
     runs-on: ubuntu-latest
     needs: test # only package once the tests are green
     steps:
@@ -83,29 +83,33 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      - name: Set up Node 22 (for the Vite landing build)
+      - name: Set up Node 22 (for the Vite landing + console builds)
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: landing/package-lock.json
+          cache-dependency-path: |
+            landing/package-lock.json
+            console/package-lock.json
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # Two SEPARATE Gradle invocations on purpose: buildLanding writes into
-      # server/src/main/resources/web, which is processResources' input dir. If both ran in one
-      # invocation, Gradle 9 fails with an implicit-dependency validation error (processResources would
-      # consume buildLanding's output without a declared edge). buildLanding is deliberately NOT wired
-      # into processResources (so Heroku's Node-less build packages the committed web/ as-is), so we
-      # sequence them here instead: first regenerate web/, then package it into the fat jar.
+      # SEPARATE Gradle invocations on purpose: buildLanding/buildConsole write into
+      # server/src/main/resources/{web,console}, which is processResources' input dir. If they ran in one
+      # invocation with shadowJar, Gradle 9 fails with an implicit-dependency validation error. Neither is
+      # wired into processResources (so Heroku's Node-less build packages the committed dirs as-is), so we
+      # sequence them here: regenerate web/ + console/, then package them into the fat jar.
       - name: Build landing site
         run: ./gradlew --no-daemon --stacktrace :server:buildLanding
 
-      - name: Build server fat jar (landing bundled)
+      - name: Build moderator console
+        run: ./gradlew --no-daemon --stacktrace :server:buildConsole
+
+      - name: Build server fat jar (landing + console bundled)
         run: ./gradlew --no-daemon --stacktrace :server:shadowJar
 
-      - name: Upload server fat jar (landing bundled)
+      - name: Upload server fat jar (landing + console bundled)
         uses: actions/upload-artifact@v4
         with:
           name: server-fatjar
@@ -125,10 +129,33 @@ jobs:
         with:
           fetch-depth: 0 # Heroku's buildpack deploy is a git push — it needs the full history
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17', cache: gradle }
+
+      - name: Set up Node 22 (to build landing + console for the deploy)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            landing/package-lock.json
+            console/package-lock.json
+
+      # Rebuild the Vite landing + the React moderator console INTO the server resources so the deployed
+      # jar always serves the current sources — Heroku's JVM buildpack has no Node and can't build them.
+      # We commit the generated dirs LOCALLY only; that commit is pushed to Heroku's git (never to
+      # origin/main), so you never have to commit the built web/ + console/ bundles by hand.
+      - name: Build landing + console into server resources
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --stacktrace :server:buildLanding
+          ./gradlew --no-daemon --stacktrace :server:buildConsole
+
       # Deploys by pushing to Heroku's git endpoint with an API-key credential (no third-party action;
       # the token comes from the secret and is never echoed). Heroku then runs `./gradlew stage` and
       # boots the fat jar via the root Procfile. -f because Heroku's git branch is just a deploy trigger.
-      - name: Push to Heroku
+      - name: Push to Heroku (with freshly built web assets)
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
           HEROKU_APP: kuna-ayuda
@@ -137,5 +164,9 @@ jobs:
             echo "::error::HEROKU_API_KEY secret is not set — add it in repo Settings → Secrets → Actions."
             exit 1
           fi
+          git config user.email "ci@kuna-ayuda.local"
+          git config user.name "kuna-ci"
+          git add -f server/src/main/resources/web server/src/main/resources/console
+          git commit -m "ci: build landing + console for Heroku deploy" || echo "No asset changes to commit."
           git config http.postBuffer 524288000
           git push -f "https://heroku:${HEROKU_API_KEY}@git.heroku.com/${HEROKU_APP}.git" HEAD:refs/heads/main

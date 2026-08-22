@@ -38,7 +38,8 @@ data class ClassifyState(
     val error: Boolean = false,          // generic failure
     val unreadable: Boolean = false,     // nothing to classify (a link/screenshot, or empty AI result) → 422
     val preview: ClassifiedPreview? = null, // AI result awaiting the poster's confirmation
-    val pendingText: String? = null,     // original text kept so we can confirm without re-typing
+    val pendingText: String? = null,     // original text kept so we can confirm without re-typing (text path)
+    val cacheRef: String? = null,        // handle to confirm an IMAGE classify without re-uploading
     val sent: Boolean = false,           // confirmed → queued for a moderator
 )
 
@@ -166,12 +167,32 @@ class BoardViewModel(
         val trimmed = text.trim()
         val kind = _classifyState.value.kind
         _classifyState.update {
-            it.copy(isSubmitting = true, error = false, unreadable = false, sent = false, preview = null)
+            it.copy(isSubmitting = true, error = false, unreadable = false, sent = false, preview = null, cacheRef = null)
         }
         viewModelScope.launch {
             runCatching { repository.previewClassification(trimmed, country.code, kind) }
                 .onSuccess { preview ->
-                    _classifyState.update { it.copy(isSubmitting = false, preview = preview, pendingText = trimmed) }
+                    _classifyState.update { it.copy(isSubmitting = false, preview = preview, pendingText = trimmed, cacheRef = null) }
+                }
+                .onFailure { t ->
+                    val unreadable = t is UnreadablePasteException
+                    _classifyState.update {
+                        it.copy(isSubmitting = false, error = !unreadable, unreadable = unreadable)
+                    }
+                }
+        }
+    }
+
+    /** Image intake — classify a SCREENSHOT/photo (vision). The preview's cacheRef confirms it later. */
+    fun classifyImage(bytes: ByteArray, mime: String) {
+        val kind = _classifyState.value.kind
+        _classifyState.update {
+            it.copy(isSubmitting = true, error = false, unreadable = false, sent = false, preview = null, pendingText = null, cacheRef = null)
+        }
+        viewModelScope.launch {
+            runCatching { repository.previewClassificationImage(bytes, mime, country.code, kind) }
+                .onSuccess { preview ->
+                    _classifyState.update { it.copy(isSubmitting = false, preview = preview, cacheRef = preview.cacheRef, pendingText = null) }
                 }
                 .onFailure { t ->
                     val unreadable = t is UnreadablePasteException
@@ -184,11 +205,17 @@ class BoardViewModel(
 
     /** Step 2 — confirm: the poster approved the preview → queue it as a moderated (pending) post. */
     fun confirmClassified() {
-        val text = _classifyState.value.pendingText ?: return
-        val kind = _classifyState.value.kind
+        val s = _classifyState.value
+        val cacheRef = s.cacheRef
+        val text = s.pendingText
+        if (cacheRef == null && text == null) return
+        val kind = s.kind
         _classifyState.update { it.copy(isConfirming = true, error = false, unreadable = false) }
         viewModelScope.launch {
-            runCatching { repository.confirmClassification(text, country.code, kind) }
+            runCatching {
+                if (cacheRef != null) repository.confirmClassificationImage(cacheRef, country.code, kind)
+                else repository.confirmClassification(text!!, country.code, kind)
+            }
                 .onSuccess { _classifyState.update { it.copy(isConfirming = false, sent = true, preview = null) } }
                 .onFailure { t ->
                     val unreadable = t is UnreadablePasteException

@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+#
+# generate_new_ios_version — build a signed iOS Release .xcarchive for Kuna Ayuda and drop it
+# into Xcode's Archives folder so it shows up in Organizer, ready for you to hit "Distribute App".
+#
+# Usage:
+#   ./generate_new_ios_version              # archive the current version in Config.xcconfig
+#   ./generate_new_ios_version --bump-build # increment the iOS build number first, then archive
+#   ./generate_new_ios_version --open       # also open the archive in Xcode Organizer when done
+#
+# SIGNING CONFIG COMES FROM YOUR ENVIRONMENT (never hardcoded, so this script is safe to commit):
+#   KUNA_IOS_TEAM_ID   Apple Developer Team ID          (required, e.g. ABCDE12345)
+#   KUNA_IOS_PROFILE   App Store provisioning profile   (required, e.g. "Kuna App Store")
+#   KUNA_IOS_IDENTITY  code-signing identity            (optional, default "Apple Distribution")
+# Provide them by exporting in your shell (~/.zshrc) OR by copying the template:
+#   cp .env.ios.example .env.ios.local   # .env.ios.local is gitignored (*.local)
+# Build settings can also be overridden: PROJECT, SCHEME, CONFIG, XCCONFIG.
+#
+set -euo pipefail
+
+# --- Locate the project (this script lives at the repo root) -----------------------------------
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+PROJECT="${PROJECT:-iosApp/iosApp.xcodeproj}"
+SCHEME="${SCHEME:-iosApp}"
+CONFIG="${CONFIG:-Release}"
+XCCONFIG="${XCCONFIG:-iosApp/Configuration/Config.xcconfig}"
+
+# --- Load local secrets from an optional gitignored dotenv (so nothing sensitive is committed) --
+ENV_FILE="${KUNA_IOS_ENV_FILE:-$ROOT/.env.ios.local}"
+if [[ -f "$ENV_FILE" ]]; then
+  set -a; source "$ENV_FILE"; set +a
+fi
+
+# --- Signing (App Store distribution) — read from the environment, no hardcoded values ----------
+TEAM="${KUNA_IOS_TEAM_ID:-}"
+PROFILE="${KUNA_IOS_PROFILE:-}"
+IDENTITY="${KUNA_IOS_IDENTITY:-Apple Distribution}"
+
+missing=()
+[[ -z "$TEAM" ]]    && missing+=("KUNA_IOS_TEAM_ID")
+[[ -z "$PROFILE" ]] && missing+=("KUNA_IOS_PROFILE")
+if (( ${#missing[@]} )); then
+  echo "✗ Missing required signing config: ${missing[*]}" >&2
+  echo "  Export them in your shell (~/.zshrc):" >&2
+  echo "      export KUNA_IOS_TEAM_ID=YOURTEAMID" >&2
+  echo "      export KUNA_IOS_PROFILE=\"Your App Store profile name\"" >&2
+  echo "  …or copy the template and fill it in (kept out of git):" >&2
+  echo "      cp .env.ios.example .env.ios.local" >&2
+  exit 1
+fi
+
+# --- Flags -------------------------------------------------------------------------------------
+BUMP_BUILD=0
+OPEN_ORGANIZER=0
+for arg in "$@"; do
+  case "$arg" in
+    --bump-build) BUMP_BUILD=1 ;;
+    --open)       OPEN_ORGANIZER=1 ;;
+    -h|--help)    grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) echo "Unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
+
+# --- Read version + (optionally) bump the build number -----------------------------------------
+read_xcconfig() { grep -E "^$1[[:space:]]*=" "$XCCONFIG" | head -1 | sed -E "s/^$1[[:space:]]*=[[:space:]]*//" | tr -d '[:space:]'; }
+
+if [[ "$BUMP_BUILD" == "1" ]]; then
+  CUR="$(read_xcconfig CURRENT_PROJECT_VERSION)"
+  NEXT=$(( CUR + 1 ))
+  # macOS/BSD sed in-place
+  sed -i '' -E "s/^CURRENT_PROJECT_VERSION[[:space:]]*=.*/CURRENT_PROJECT_VERSION=${NEXT}/" "$XCCONFIG"
+  echo "→ Bumped iOS build number: ${CUR} → ${NEXT}"
+fi
+
+MARKETING="$(read_xcconfig MARKETING_VERSION)"
+BUILD="$(read_xcconfig CURRENT_PROJECT_VERSION)"
+
+if [[ -z "$MARKETING" || -z "$BUILD" ]]; then
+  echo "✗ Could not read MARKETING_VERSION / CURRENT_PROJECT_VERSION from $XCCONFIG" >&2
+  exit 1
+fi
+
+# --- Pre-flight checks -------------------------------------------------------------------------
+if ! security find-identity -v -p codesigning | grep -q "$IDENTITY"; then
+  echo "✗ No '$IDENTITY' code-signing identity in your keychain." >&2
+  echo "  Fix: Xcode → Settings → Accounts → Manage Certificates → + Apple Distribution." >&2
+  exit 1
+fi
+
+# --- Where the archive goes (Xcode's own layout, so Organizer groups it by day) ----------------
+DAY="$(date +%Y-%m-%d)"
+STAMP="$(date +%H.%M)"
+ARCHIVE_DIR="$HOME/Library/Developer/Xcode/Archives/$DAY"
+ARCHIVE_PATH="$ARCHIVE_DIR/KunaAyuda ${MARKETING} (${BUILD}) ${STAMP}.xcarchive"
+mkdir -p "$ARCHIVE_DIR"
+
+LOG="$ROOT/build/ios-archive.log"
+mkdir -p "$ROOT/build"
+
+echo "──────────────────────────────────────────────────────────────"
+echo " Kuna Ayuda — iOS archive"
+echo "   Version : ${MARKETING} (build ${BUILD})"
+echo "   Scheme  : ${SCHEME}  [${CONFIG}]"
+echo "   Signing : ${IDENTITY} / '${PROFILE}' / team ${TEAM}"
+echo "   Output  : ${ARCHIVE_PATH}"
+echo "   Log     : ${LOG}"
+echo "──────────────────────────────────────────────────────────────"
+
+# Pretty output if xcbeautify is installed; otherwise raw (still tee'd to the log).
+if command -v xcbeautify >/dev/null 2>&1; then FMT=(xcbeautify); else FMT=(cat); fi
+
+# --- Clean, then archive -----------------------------------------------------------------------
+echo "→ Cleaning…"
+xcodebuild clean \
+  -project "$PROJECT" -scheme "$SCHEME" -configuration "$CONFIG" \
+  >/dev/null 2>&1 || true
+
+echo "→ Archiving (this compiles Kotlin/Native for device — grab a coffee)…"
+set -o pipefail
+if xcodebuild archive \
+    -project "$PROJECT" \
+    -scheme "$SCHEME" \
+    -configuration "$CONFIG" \
+    -destination "generic/platform=iOS" \
+    -archivePath "$ARCHIVE_PATH" \
+    -allowProvisioningUpdates \
+    CODE_SIGN_STYLE=Manual \
+    DEVELOPMENT_TEAM="$TEAM" \
+    CODE_SIGN_IDENTITY="$IDENTITY" \
+    PROVISIONING_PROFILE_SPECIFIER="$PROFILE" \
+    2>&1 | tee "$LOG" | "${FMT[@]}"; then
+  echo
+  echo "✓ Archive succeeded:"
+  echo "  $ARCHIVE_PATH"
+  echo
+  echo "Next: open Xcode → Window → Organizer → Archives, select this build,"
+  echo "      and click \"Distribute App\" → App Store Connect."
+  if [[ "$OPEN_ORGANIZER" == "1" ]]; then open "$ARCHIVE_PATH"; fi
+  exit 0
+else
+  echo
+  echo "✗ Archive failed. Last lines of the log ($LOG):" >&2
+  tail -n 40 "$LOG" >&2
+  exit 1
+fi

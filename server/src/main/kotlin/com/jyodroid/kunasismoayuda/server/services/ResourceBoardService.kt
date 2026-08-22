@@ -1,6 +1,8 @@
 package com.jyodroid.kunasismoayuda.server.services
 
 import com.jyodroid.kunasismoayuda.server.ai.AnthropicClient
+import com.jyodroid.kunasismoayuda.server.ai.ClassifiedPost
+import com.jyodroid.kunasismoayuda.server.ai.ImageInput
 import com.jyodroid.kunasismoayuda.server.domain.models.NewResourcePost
 import com.jyodroid.kunasismoayuda.server.domain.models.ResourcePost
 import com.jyodroid.kunasismoayuda.server.domain.repositories.ClassifyCacheEntry
@@ -25,6 +27,12 @@ enum class ResolveOutcome { RESOLVED, NOT_FOUND, FORBIDDEN }
  */
 class UnclassifiableTextException : RuntimeException("The pasted text could not be classified")
 
+/**
+ * A confirm-by-cache-handle (image intake) referenced a classify result that's no longer cached — the
+ * poster must analyze the screenshot again. Mapped to a clean 410/422 with re-analyze guidance.
+ */
+class ClassifyExpiredException : RuntimeException("The classify preview expired; analyze again")
+
 class ResourceBoardService(
     private val repository: ResourceBoardRepository,
     private val anthropic: AnthropicClient,
@@ -36,10 +44,12 @@ class ResourceBoardService(
     companion object {
         val KINDS = setOf("REQUEST", "OFFER")
         val TYPES = setOf("WATER", "FOOD", "MEDICINE", "SHELTER", "HYGIENE", "OTHER")
+        val RISK_FLAGS = setOf("ASKS_FOR_MONEY", "UNVERIFIED_CLAIM", "NO_SOURCE")
         const val STATUS_ACTIVE = "ACTIVE"
         const val STATUS_PENDING = "PENDING"
         // Bump when the extraction prompt changes, to invalidate the classify_cache (keyed on this).
-        private const val PROMPT_VERSION = "v4"
+        // v5: added vision (screenshot) intake + riskFlags to the extraction.
+        private const val PROMPT_VERSION = "v5"
         private val random = SecureRandom()
     }
 
@@ -91,71 +101,62 @@ class ResourceBoardService(
      * link/empty guards and the paid call (cached), so the confirm step below is free.
      */
     suspend fun classifyPreview(text: String, country: String = "CO", kindOverride: String? = null): ClassifyPreviewResponse {
-        val entry = classifyToEntry(text, country)
-        return ClassifyPreviewResponse(
-            kind = resolveKind(kindOverride, entry.kind),
-            resourceType = entry.resourceType,
-            region = entry.region,
-            description = entry.description,
-            contactPhone = entry.contactPhone,
-            contactName = entry.contactName,
-            factCheck = entry.factCheck,
-            collectionPoints = entry.collectionPoints,
-        )
+        if (isLinkOnly(text)) throw UnclassifiableTextException()
+        val hash = contentHash(text)
+        val entry = entryFor(hash, country, { anthropic.classify(text, KINDS, TYPES) }, { text })
+        return entry.toPreview(kindOverride, cacheRef = hash)
     }
 
     /**
-     * Step 2 — the poster confirmed the preview; queue it as a PENDING entry for admin moderation
-     * (anti-fraud — classified content is never public until an admin approves it). Re-runs
-     * [classifyToEntry], which hits the cache from the preview, so no new paid call is made.
+     * Image intake — classify a SCREENSHOT/photo of a post via vision (Instagram blocks copying text).
+     * Reads the text in the image, extracts, and caches by the image bytes so `confirmFromCache` (below)
+     * doesn't re-upload or re-pay. Same guards + risk flags as the text path.
+     */
+    suspend fun classifyImagePreview(imageBytes: ByteArray, mediaType: String, country: String = "CO", kindOverride: String? = null): ClassifyPreviewResponse {
+        val hash = imageContentHash(imageBytes)
+        val image = ImageInput(Base64.getEncoder().encodeToString(imageBytes), mediaType)
+        // Fact-check the extracted description (there's no separate pasted text for an image).
+        val entry = entryFor(hash, country, { anthropic.classifyImage(image, KINDS, TYPES) }, { it.description })
+        return entry.toPreview(kindOverride, cacheRef = hash)
+    }
+
+    /**
+     * Step 2 (text) — the poster confirmed the preview; queue it as a PENDING entry for admin moderation.
+     * Re-runs the pipeline, which hits the cache from the preview, so no new paid call is made.
      */
     suspend fun classifyAndQueue(text: String, country: String = "CO", kindOverride: String? = null): ResourcePostResponse {
-        val entry = classifyToEntry(text, country)
-        return repository.create(
-            NewResourcePost(
-                kind = resolveKind(kindOverride, entry.kind),
-                resourceType = entry.resourceType,
-                region = entry.region,
-                description = entry.description,
-                contactPhone = entry.contactPhone,
-                contactEmail = null,
-                contactName = entry.contactName,
-                status = STATUS_PENDING,
-                source = "classified",
-                rawText = text.trim(),
-                factCheck = entry.factCheck,
-                country = country,
-                collectionPoints = entry.collectionPoints,
-            ),
-        ).toResponse()
+        if (isLinkOnly(text)) throw UnclassifiableTextException()
+        val hash = contentHash(text)
+        val entry = entryFor(hash, country, { anthropic.classify(text, KINDS, TYPES) }, { text })
+        return entry.queue(kindOverride, country, rawText = text.trim())
+    }
+
+    /** Step 2 (image) — confirm a previewed classify by its cache handle, without re-uploading the image. */
+    fun confirmFromCache(cacheRef: String, country: String = "CO", kindOverride: String? = null): ResourcePostResponse {
+        val entry = classifyCache.get(cacheRef) ?: throw ClassifyExpiredException()
+        return entry.queue(kindOverride, country, rawText = null)
     }
 
     /**
-     * Shared classify pipeline for both preview and confirm: link guard → cache-first Claude call
-     * (+ usage cap + best-effort fact-check) → empty guard. Throws [UnclassifiableTextException] when
-     * there's nothing to classify (a bare link, or an empty extraction).
+     * Shared pipeline: cache-first Claude call (+ usage cap + best-effort fact-check) → empty guard.
+     * [classify] runs the paid call on a cache miss; [factCheckSource] yields the text to fact-check
+     * (the pasted text, or the extracted description for images). Throws [UnclassifiableTextException]
+     * when the extraction is empty.
      */
-    private suspend fun classifyToEntry(text: String, country: String): ClassifyCacheEntry {
-        // Cheap pre-check BEFORE any paid call: a paste that's just a link (the model can't open URLs)
-        // has nothing to classify — reject with guidance instead of spending on an empty extraction.
-        if (isLinkOnly(text)) throw UnclassifiableTextException()
-
-        val hash = contentHash(text)
-
-        // Cache-first: the same post (often a viral one, or a preview being confirmed) is served from
-        // the memoized result — no Anthropic, no Fact Check, no usage consumed.
+    private suspend fun entryFor(
+        hash: String,
+        country: String,
+        classify: suspend () -> ClassifiedPost,
+        factCheckSource: (ClassifiedPost) -> String,
+    ): ClassifyCacheEntry {
         val entry = classifyCache.get(hash) ?: run {
-            // Spend cap: stop (429) before spending once the monthly cap is reached. We check BEFORE the
-            // paid call (so a hit cap costs nothing) and only record AFTER it succeeds (so a failed call
-            // — e.g. a bad key — doesn't burn the budget).
+            // Spend cap checked BEFORE the paid call (a hit cap costs nothing); recorded only AFTER success.
             usageLimiter.require(UsageLimiter.FEATURE_ANTHROPIC)
-            val classified = anthropic.classify(text, KINDS, TYPES)
+            val classified = classify()
             usageLimiter.record(UsageLimiter.FEATURE_ANTHROPIC)
 
-            // Fact-check as a moderator signal (best-effort): only if a key is configured AND its own
-            // monthly cap isn't spent. Failures/no-matches ⇒ null, never blocks classification.
             val checked = factCheck.isConfigured && usageLimiter.tryConsume(UsageLimiter.FEATURE_FACTCHECK)
-            val factCheckNote = if (checked) factCheck.searchSummary(text, languageFor(country)) else null
+            val factCheckNote = if (checked) factCheck.searchSummary(factCheckSource(classified), languageFor(country)) else null
 
             ClassifyCacheEntry(
                 kind = classified.kind.uppercase().takeIf { it in KINDS } ?: "REQUEST",
@@ -167,14 +168,52 @@ class ResourceBoardService(
                 factCheck = factCheckNote,
                 checked = checked,
                 collectionPoints = classified.collectionPoints.cleaned(),
+                riskFlags = classified.riskFlags.cleanedFlags(),
             ).also { classifyCache.put(hash, it) }
         }
-
-        // Post-classification guard: if the model extracted nothing usable (no place AND no
-        // description — a blank "OTHER"), don't queue it. Approving such an entry would publish a
-        // useless empty card. The result is still cached above, so a re-paste won't pay again.
+        // Nothing usable (no place AND no description) ⇒ don't queue a blank card. Still cached above.
         if (isEmptyExtraction(entry)) throw UnclassifiableTextException()
         return entry
+    }
+
+    private fun ClassifyCacheEntry.toPreview(kindOverride: String?, cacheRef: String) = ClassifyPreviewResponse(
+        kind = resolveKind(kindOverride, kind),
+        resourceType = resourceType,
+        region = region,
+        description = description,
+        contactPhone = contactPhone,
+        contactName = contactName,
+        factCheck = factCheck,
+        collectionPoints = collectionPoints,
+        riskFlags = riskFlags,
+        cacheRef = cacheRef,
+    )
+
+    private fun ClassifyCacheEntry.queue(kindOverride: String?, country: String, rawText: String?) =
+        repository.create(
+            NewResourcePost(
+                kind = resolveKind(kindOverride, kind),
+                resourceType = resourceType,
+                region = region,
+                description = description,
+                contactPhone = contactPhone,
+                contactEmail = null,
+                contactName = contactName,
+                status = STATUS_PENDING,
+                source = "classified",
+                rawText = rawText,
+                factCheck = factCheck,
+                country = country,
+                collectionPoints = collectionPoints,
+                riskFlags = riskFlags,
+            ),
+        ).toResponse()
+
+    /** Cache key for an image: SHA-256 of the bytes, salted with [PROMPT_VERSION] like the text hash. */
+    private fun imageContentHash(bytes: ByteArray): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        digest.update("$PROMPT_VERSION|img|".toByteArray(Charsets.UTF_8))
+        return digest.digest(bytes).joinToString("") { "%02x".format(it) }
     }
 
     /** The poster's own REQUEST/OFFER choice wins over the model's guess (when it's a valid kind). */
@@ -213,6 +252,10 @@ class ResourceBoardService(
     fun listPending(): List<ResourcePostResponse> =
         repository.listByStatus(STATUS_PENDING).map { it.toResponse() }
 
+    /** Published (ACTIVE) posts across all countries, for moderators to review/remove abusive live posts. */
+    fun listActivePosts(): List<ResourcePostResponse> =
+        repository.listByStatus(STATUS_ACTIVE).map { it.toResponse() }
+
     /** The raw domain post by id (for the audit before-snapshot); null if absent. */
     fun find(id: Int): ResourcePost? = repository.find(id)
 
@@ -239,6 +282,7 @@ class ResourceBoardService(
         createdAt = createdAt.toString(),
         ownerSecret = if (includeSecret) ownerSecret else null,
         collectionPoints = collectionPoints,
+        riskFlags = riskFlags,
     )
 
     /** Drop blank/garbage points and trim; keeps only entries that name a place. */
@@ -248,4 +292,8 @@ class ResourceBoardService(
             if (name.isBlank()) return@mapNotNull null
             com.jyodroid.kunasismoayuda.server.domain.models.CollectionPoint(name, p.address.trim(), p.hours.trim())
         }.take(12)
+
+    /** Keep only the known risk-flag codes (the model is schema-constrained, but guard anyway), deduped. */
+    private fun List<String>.cleanedFlags() =
+        map { it.trim().uppercase() }.filter { it in RISK_FLAGS }.distinct().take(5)
 }

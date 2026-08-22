@@ -4,6 +4,35 @@ All notable changes to Kuna Ayuda. Format based on [Keep a Changelog](https://ke
 this project uses [Semantic Versioning](https://semver.org/). The version lives in
 `gradle/libs.versions.toml` (`desktopPackageVersion`) and is enforced against the git tag by CI.
 
+## [1.3.0] — 2026-08-22
+
+### Added
+- **Preview before publishing.** The aid-board create form and the Lost & Found (Búsqueda y reencuentro)
+  create form now have a local **Vista previa → Publicar / Editar** review step before anything is sent,
+  so posters can catch mistakes before their post goes live.
+- **Image-first paste-and-classify.** Because Instagram blocks copying a post's text, the "Pegar
+  publicación" flow now also accepts a **screenshot/photo** (gallery or camera): Claude reads it with
+  vision, extracts the same structured post, and the poster reviews a preview and confirms — served from
+  cache on confirm, no extra paid call.
+- **Moderator risk flags.** Classification now surfaces moderator-facing caution flags
+  (asks-for-money / unverified-claim / no-source) on the classify preview, the app moderation queue, and
+  the console — a **signal only, never an auto-reject** (like the fact-check note).
+- **Moderator instant-delete of published content.** Moderators can now remove a **live** aid-board post
+  (new **Publicados** tab in the app + console) and a **Lost & Found** report (in-app **Eliminar** on
+  each card, matching the console) on the spot — not only pending items.
+
+### Changed
+- **Data retention.** User content now has a full lifecycle: ACTIVE (0–30 days) → CLOSED + contact
+  scrubbed (30–60 days) → **permanently deleted (>60 days)**. Aid-board posts, Lost & Found reports (and
+  their photos), and SOS reports are hard-purged after 60 days; official help points are kept. The
+  landing privacy policy states the 60-day deletion.
+- CI now rebuilds the landing site **and** the moderator console into the server on every deploy, so the
+  deployed jar always serves the current versions.
+
+### Server
+- Migration **V21** adds `risk_flags` to `resource_posts` and `classify_cache`; the classify prompt
+  version bumped to `v5` (image intake + risk flags). Runs automatically on deploy.
+
 ## [1.2.0] — 2026-08-21
 
 ### Added

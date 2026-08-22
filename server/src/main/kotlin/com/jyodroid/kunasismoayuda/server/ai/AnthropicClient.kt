@@ -24,7 +24,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
-/** A board post extracted from free text by the model (schema-constrained, so fields are present). */
+/** A board post extracted from free text OR a screenshot by the model (schema-constrained). */
 @Serializable
 data class ClassifiedPost(
     val kind: String,          // REQUEST | OFFER
@@ -34,7 +34,12 @@ data class ClassifiedPost(
     val contactPhone: String,
     val contactName: String,
     val collectionPoints: List<CollectionPoint> = emptyList(),
+    // Moderator-facing caution flags (never auto-reject): ASKS_FOR_MONEY | UNVERIFIED_CLAIM | NO_SOURCE.
+    val riskFlags: List<String> = emptyList(),
 )
+
+/** A base64-encoded image + its MIME type, for the vision (screenshot) classify path. */
+data class ImageInput(val base64: String, val mediaType: String)
 
 class AnthropicMissingKeyException : RuntimeException("ANTHROPIC_API_KEY is not configured")
 class AnthropicRefusalException : RuntimeException("The model declined to classify this text")
@@ -59,10 +64,18 @@ class AnthropicClient(
     /** True when an API key is present; the route uses this to return a clean 503 instead of failing. */
     val isConfigured: Boolean get() = !apiKey.isNullOrBlank()
 
-    suspend fun classify(text: String, kinds: Set<String>, types: Set<String>): ClassifiedPost {
+    /** Classify a pasted post's TEXT. */
+    suspend fun classify(text: String, kinds: Set<String>, types: Set<String>): ClassifiedPost =
+        call(promptText = prompt(text), image = null, kinds = kinds, types = types)
+
+    /** Classify a SCREENSHOT/photo of a post (vision) — reads the text in the image, then extracts. */
+    suspend fun classifyImage(image: ImageInput, kinds: Set<String>, types: Set<String>): ClassifiedPost =
+        call(promptText = imagePrompt(), image = image, kinds = kinds, types = types)
+
+    private suspend fun call(promptText: String, image: ImageInput?, kinds: Set<String>, types: Set<String>): ClassifiedPost {
         if (apiKey.isNullOrBlank()) throw AnthropicMissingKeyException()
 
-        val requestBody = buildRequest(text, kinds, types)
+        val requestBody = buildRequest(promptText, image, kinds, types)
         val response: HttpResponse = http.post(MESSAGES_URL) {
             header("x-api-key", apiKey)
             header("anthropic-version", ANTHROPIC_VERSION)
@@ -92,7 +105,7 @@ class AnthropicClient(
         return json.decodeFromString<ClassifiedPost>(jsonText)
     }
 
-    private fun buildRequest(text: String, kinds: Set<String>, types: Set<String>): JsonObject = buildJsonObject {
+    private fun buildRequest(promptText: String, image: ImageInput?, kinds: Set<String>, types: Set<String>): JsonObject = buildJsonObject {
         put("model", model)
         put("max_tokens", 900) // room to keep lists (orgs, places, phones) instead of over-summarizing
         putJsonObject("output_config") {
@@ -104,7 +117,23 @@ class AnthropicClient(
         putJsonArray("messages") {
             addJsonObject {
                 put("role", "user")
-                put("content", prompt(text))
+                // Content is always an array of blocks: a text instruction, plus the image when present.
+                putJsonArray("content") {
+                    addJsonObject {
+                        put("type", "text")
+                        put("text", promptText)
+                    }
+                    if (image != null) {
+                        addJsonObject {
+                            put("type", "image")
+                            putJsonObject("source") {
+                                put("type", "base64")
+                                put("media_type", image.mediaType)
+                                put("data", image.base64)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -138,10 +167,17 @@ class AnthropicClient(
                     putJsonArray("required") { add("name"); add("address"); add("hours") }
                 }
             }
+            putJsonObject("riskFlags") {
+                put("type", "array")
+                putJsonObject("items") {
+                    put("type", "string")
+                    putJsonArray("enum") { RISK_FLAGS.forEach { add(it) } }
+                }
+            }
         }
         putJsonArray("required") {
             add("kind"); add("resourceType"); add("region")
-            add("description"); add("contactPhone"); add("contactName"); add("collectionPoints")
+            add("description"); add("contactPhone"); add("contactName"); add("collectionPoints"); add("riskFlags")
         }
     }
 
@@ -149,6 +185,33 @@ class AnthropicClient(
         You extract disaster-relief resource requests and offers from social-media posts
         (Instagram, Facebook, WhatsApp, X) about earthquakes. Classify the post below.
 
+        $EXTRACTION_RULES
+
+        Do not invent details. Only extract what is actually in the text.
+
+        Post:
+        ${text.trim()}
+    """.trimIndent()
+
+    /** Vision prompt: the user submitted a screenshot/photo instead of pasteable text (IG blocks copy). */
+    private fun imagePrompt(): String = """
+        The attached image is a SCREENSHOT or photo of a social-media post (Instagram, Facebook,
+        WhatsApp, X), or a printed/handwritten aid notice, about an earthquake. Read ALL of the text
+        visible in the image (perform OCR) and classify it. Use only the text you can actually read in
+        the image — if part is unreadable, use what you can and do not guess.
+
+        $EXTRACTION_RULES
+
+        Do not invent details. Only extract what is actually visible in the image.
+    """.trimIndent()
+
+    private companion object {
+        const val MESSAGES_URL = "https://api.anthropic.com/v1/messages"
+        const val ANTHROPIC_VERSION = "2023-06-01"
+        val RISK_FLAGS = listOf("ASKS_FOR_MONEY", "UNVERIFIED_CLAIM", "NO_SOURCE")
+
+        /** Shared extraction rules for both the text and the image (vision) prompts. */
+        val EXTRACTION_RULES = """
         - kind: REQUEST if the post asks for or solicits help/resources/donations for affected people —
           this INCLUDES "please donate/contribute/share", calls to support victims, and lists of
           channels/organizations to donate to. OFFER only when the POSTER THEMSELVES is providing or
@@ -166,17 +229,13 @@ class AnthropicClient(
         - collectionPoints: a list of the specific drop-off / collection / distribution points named in the
           post — the places where people bring or pick up the resources. Each item is
           {name, address, hours}: name = the place ("Parroquia San José", "Colegio Central"); address = its
-          street/area if given, else ""; hours = opening hours if given, else "". Return [] when the post
-          names none. Do NOT invent points, and do NOT treat a general city/region as a collection point.
-
-        Do not invent details. Only extract what is actually in the text.
-
-        Post:
-        ${text.trim()}
-    """.trimIndent()
-
-    private companion object {
-        const val MESSAGES_URL = "https://api.anthropic.com/v1/messages"
-        const val ANTHROPIC_VERSION = "2023-06-01"
+          street/area if given, else ""; hours = opening hours if given, else "". Return [] when none.
+          Do NOT invent points, and do NOT treat a general city/region as a collection point.
+        - riskFlags: moderator caution flags that apply (a signal only, never a rejection). Use:
+          ASKS_FOR_MONEY = asks people to send money / bank transfer / crypto / a personal account (a
+          common disaster-scam pattern); UNVERIFIED_CLAIM = states a specific factual claim a moderator
+          should verify (e.g. "shelter X is closed", a death toll, "the government is doing Y"); NO_SOURCE
+          = no identifiable person, organization, or official source behind the post. Return [] if none.
+        """.trimIndent()
     }
 }

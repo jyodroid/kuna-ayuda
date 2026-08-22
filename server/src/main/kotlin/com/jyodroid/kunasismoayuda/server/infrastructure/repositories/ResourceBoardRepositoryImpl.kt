@@ -5,11 +5,14 @@ import com.jyodroid.kunasismoayuda.server.domain.models.NewResourcePost
 import com.jyodroid.kunasismoayuda.server.domain.models.ResourcePost
 import com.jyodroid.kunasismoayuda.server.domain.repositories.ResourceBoardRepository
 import com.jyodroid.kunasismoayuda.server.infrastructure.CollectionPointsJson
+import com.jyodroid.kunasismoayuda.server.infrastructure.RiskFlagsJson
 import com.jyodroid.kunasismoayuda.server.infrastructure.tables.ResourcePosts
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -55,6 +58,7 @@ class ResourceBoardRepositoryImpl : ResourceBoardRepository {
             it[factCheck] = post.factCheck
             it[country] = post.country.uppercase()
             it[collectionPoints] = CollectionPointsJson.encode(post.collectionPoints)
+            it[riskFlags] = RiskFlagsJson.encode(post.riskFlags)
             it[createdAt] = LocalDateTime.now()
         } get ResourcePosts.id
 
@@ -117,6 +121,14 @@ class ResourceBoardRepositoryImpl : ResourceBoardRepository {
         }
     }
 
+    override fun deleteOlderThan(cutoff: LocalDateTime): Int {
+        if (!DatabaseFactory.initialized) return 0
+        // Hard delete (60-day purge): remove the row entirely regardless of status — data minimization.
+        return transaction {
+            ResourcePosts.deleteWhere { ResourcePosts.createdAt less cutoff }
+        }
+    }
+
     private fun ResultRow.toPost() = ResourcePost(
         id = this[ResourcePosts.id],
         kind = this[ResourcePosts.kind],
@@ -134,5 +146,6 @@ class ResourceBoardRepositoryImpl : ResourceBoardRepository {
         ownerSecret = this[ResourcePosts.ownerSecret],
         createdAt = this[ResourcePosts.createdAt],
         collectionPoints = CollectionPointsJson.decode(this[ResourcePosts.collectionPoints]),
+        riskFlags = RiskFlagsJson.decode(this[ResourcePosts.riskFlags]),
     )
 }

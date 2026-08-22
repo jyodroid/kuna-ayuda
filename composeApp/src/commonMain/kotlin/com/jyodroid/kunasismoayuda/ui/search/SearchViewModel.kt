@@ -87,5 +87,14 @@ class SearchViewModel(
         }
     }
 
+    /** Moderator-only: remove an abusive report (requires a logged-in admin token). */
+    fun delete(id: Int) {
+        viewModelScope.launch {
+            runCatching { repository.delete(id) }
+                .onSuccess { _state.update { s -> s.copy(reports = s.reports.filterNot { it.id == id }) } }
+                .onFailure { _state.update { it.copy(error = true) } }
+        }
+    }
+
     fun resetCreateState() = _createState.update { SearchCreateState() }
 }

@@ -182,6 +182,12 @@
     <string name="board_paste_howto">Cómo copiar el texto: abre la publicación en Instagram o Facebook, mantén pulsado el texto de la descripción, toca «Copiar» y pégalo aquí. Los enlaces y las capturas de pantalla no funcionan.</string>
     <string name="board_paste_unreadable">No pudimos leer una publicación ahí. Copia las palabras de la publicación (su descripción) y pégalas; los enlaces y las capturas no funcionan.</string>
     <string name="board_paste_submit">Analizar</string>
+    <string name="board_paste_image">Subir una captura</string>
+    <string name="board_paste_image_hint">¿No puedes copiar el texto? Sube una captura de pantalla del post y la leemos por ti.</string>
+    <string name="risk_flags_title">Señales de precaución</string>
+    <string name="risk_flag_money">Pide dinero</string>
+    <string name="risk_flag_claim">Afirmación sin verificar</string>
+    <string name="risk_flag_source">Sin fuente identificable</string>
     <string name="board_paste_ai_note">La organizamos con IA y un moderador la revisa antes de publicarla (anti-fraude).</string>
     <string name="board_preview_title">Revisa lo que entendimos</string>
     <string name="board_preview_note">Si está bien, se enviará a un moderador para su aprobación antes de publicarse.</string>
@@ -204,6 +210,9 @@
     <string name="board_email">Correo</string>
     <string name="board_resolve">Marcar como resuelto</string>
     <string name="board_submit">Publicar</string>
+    <string name="preview_action">Vista previa</string>
+    <string name="preview_edit">Editar</string>
+    <string name="preview_heading">Vista previa</string>
     <string name="board_submitting">Publicando…</string>
     <string name="board_submit_error">No se pudo publicar. Intenta de nuevo.</string>
     <!-- Moderation (moderators only) -->
@@ -224,6 +233,12 @@
     <string name="mod_fact_check">Verificación (Google Fact Check)</string>
     <string name="mod_approve">Aprobar</string>
     <string name="mod_reject">Rechazar</string>
+    <string name="mod_tab_pending">Pendientes</string>
+    <string name="mod_tab_published">Publicados</string>
+    <string name="mod_published_empty">No hay publicaciones activas.</string>
+    <string name="mod_delete">Eliminar</string>
+    <string name="mod_delete_confirm">¿Eliminar esta publicación? Se quitará del tablero de inmediato.</string>
+    <string name="action_cancel">Cancelar</string>
     <string name="mod_logout">Cerrar sesión</string>
 
     <string name="admin_title">Moderadores</string>

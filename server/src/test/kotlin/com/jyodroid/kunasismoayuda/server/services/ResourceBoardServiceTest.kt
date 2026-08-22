@@ -98,6 +98,7 @@ class ResourceBoardServiceTest {
         }
 
         override fun expireOlderThan(cutoff: LocalDateTime) = 0
+        override fun deleteOlderThan(cutoff: LocalDateTime) = 0
     }
 
     private class FakeCache : ClassifyCacheRepository {

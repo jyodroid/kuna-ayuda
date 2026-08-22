@@ -26,6 +26,7 @@ data class ResourcePostDto(
     val createdAt: String,
     val ownerSecret: String? = null,
     val collectionPoints: List<CollectionPointDto> = emptyList(),
+    val riskFlags: List<String> = emptyList(),
 )
 
 @Serializable
@@ -59,10 +60,20 @@ data class ClassifyPreviewDto(
     val contactName: String? = null,
     val factCheck: String? = null,
     val collectionPoints: List<CollectionPointDto> = emptyList(),
+    val riskFlags: List<String> = emptyList(),
+    val cacheRef: String? = null,
 )
 
 /** Body for `POST /api/board/{id}/resolve` — the device's ownership token. */
 @Serializable
 data class ResolveRequestDto(
     val secret: String,
+)
+
+/** Body for `POST /api/board/classify/confirm-ref` — confirm an image classify by its cache handle. */
+@Serializable
+data class ConfirmRefRequestDto(
+    val cacheRef: String,
+    val country: String = "CO",
+    val kind: String? = null,
 )

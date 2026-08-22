@@ -15,6 +15,7 @@ object ClassifyCache : Table("classify_cache") {
     val factCheck = text("fact_check").nullable()
     val checked = bool("checked")
     val collectionPoints = text("collection_points").nullable() // JSON array of {name,address,hours}
+    val riskFlags = text("risk_flags").nullable() // JSON array of moderator caution flags (V21)
     val createdAt = datetime("created_at")
 
     override val primaryKey = PrimaryKey(contentHash)

@@ -27,14 +27,26 @@ interface ResourceBoardRepository {
     /** Step 2: the poster confirmed the preview → queue it as a moderated (pending) post. */
     suspend fun confirmClassification(text: String, country: String = "CO", kind: PostKind? = null): ResourcePost
 
+    /**
+     * Image intake — classify a SCREENSHOT/photo of a post via vision (Instagram blocks copying text).
+     * Returns a preview (with a `cacheRef` used by [confirmClassificationImage]).
+     */
+    suspend fun previewClassificationImage(bytes: ByteArray, mime: String, country: String = "CO", kind: PostKind? = null): ClassifiedPreview
+
+    /** Confirm an image classify by the preview's `cacheRef` (no image re-upload) → queue PENDING. */
+    suspend fun confirmClassificationImage(cacheRef: String, country: String = "CO", kind: PostKind? = null): ResourcePost
+
     // --- Moderator-only (require an authenticated ADMIN session) ---
 
     /** Posts awaiting moderation (status PENDING). */
     suspend fun listPending(): List<ResourcePost>
 
+    /** Published (ACTIVE) posts, so a moderator can find and remove an abusive live post. */
+    suspend fun listActive(): List<ResourcePost>
+
     /** Publish a pending post (make it ACTIVE). */
     suspend fun approve(id: Int)
 
-    /** Reject a pending post (remove it from the queue). */
+    /** Reject a pending post, or delete a published one (both close it via DELETE /api/board/{id}). */
     suspend fun reject(id: Int)
 }

@@ -20,6 +20,7 @@ data class ResourcePost(
     val ownerSecret: String?,  // device-local ownership token (#4); null for classified/legacy
     val createdAt: LocalDateTime,
     val collectionPoints: List<CollectionPoint> = emptyList(), // drop-off/collection points (classified)
+    val riskFlags: List<String> = emptyList(), // moderator caution flags (classified) — signal only
 )
 
 data class NewResourcePost(
@@ -37,4 +38,5 @@ data class NewResourcePost(
     val country: String = "CO",
     val ownerSecret: String? = null,
     val collectionPoints: List<CollectionPoint> = emptyList(),
+    val riskFlags: List<String> = emptyList(),
 )

@@ -13,4 +13,8 @@ data class ClassifiedPreview(
     val contactName: String?,
     val factCheck: String?,
     val collectionPoints: List<CollectionPoint> = emptyList(),
+    val riskFlags: List<String> = emptyList(),
+    // Opaque handle to the cached classify result — lets the poster confirm an IMAGE classify without
+    // re-uploading the screenshot. Null for the text path.
+    val cacheRef: String? = null,
 )

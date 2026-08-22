@@ -4,15 +4,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +43,11 @@ import com.jyodroid.kunasismoayuda.resources.board_submit
 import com.jyodroid.kunasismoayuda.resources.board_submit_error
 import com.jyodroid.kunasismoayuda.resources.board_submitting
 import com.jyodroid.kunasismoayuda.resources.expiry_notice_30d
+import com.jyodroid.kunasismoayuda.resources.preview_action
+import com.jyodroid.kunasismoayuda.resources.preview_edit
+import com.jyodroid.kunasismoayuda.resources.preview_heading
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -55,6 +64,8 @@ fun CreatePostScreen(
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
+    // Local review step before publishing (client-only): fill → Vista previa → Publicar/Editar.
+    var showPreview by remember { mutableStateOf(false) }
 
     // Contact is optional (opt-in). Region is the only required field.
     val canSubmit = region.isNotBlank() && !createState.isSubmitting
@@ -147,28 +158,75 @@ fun CreatePostScreen(
             )
         }
 
-        Button(
-            onClick = {
-                onSubmit(
-                    NewResourcePost(
-                        kind = kind,
-                        resourceType = type,
-                        region = region.trim(),
-                        description = description.trim(),
-                        contactPhone = phone.trim().ifBlank { null },
-                        contactEmail = email.trim().ifBlank { null },
-                        contactName = name.trim().ifBlank { null },
-                    ),
-                )
-            },
-            enabled = canSubmit,
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        ) {
-            if (createState.isSubmitting) {
-                CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
-                Text(stringResource(Res.string.board_submitting))
-            } else {
-                Text(stringResource(Res.string.board_submit))
+        if (!showPreview) {
+            Button(
+                onClick = { showPreview = true },
+                enabled = canSubmit,
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp).heightIn(min = 48.dp),
+            ) {
+                Text(stringResource(Res.string.preview_action))
+            }
+        } else {
+            // Read-only review of what will be published.
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = stringResource(Res.string.preview_heading),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    Text(
+                        text = "${resourceTypeEmoji(type)} ${stringResource(resourceTypeLabelRes(type))} · ${region.trim()}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = stringResource(if (kind == PostKind.REQUEST) Res.string.board_kind_request else Res.string.board_kind_offer),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    description.trim().takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+                    name.trim().takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                    phone.trim().takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                    email.trim().takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = { showPreview = false },
+                    enabled = !createState.isSubmitting,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                ) {
+                    Text(stringResource(Res.string.preview_edit))
+                }
+                Button(
+                    onClick = {
+                        onSubmit(
+                            NewResourcePost(
+                                kind = kind,
+                                resourceType = type,
+                                region = region.trim(),
+                                description = description.trim(),
+                                contactPhone = phone.trim().ifBlank { null },
+                                contactEmail = email.trim().ifBlank { null },
+                                contactName = name.trim().ifBlank { null },
+                            ),
+                        )
+                    },
+                    enabled = !createState.isSubmitting,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                ) {
+                    if (createState.isSubmitting) {
+                        CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
+                        Text(stringResource(Res.string.board_submitting))
+                    } else {
+                        Text(stringResource(Res.string.board_submit))
+                    }
+                }
             }
         }
     }

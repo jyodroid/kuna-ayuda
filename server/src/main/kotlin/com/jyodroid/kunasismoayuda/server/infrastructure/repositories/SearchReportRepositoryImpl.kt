@@ -4,11 +4,15 @@ import com.jyodroid.kunasismoayuda.server.config.DatabaseFactory
 import com.jyodroid.kunasismoayuda.server.domain.models.NewSearchReport
 import com.jyodroid.kunasismoayuda.server.domain.models.SearchReport
 import com.jyodroid.kunasismoayuda.server.domain.repositories.SearchRepository
+import com.jyodroid.kunasismoayuda.server.infrastructure.tables.Photos
 import com.jyodroid.kunasismoayuda.server.infrastructure.tables.SearchReports
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -70,6 +74,22 @@ class SearchReportRepositoryImpl : SearchRepository {
             }) {
                 it[status] = "CLOSED"
             }
+        }
+    }
+
+    override fun deleteOlderThan(cutoff: LocalDateTime): Int {
+        if (!DatabaseFactory.initialized) return 0
+        return transaction {
+            // Capture the reports' photos first (FK is SET NULL, not cascade), delete the reports,
+            // then delete those photo rows so the bytea doesn't leak.
+            val photoIds = SearchReports.selectAll()
+                .where { SearchReports.createdAt less cutoff }
+                .mapNotNull { it[SearchReports.photoId] }
+            val deleted = SearchReports.deleteWhere { SearchReports.createdAt less cutoff }
+            if (photoIds.isNotEmpty()) {
+                Photos.deleteWhere { Photos.id inList photoIds }
+            }
+            deleted
         }
     }
 

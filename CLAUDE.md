@@ -153,8 +153,9 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   `server/src/main/resources/console/`. Login → JWT in `sessionStorage`; `src/api.ts` attaches `Bearer` +
   `X-App-Key` (same baked deterrent as the app) and signs out on 401. **Role-gated:** any moderator sees
   only "Change my password"; SUPERADMIN sees Audit (filter table + before/after diff + revert), Moderators
-  (activity, disable/enable, reset password, revert-all), and Moderation (board approve/reject, shelters,
-  SOS). The landing footer has a discreet **"Moderadores" → /console** link (regular mods use it for the
+  (activity, disable/enable, reset password, revert-all), and Moderation — board (**Pendientes** approve/reject
+  + **Publicados** list with delete via `GET /api/board/active`), **Búsqueda** (Lost & Found list + delete),
+  shelters, and SOS. The landing footer has a discreet **"Moderadores" → /console** link (regular mods use it for the
   password change too). **No app-side moderator self-service** (deliberate). Deferred: CSV export, alerts, 2FA.
 - **App-only gate** (`config/AppGate.kt`) — optional `APP_CLIENT_KEY` env. When set, every `/api/**`
   request must carry an `X-App-Key` header matching it (constant-time compare; `OPTIONS`/non-`/api`
@@ -205,13 +206,29 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   `classify_cache` (`collection_points` TEXT via `infrastructure/CollectionPointsJson`, V20); shown on the
   board card / classify preview (`ui/board`) as "Puntos de recepción" and in the console board queue. They
   stay post content (not official map points). Bumping the extraction prompt bumped `PROMPT_VERSION`→`v4`.
-  Then `POST /api/board/{id}/resolve`
+  **Image intake (Phase B) — screenshot → vision.** Because Instagram blocks copying a post's text, the
+  poster can instead submit a **screenshot/photo**: `POST /api/board/classify/image` (public, rate-limited,
+  multipart image — reuses the `/api/photos` guards: JPEG/PNG/WebP ≤3 MB; exempt from the 128 KB JSON cap in
+  `config/RequestSizeLimit`) runs `AnthropicClient.classifyImage` (Claude **vision** — the message `content`
+  becomes `[text instruction + image block]`; same JSON-schema output, same `ClassifiedPost` parse) and
+  returns a `ClassifyPreviewResponse` with a **`cacheRef`** (SHA-256 of the image bytes, the classify_cache
+  key). The poster confirms via `POST /api/board/classify/confirm-ref` (`ConfirmRefRequest{cacheRef}`) —
+  served from cache, **no** new paid call, no image re-upload. In the app, `ClassifyPostScreen` gains an
+  "Subir una captura" (gallery) + camera option via `core:media` `rememberImagePicker`; `BoardViewModel`
+  tracks `cacheRef` so confirm dispatches image-confirm vs text-confirm. The classify also extracts
+  **moderator risk flags** — `riskFlags` (`ASKS_FOR_MONEY`/`UNVERIFIED_CLAIM`/`NO_SOURCE`), a JSON-schema
+  array — a **signal only, never an auto-reject** (like the fact-check note): persisted on the post +
+  memoized (`risk_flags` TEXT via `infrastructure/RiskFlagsJson`, **V21**) and shown as a caution block
+  (`ui/board RiskFlagsBlock`) in the classify preview, the app moderation queue, and the console board queue.
+  Both bumps moved `PROMPT_VERSION`→`v5`. Then `POST /api/board/{id}/resolve`
   (**public, device-gated** — the creating device closes its own post by presenting the `owner_secret`
   the server issued at creation and returned once in the create response; no auth, the secret IS the
   identity; constant-time compare; RESOLVED→204 / not-owner→403 / missing→404) + `GET /api/board/pending`
-  + `POST /api/board/{id}/approve` + `DELETE /api/board/{id}` (all **admin**, the classified-content
+  + `GET /api/board/active` (**admin** — published posts, so a moderator can find & delete an abusive
+  live one) + `POST /api/board/{id}/approve` + `DELETE /api/board/{id}` (all **admin**, the classified-content
   moderation flow — approve→ACTIVE, **delete/resolve→CLOSED and scrubs the post's
-  contact_phone/email/name + owner_secret** so contact is public only while a post is live); `POST /api/sos` (public,
+  contact_phone/email/name + owner_secret** so contact is public only while a post is live; `DELETE` works
+  on ACTIVE posts too, i.e. instant removal of a published post); `POST /api/sos` (public,
   **not** rate-limited — never block someone in danger; accepts SOS or SAFE) + the **admin responder
   lifecycle**: `GET /api/sos` (`?status=SOS|SAFE` filters — omit/`ALL` returns both, unknown falls back
   to both rather than erroring; `?archived=false` default = pending, `true` = archived, `all` = both) +
@@ -236,7 +253,14 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   `expireOlderThan(cutoff)` on both repos, reusing each `close()` semantics (board posts also get
   contact + `owner_secret` scrubbed; search reports flip to CLOSED). Keeps the feeds fresh; the create
   forms carry a 30-day auto-archive disclaimer (`expiry_notice_30d`). Change the window in one place
-  (`EXPIRY_DAYS`). Shelters/help points and SOS are **not** swept (official/emergency data). Flyway `V1__init.sql` (shelters), `V2__resource_board.sql`
+  (`EXPIRY_DAYS`). Shelters/help points and SOS are **not** swept by the *expiry* sweep. **Hard-purge
+  sweep** (`services/PurgeService` + the same `startExpirySweep` daily loop): permanently **row-deletes**
+  user content older than `PurgeService.PURGE_DAYS` (**60**) — aid-board posts, Lost & Found reports
+  **and their `photos` bytea** (the FK is `ON DELETE SET NULL`, not cascade, so photos are deleted
+  explicitly; orphan photos swept too), and **SOS reports** (per "delete all data"). **Shelters are kept**
+  (official/curated). So a post's lifecycle is ACTIVE (0–30d) → CLOSED+scrubbed (30–60d) → **deleted**
+  (>60d); keyed on `created_at` (no `closed_at` column). `deleteOlderThan` on the board/search/sos repos +
+  `PhotoRepository.deleteOrphansOlderThan`; covered by `PurgeServiceTest` (mockk). Flyway `V1__init.sql` (shelters), `V2__resource_board.sql`
   (resource_posts), `V3__sos.sql` (sos_reports), `V4__board_classify.sql` (adds `source`/`raw_text`/
   PENDING status), `V5__admin_users.sql` (moderator accounts), `V6__seed_official_points.sql`
   (replaces the V1 placeholder shelters with **real official institutions** — UNGRD, IDIGER, Cruz Roja
@@ -275,8 +299,11 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   `LaunchedEffect(country)` reloads the Quakes/Shelters/Board VMs (each has `setCountry`) — the Overview
   tab has a `CountrySelector` dropdown to switch. **Moderation UI** (`ui/auth`,
   `ui/moderation`, `ui/admin`): a discreet "Moderación" entry at the bottom of the Guide screen opens the
-  `moderation` route, which shows `LoginScreen` until there's a session and the `ModerationScreen`
-  (pending queue → approve/reject, showing each classified post's original `rawText`) after. The
+  `moderation` route, which shows `LoginScreen` until there's a session and the `ModerationScreen` after.
+  `ModerationScreen` has a **Pendientes / Publicados** toggle (`ModerationTab`): *Pendientes* is the
+  classify queue (approve/reject, showing each post's original `rawText`); *Publicados* lists **ACTIVE**
+  posts (`ResourceBoardRepository.listActive()` → `GET /api/board/active`) each with an **Eliminar**
+  (confirm dialog) that deletes a live post on the spot (reuses `reject` = `DELETE /api/board/{id}`). The
   top-bar SOS action is replaced by "Sign out" on that route. `AuthViewModel.session` (null for every
   normal user) is what gates it; regular users never see a login wall. **Super-admin console**
   (`ui/admin` — `AdminViewModel` + `AdminManagementScreen`): when the session's `role` is `SUPERADMIN`,
@@ -463,7 +490,12 @@ points here too). **Serving**: `routes/Routing.kt` adds `staticResources("/", "w
 gated). **Build/deploy**: `:server:buildLanding` (Exec `npm build` + Copy `dist`→`server/src/main/resources/web`)
 is a **manual dev task** (needs Node) — it is **deliberately NOT wired into `processResources`** so Heroku's
 Node-less JVM buildpack just packages whatever `web/` is present (recommended deploy option A). Re-run
-`:server:buildLanding` after editing `landing/`; the fat jar bundles `web/` like any resource. The Desktop
+`:server:buildLanding` after editing `landing/`; the fat jar bundles `web/` like any resource. **CI now
+runs it for you:** the `ci.yml` **deploy** job builds **both** `:server:buildLanding` + `:server:buildConsole`
+into `resources/{web,console}`, commits them **locally**, and pushes that commit to Heroku's git (never to
+origin/main) — so the deployed jar always serves the current landing + moderator console **without** you
+committing the built bundles by hand. `release.yml`'s server job + `ci.yml`'s `package` job build both too,
+so the release fat jar is complete. (You can still run the tasks + commit manually for a Node-less deploy.) The Desktop
 app binaries are **not** bundled (too big for the slug) — the Download links point to configurable URLs
 (GitHub Releases recommended). Placeholders to fill before launch: domain, contact email, responsible
 party, governing-law jurisdiction, tagline, real logo, desktop download URLs — and a lawyer review.
@@ -540,7 +572,9 @@ Channels and safety Tips — merged so we stay at 5 tabs). Nav labels are center
   `core/domain util tipSpeechText(title, body)` (unit-tested). Storyboards default empty
   (`Tip.steps`), so tips without one still get the readable + Listen sheet.
 - The board has two pushed routes (not tabs): `board_create` (manual "new post" form — contact is
-  opt-in with a public-contact disclaimer, #3) and `board_classify` (**"Pegar publicación"** — paste a
+  opt-in with a public-contact disclaimer, #3; the form now has a local **Vista previa → Publicar/Editar**
+  review step before it POSTs, mirrored on the Lost & Found `SearchCreateScreen` — client-only, no server
+  change) and `board_classify` (**"Pegar publicación"** — paste a
   social-media post's **text** → Claude structures it → the poster **reviews a preview and confirms**
   → queued for moderation; `ClassifyPostScreen` is two-step, "Analizar" → preview card + "Enviar a
   revisión"/"Editar", with a how-to for turning an IG/FB post into pasteable text and an "unreadable"
@@ -611,7 +645,10 @@ compile-enforced boundaries — mostly matters at larger scale); revisit post-la
 **Lost & Found / reunification** (`ui/search`): reachable from the aid board ("Búsqueda y reencuentro"),
 it lists community reports of **lost/found pets and people** (`SearchViewModel` over `SearchRepository`
 → `/api/search`), filterable by subject (pet/person) and state (lost/found), **direct-post** (no
-moderation). Reports carry an **optional photo**: `core:media`'s `ImagePicker` (expect/actual — Android system
+moderation on submit). A **logged-in moderator** browsing the list sees a per-card **Eliminar** (confirm
+dialog) that removes an abusive report — `SearchScreen(onDelete=…)` gated by `session != null` in `App()`,
+`SearchViewModel.delete` → `SearchRepository.delete` → `DELETE /api/search/{id}` (admin); regular users
+never see it. (Console has the same via the Moderation → Búsqueda tab.) Reports carry an **optional photo**: `core:media`'s `ImagePicker` (expect/actual — Android system
 photo-picker + `TakePicturePreview` camera; iOS `UIImagePickerController`; Desktop = file chooser, no
 camera; all downscale to ~1280 px JPEG) captures it, `SearchApi.uploadPhoto` multipart-uploads to
 `POST /api/photos`, and thumbnails load via **Coil 3** (`AsyncImage`) through the app's shared Ktor

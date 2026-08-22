@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +33,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -47,6 +50,9 @@ import com.jyodroid.kunasismoayuda.resources.board_submit
 import com.jyodroid.kunasismoayuda.resources.board_submit_error
 import com.jyodroid.kunasismoayuda.resources.board_submitting
 import com.jyodroid.kunasismoayuda.resources.expiry_notice_30d
+import com.jyodroid.kunasismoayuda.resources.preview_action
+import com.jyodroid.kunasismoayuda.resources.preview_edit
+import com.jyodroid.kunasismoayuda.resources.preview_heading
 import com.jyodroid.kunasismoayuda.resources.search_disclaimer
 import com.jyodroid.kunasismoayuda.resources.search_field_description
 import com.jyodroid.kunasismoayuda.resources.search_field_last_seen
@@ -77,6 +83,8 @@ fun SearchCreateScreen(
     var phone by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var picked by remember { mutableStateOf<PickedImage?>(null) }
+    // Local review step before publishing (client-only): fill → Vista previa → Publicar/Editar.
+    var showPreview by remember { mutableStateOf(false) }
 
     val picker = rememberImagePicker { picked = it }
 
@@ -204,31 +212,80 @@ fun SearchCreateScreen(
             )
         }
 
-        Button(
-            onClick = {
-                onSubmit(
-                    NewSearchReport(
-                        subject = subject,
-                        status = status,
-                        title = title.trim(),
-                        description = description.trim(),
-                        lastSeen = lastSeen.trim(),
-                        notes = notes.trim().ifBlank { null },
-                        contactPhone = phone.trim(),
-                        contactName = name.trim().ifBlank { null },
-                    ),
-                    picked?.bytes,
-                    picked?.mime,
-                )
-            },
-            enabled = canSubmit,
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp).heightIn(min = 48.dp),
-        ) {
-            if (createState.isSubmitting) {
-                CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
-                Text(stringResource(Res.string.board_submitting))
-            } else {
-                Text(stringResource(Res.string.board_submit))
+        if (!showPreview) {
+            Button(
+                onClick = { showPreview = true },
+                enabled = canSubmit,
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp).heightIn(min = 48.dp),
+            ) {
+                Text(stringResource(Res.string.preview_action))
+            }
+        } else {
+            // Read-only review of what will be published (incl. the chosen photo).
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = stringResource(Res.string.preview_heading),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    val subj = if (subject == SearchSubject.PET) "🐾 ${stringResource(Res.string.search_subject_pet)}" else "🧑 ${stringResource(Res.string.search_subject_person)}"
+                    val st = stringResource(if (status == SearchStatus.LOST) Res.string.search_status_lost else Res.string.search_status_found)
+                    Text("$subj · $st", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(title.trim(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(lastSeen.trim(), style = MaterialTheme.typography.bodyMedium)
+                    description.trim().takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+                    phone.trim().takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                    name.trim().takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                    picked?.let { img ->
+                        AsyncImage(
+                            model = img.bytes,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(120.dp).clip(RoundedCornerShape(8.dp)),
+                        )
+                    }
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = { showPreview = false },
+                    enabled = !createState.isSubmitting,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                ) {
+                    Text(stringResource(Res.string.preview_edit))
+                }
+                Button(
+                    onClick = {
+                        onSubmit(
+                            NewSearchReport(
+                                subject = subject,
+                                status = status,
+                                title = title.trim(),
+                                description = description.trim(),
+                                lastSeen = lastSeen.trim(),
+                                notes = notes.trim().ifBlank { null },
+                                contactPhone = phone.trim(),
+                                contactName = name.trim().ifBlank { null },
+                            ),
+                            picked?.bytes,
+                            picked?.mime,
+                        )
+                    },
+                    enabled = !createState.isSubmitting,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                ) {
+                    if (createState.isSubmitting) {
+                        CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
+                        Text(stringResource(Res.string.board_submitting))
+                    } else {
+                        Text(stringResource(Res.string.board_submit))
+                    }
+                }
             }
         }
       }

@@ -11,16 +11,23 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -33,14 +40,21 @@ import com.jyodroid.kunasismoayuda.resources.Res
 import com.jyodroid.kunasismoayuda.resources.admin_manage_entry
 import com.jyodroid.kunasismoayuda.resources.shelter_add_entry
 import com.jyodroid.kunasismoayuda.resources.sos_resp_entry
+import com.jyodroid.kunasismoayuda.resources.action_cancel
 import com.jyodroid.kunasismoayuda.resources.mod_approve
+import com.jyodroid.kunasismoayuda.resources.mod_delete
+import com.jyodroid.kunasismoayuda.resources.mod_delete_confirm
 import com.jyodroid.kunasismoayuda.resources.mod_empty
 import com.jyodroid.kunasismoayuda.resources.mod_error
 import com.jyodroid.kunasismoayuda.resources.mod_loading
 import com.jyodroid.kunasismoayuda.resources.mod_fact_check
 import com.jyodroid.kunasismoayuda.resources.mod_original
+import com.jyodroid.kunasismoayuda.resources.mod_published_empty
 import com.jyodroid.kunasismoayuda.resources.mod_reject
+import com.jyodroid.kunasismoayuda.resources.mod_tab_pending
+import com.jyodroid.kunasismoayuda.resources.mod_tab_published
 import com.jyodroid.kunasismoayuda.resources.retry
+import com.jyodroid.kunasismoayuda.ui.board.RiskFlagsBlock
 import com.jyodroid.kunasismoayuda.ui.board.resourceTypeEmoji
 import com.jyodroid.kunasismoayuda.ui.board.resourceTypeLabelRes
 import org.jetbrains.compose.resources.stringResource
@@ -51,6 +65,7 @@ fun ModerationScreen(
     onApprove: (Int) -> Unit,
     onReject: (Int) -> Unit,
     onLoad: () -> Unit,
+    onSelectTab: (ModerationTab) -> Unit,
     modifier: Modifier = Modifier,
     // Non-null only for a SUPERADMIN session — opens the admin-account console. Null hides the entry.
     onManageAdmins: (() -> Unit)? = null,
@@ -95,6 +110,22 @@ fun ModerationScreen(
                 Text(stringResource(Res.string.admin_manage_entry))
             }
         }
+        // Pendientes (moderation queue) ↔ Publicados (live posts, deletable on the spot).
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilterChip(
+                selected = state.tab == ModerationTab.PENDING,
+                onClick = { onSelectTab(ModerationTab.PENDING) },
+                label = { Text(stringResource(Res.string.mod_tab_pending)) },
+            )
+            FilterChip(
+                selected = state.tab == ModerationTab.PUBLISHED,
+                onClick = { onSelectTab(ModerationTab.PUBLISHED) },
+                label = { Text(stringResource(Res.string.mod_tab_published)) },
+            )
+        }
         Box(Modifier.weight(1f)) {
             ModerationContent(
                 state = state,
@@ -114,6 +145,8 @@ private fun ModerationContent(
     onLoad: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val pending = state.tab == ModerationTab.PENDING
+    val items = if (pending) state.pending else state.active
     when {
         state.isLoading -> Centered(modifier) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -122,7 +155,7 @@ private fun ModerationContent(
             }
         }
 
-        state.error && state.pending.isEmpty() -> Centered(modifier) {
+        state.error && items.isEmpty() -> Centered(modifier) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(stringResource(Res.string.mod_error))
                 Button(onClick = onLoad, modifier = Modifier.padding(top = 8.dp).heightIn(min = 48.dp)) {
@@ -131,22 +164,88 @@ private fun ModerationContent(
             }
         }
 
-        state.pending.isEmpty() -> Centered(modifier) { Text(stringResource(Res.string.mod_empty)) }
+        items.isEmpty() -> Centered(modifier) {
+            Text(stringResource(if (pending) Res.string.mod_empty else Res.string.mod_published_empty))
+        }
 
         else -> LazyColumn(
             modifier = modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(state.pending, key = { it.id }) { post ->
-                PendingCard(
-                    post = post,
-                    isActioning = state.actioningId == post.id,
-                    onApprove = { onApprove(post.id) },
-                    onReject = { onReject(post.id) },
-                )
+            items(items, key = { it.id }) { post ->
+                if (pending) {
+                    PendingCard(
+                        post = post,
+                        isActioning = state.actioningId == post.id,
+                        onApprove = { onApprove(post.id) },
+                        onReject = { onReject(post.id) },
+                    )
+                } else {
+                    ActiveCard(
+                        post = post,
+                        isActioning = state.actioningId == post.id,
+                        onDelete = { onReject(post.id) },
+                    )
+                }
             }
         }
+    }
+}
+
+/** A published post with a single, confirmed "Eliminar" action (delete a live post immediately). */
+@Composable
+private fun ActiveCard(
+    post: ResourcePost,
+    isActioning: Boolean,
+    onDelete: () -> Unit,
+) {
+    var confirming by remember { mutableStateOf(false) }
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = "${resourceTypeEmoji(post.resourceType)}  ${stringResource(resourceTypeLabelRes(post.resourceType))} · ${post.region}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = post.kind.name,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (post.description.isNotBlank()) {
+                Text(post.description, style = MaterialTheme.typography.bodyMedium)
+            }
+            post.contactPhone?.takeIf { it.isNotBlank() }?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall)
+            }
+            OutlinedButton(
+                onClick = { confirming = true },
+                enabled = !isActioning,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp).heightIn(min = 48.dp),
+            ) {
+                Text(stringResource(Res.string.mod_delete))
+            }
+        }
+    }
+
+    if (confirming) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            title = { Text(stringResource(Res.string.mod_delete)) },
+            text = { Text(stringResource(Res.string.mod_delete_confirm)) },
+            confirmButton = {
+                TextButton(onClick = { confirming = false; onDelete() }) {
+                    Text(stringResource(Res.string.mod_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirming = false }) {
+                    Text(stringResource(Res.string.action_cancel))
+                }
+            },
+        )
     }
 }
 
@@ -219,6 +318,9 @@ private fun PendingCard(
                     }
                 }
             }
+
+            // AI risk flags (scam / unverified / no-source) — a moderator signal, never an auto-reject.
+            RiskFlagsBlock(post.riskFlags, modifier = Modifier.padding(top = 6.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),

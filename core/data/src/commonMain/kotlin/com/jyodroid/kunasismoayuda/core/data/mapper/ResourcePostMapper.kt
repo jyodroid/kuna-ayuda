@@ -26,6 +26,7 @@ fun ResourcePostDto.toDomain(): ResourcePost = ResourcePost(
     factCheck = factCheck,
     ownerSecret = ownerSecret,
     collectionPoints = collectionPoints.map { it.toDomain() },
+    riskFlags = riskFlags,
 )
 
 fun CollectionPointDto.toDomain(): CollectionPoint = CollectionPoint(name = name, address = address, hours = hours)
@@ -39,6 +40,8 @@ fun ClassifyPreviewDto.toDomain(): ClassifiedPreview = ClassifiedPreview(
     contactName = contactName,
     factCheck = factCheck,
     collectionPoints = collectionPoints.map { it.toDomain() },
+    riskFlags = riskFlags,
+    cacheRef = cacheRef,
 )
 
 fun NewResourcePost.toDto(): NewResourcePostDto = NewResourcePostDto(

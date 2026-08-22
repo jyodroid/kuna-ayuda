@@ -26,6 +26,9 @@ interface SosRepository {
     /** Permanently delete a report. Returns false if absent. */
     fun delete(id: Int): Boolean
 
+    /** Permanently deletes every report created before [cutoff] (60-day purge). Returns the count. */
+    fun deleteOlderThan(cutoff: java.time.LocalDateTime): Int
+
     /** Pending-vs-handled counts for the responder dashboard. */
     fun stats(): SosStats
 }

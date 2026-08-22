@@ -182,6 +182,12 @@
     <string name="board_paste_howto">How to copy the text: open the post in Instagram or Facebook, press and hold the caption, tap “Copy”, and paste it here. Links and screenshots don’t work.</string>
     <string name="board_paste_unreadable">We couldn’t read a post there. Copy the post’s words (its caption) and paste them — links and screenshots don’t work.</string>
     <string name="board_paste_submit">Analyze</string>
+    <string name="board_paste_image">Upload a screenshot</string>
+    <string name="board_paste_image_hint">Can't copy the text? Upload a screenshot of the post and we'll read it for you.</string>
+    <string name="risk_flags_title">Caution signals</string>
+    <string name="risk_flag_money">Asks for money</string>
+    <string name="risk_flag_claim">Unverified claim</string>
+    <string name="risk_flag_source">No identifiable source</string>
     <string name="board_preview_title">Review what we understood</string>
     <string name="board_preview_note">If it looks right, it’ll be sent to a moderator for approval before it’s published.</string>
     <string name="board_preview_confirm">Send for review</string>
@@ -204,6 +210,9 @@
     <string name="board_email">Email</string>
     <string name="board_resolve">Mark as resolved</string>
     <string name="board_submit">Post</string>
+    <string name="preview_action">Preview</string>
+    <string name="preview_edit">Edit</string>
+    <string name="preview_heading">Preview</string>
     <string name="board_submitting">Posting…</string>
     <string name="board_submit_error">Couldn’t post. Try again.</string>
     <!-- Moderation (moderators only) -->
@@ -224,6 +233,12 @@
     <string name="mod_fact_check">Fact check (Google)</string>
     <string name="mod_approve">Approve</string>
     <string name="mod_reject">Reject</string>
+    <string name="mod_tab_pending">Pending</string>
+    <string name="mod_tab_published">Published</string>
+    <string name="mod_published_empty">No active posts.</string>
+    <string name="mod_delete">Delete</string>
+    <string name="mod_delete_confirm">Delete this post? It will be removed from the board immediately.</string>
+    <string name="action_cancel">Cancel</string>
     <string name="mod_logout">Sign out</string>
 
     <string name="admin_title">Moderators</string>
