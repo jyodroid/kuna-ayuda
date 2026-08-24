@@ -1,25 +1,55 @@
-# Google Play store listing — Kuna Ayuda
+# App Store Connect listing — Kuna Ayuda
 
-Ready-to-paste copy for the Play Console **Main store listing**, in the app's four locales.
-English is the **default** listing language; add ES / ID / IT as additional listing languages.
+Ready-to-paste copy for App Store Connect, in the app's four locales. **English is the primary
+language**; add ES / ID / IT as additional App Store localizations.
 
-**Limits:** Title ≤ 30 chars · Short description ≤ 80 chars · Full description ≤ 4000 chars.
+The **promotional text and description are the same copy as Google Play** (`store/play-listing.md`) —
+keep the two files in sync; edit both together. Only the short/keyword fields differ, because the two
+stores have different field shapes:
 
-**Title (all languages):** `Kuna Ayuda`
+| App Store field | Limit | Source |
+|---|---|---|
+| **Name** | 30 | same as Play title (`Kuna Ayuda`) |
+| **Subtitle** | 30 | trimmed tagline (Play's 80-char short description won't fit) |
+| **Promotional text** | 170 | the Play **short description**, verbatim (editable later without review) |
+| **Description** | 4000 | the Play **full description**, verbatim |
+| **Keywords** | 100 | iOS-only, comma-separated, no spaces (Play has no keyword field) |
 
-Keep these in sync with the in-app copy and the Privacy/Terms pages. The "not an emergency service"
-disclaimer is intentional — Play scrutinizes safety claims, and it matches the rest of the product.
+Fixed metadata (all locales): **Support URL** `https://kunaayuda.org` · **Marketing URL**
+`https://kunaayuda.org` · **Privacy Policy URL** `https://kunaayuda.org/privacy` · Category: suggest
+**Reference** (primary) / **Utilities** or **Weather** (secondary). Keep the "not an emergency service"
+line. **Age rating:** matches the Play content rating (`store/play-content-rating-and-audience.md`).
+**Copyright** (App Information): `2026 Kuna Ayuda` — year + owner name, **no © symbol, no URL** (App
+Store Connect rejects a blank/symbol/URL as "invalid").
+
+**App preview (video) limits:** ≤500 MB, **15–30 s**, accepted iPhone 6.5" resolution **886×1920** (or
+1080×1920). Use `./fit_app_store_previews` to size + compress raw recordings; trim to ≤30 s if longer.
+
+> Note: this copy lists all five shipped countries — **Colombia, Indonesia, Spain, Italy and Peru** —
+> and mirrors `play-listing.md`. Keep both files identical whenever the country list changes.
+
+**Name (all languages):** `Kuna Ayuda`
 
 ---
 
-## English (default)
+## English (primary)
 
-**Short description**
+**Subtitle** (≤30)
+```
+Help for natural disasters
+```
+
+**Promotional text** (≤170)
 ```
 Earthquakes & wildfires, help points, mutual aid and offline SOS.
 ```
 
-**Full description**
+**Keywords** (≤100)
+```
+earthquake,quake,wildfire,SOS,emergency,disaster,shelter,aid,relief,rescue,aftershock,map
+```
+
+**Description** (≤4000)
 ```
 Kuna Ayuda brings together, in one place, what's useful during a disaster — starting with earthquakes and wildfires, and prioritizing the affected areas.
 
@@ -46,12 +76,22 @@ Kuna Ayuda is a free, open-source, public-good project.
 
 ## Español
 
-**Descripción breve**
+**Subtítulo** (≤30)
+```
+Ayuda ante emergencia natural
+```
+
+**Texto promocional** (≤170)
 ```
 Sismos e incendios, puntos de ayuda, red de apoyo mutuo y SOS sin conexión.
 ```
 
-**Descripción completa**
+**Palabras clave** (≤100)
+```
+sismo,terremoto,incendio,SOS,emergencia,desastre,refugio,albergue,ayuda,rescate,replica,linterna
+```
+
+**Descripción** (≤4000)
 ```
 Kuna Ayuda reúne, en un solo lugar, la información útil durante un desastre: empezamos por los terremotos y los incendios forestales, y priorizamos las zonas afectadas.
 
@@ -78,12 +118,22 @@ Kuna Ayuda es un proyecto libre, de código abierto y de bien público.
 
 ## Bahasa Indonesia
 
-**Deskripsi singkat**
+**Subjudul** (≤30)
+```
+Bantuan bencana alam
+```
+
+**Teks promosi** (≤170)
 ```
 Gempa & kebakaran hutan, titik bantuan, bantuan warga, dan SOS luring.
 ```
 
-**Deskripsi lengkap**
+**Kata kunci** (≤100)
+```
+gempa,kebakaran,SOS,darurat,bencana,bantuan,pengungsian,evakuasi,peta,gempa bumi
+```
+
+**Deskripsi** (≤4000)
 ```
 Kuna Ayuda menyatukan, dalam satu tempat, informasi yang berguna saat bencana — dimulai dari gempa bumi dan kebakaran hutan, dengan memprioritaskan wilayah yang terdampak.
 
@@ -110,12 +160,22 @@ Kuna Ayuda adalah proyek gratis, sumber terbuka, dan untuk kepentingan publik.
 
 ## Italiano
 
-**Descrizione breve**
+**Sottotitolo** (≤30)
+```
+Aiuto per emergenze naturali
+```
+
+**Testo promozionale** (≤170)
 ```
 Terremoti e incendi, punti di aiuto, rete di mutuo aiuto e SOS offline.
 ```
 
-**Descrizione completa**
+**Parole chiave** (≤100)
+```
+terremoto,sisma,incendio,SOS,emergenza,disastro,rifugio,aiuto,soccorso,scossa,mappa
+```
+
+**Descrizione** (≤4000)
 ```
 Kuna Ayuda riunisce, in un unico posto, le informazioni utili durante un disastro: partiamo dai terremoti e dagli incendi boschivi, dando priorità alle zone colpite.
 

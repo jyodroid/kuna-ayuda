@@ -33,3 +33,6 @@ keystore.properties
 *.jks
 *.keystore
 
+
+# App Store screenshot/video captures + generated outputs (large, personal — keep local)
+store/screenshots/

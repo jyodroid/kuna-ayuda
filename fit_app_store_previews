@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+#
+# fit_app_store_previews — transcode raw app-preview videos to EXACT App Store Connect sizes.
+#
+# App Store previews must be an accepted resolution, H.264/HEVC in .mov/.mp4/.m4v, 15–30s, ≤500 MB.
+# This scales+pads each clip (no distortion) to the accepted preview size for its device (auto-detected
+# from aspect ratio) and re-encodes to H.264 + AAC. It warns — but does not fail — if a clip is outside
+# the 15–30s window (Apple enforces that; trim the source and re-run).
+#
+# Usage:
+#   1) Drop your raw videos into  store/screenshots/video-raw/
+#   2) ./fit_app_store_previews
+#   3) Upload  store/screenshots/video-out/*.mov  as app previews.
+#
+# Options / env:
+#   --trim30          Trim each clip to the first 30s (Apple's max). Shortcut for TRIM_TO=30.
+#   TRIM_TO=SECONDS   Trim to this many seconds (e.g. 30). Empty = no trim (default).
+#   TRIM_FROM=SECONDS Start offset for the trim, in seconds. Default 0.
+#   PAD_COLOR=color   ffmpeg pad color name or 0xRRGGBB. Default white.
+#   IN_DIR / OUT_DIR  Override input/output folders.
+#
+# Accepted preview sizes used (portrait/landscape auto by orientation):
+#   iPhone 6.5"  886x1920  / 1920x886
+#   iPad 12.9"   1200x1600 / 1600x1200
+#
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+IN_DIR="${IN_DIR:-store/screenshots/video-raw}"
+OUT_DIR="${OUT_DIR:-store/screenshots/video-out}"
+PAD_COLOR="${PAD_COLOR:-white}"
+TRIM_TO="${TRIM_TO:-}"
+TRIM_FROM="${TRIM_FROM:-0}"
+
+for arg in "$@"; do
+  case "$arg" in
+    --trim30) TRIM_TO=30 ;;
+    -h|--help) grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) echo "Unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
+
+trim_args=()
+if [[ -n "$TRIM_TO" ]]; then trim_args=(-ss "$TRIM_FROM" -t "$TRIM_TO"); fi
+
+command -v ffmpeg  >/dev/null || { echo "✗ ffmpeg not found (brew install ffmpeg)." >&2; exit 1; }
+command -v ffprobe >/dev/null || { echo "✗ ffprobe not found (comes with ffmpeg)." >&2; exit 1; }
+mkdir -p "$IN_DIR" "$OUT_DIR"
+
+shopt -s nullglob nocaseglob
+vids=("$IN_DIR"/*.mov "$IN_DIR"/*.mp4 "$IN_DIR"/*.m4v)
+shopt -u nocaseglob
+if (( ${#vids[@]} == 0 )); then
+  echo "No videos in $IN_DIR/ — drop your clips there and re-run." >&2
+  exit 0
+fi
+
+echo "Pad color: $PAD_COLOR"
+echo "─────────────────────────────────────────────"
+ok=0
+for src in "${vids[@]}"; do
+  [[ -e "$src" ]] || continue
+  W=$(ffprobe -v error -select_streams v:0 -show_entries stream=width  -of csv=p=0 "$src")
+  H=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 "$src")
+  DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$src")
+  if [[ -z "$W" || -z "$H" ]]; then echo "! skip (no video stream): $(basename "$src")" >&2; continue; fi
+
+  read -r TW TH SUB < <(awk -v w="$W" -v h="$H" '
+    function abs(x){return x<0?-x:x}
+    BEGIN{
+      lo=(w<h)?w:h; hi=(w<h)?h:w; r=lo/hi; portrait=(h>=w);
+      if (abs(r-0.462) <= abs(r-0.750)) dev="iphone-6.5"; else dev="ipad-12.9";
+      if (dev=="iphone-6.5"){ if(portrait){TW=886;TH=1920}else{TW=1920;TH=886} }
+      else                  { if(portrait){TW=1200;TH=1600}else{TW=1600;TH=1200} }
+      print TW, TH, dev;
+    }')
+
+  base="$(basename "${src%.*}")"
+  out="$OUT_DIR/${base}.mov"
+  vf="scale=${TW}:${TH}:force_original_aspect_ratio=decrease,pad=${TW}:${TH}:(ow-iw)/2:(oh-ih)/2:color=${PAD_COLOR}"
+
+  ffmpeg -hide_banner -loglevel error -y ${trim_args[@]+"${trim_args[@]}"} -i "$src" \
+    -vf "$vf" -r 30 -c:v libx264 -profile:v high -pix_fmt yuv420p -b:v 10M \
+    -c:a aac -b:a 256k -movflags +faststart "$out"
+
+  VW=$(ffprobe -v error -select_streams v:0 -show_entries stream=width  -of csv=p=0 "$out")
+  VH=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 "$out")
+  dur_note=""
+  if awk -v d="$DUR" 'BEGIN{exit !(d<15 || d>30)}'; then
+    dur_note="  ⚠ ${DUR%.*}s (Apple requires 15–30s — trim the source)"
+  fi
+  if [[ "$VW" == "$TW" && "$VH" == "$TH" ]]; then
+    printf "✓ %-24s %sx%s → %-11s %sx%s%s\n" "$(basename "$src")" "$W" "$H" "$SUB" "$VW" "$VH" "$dur_note"; ((ok++))
+  else
+    printf "✗ %-24s produced %sx%s (wanted %sx%s)\n" "$(basename "$src")" "$VW" "$VH" "$TW" "$TH" >&2
+  fi
+done
+echo "─────────────────────────────────────────────"
+echo "Done: $ok video(s) → $OUT_DIR/"

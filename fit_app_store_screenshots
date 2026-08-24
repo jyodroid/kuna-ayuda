@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+#
+# fit_app_store_screenshots — resize raw iPhone/iPad screenshots to EXACT App Store Connect sizes.
+#
+# App Store Connect rejects screenshots that aren't one of the accepted pixel sizes. This scales each
+# capture to fit and pads it (default) — or crops it — to an exact accepted size, with no distortion.
+# Device (iPhone 6.5" vs iPad 12.9") is auto-detected from the aspect ratio.
+#
+# Usage:
+#   1) Drop your raw screenshots (any size) into  store/screenshots/raw/
+#   2) ./fit_app_store_screenshots
+#   3) Upload  store/screenshots/ios/iphone-6.5/*  and  store/screenshots/ios/ipad-12.9/*
+#
+# Options / env:
+#   --crop            Fill the frame and center-crop instead of padding (edge-to-edge, no bars).
+#   PAD_COLOR=RRGGBB  Pad color (hex, no #). Default FFFFFF (white). e.g. PAD_COLOR=0F5E66 for brand teal.
+#   SIZE=WxH          Force one exact target for every image (skips auto device/size selection).
+#   RAW_DIR / OUT_DIR Override the input/output folders.
+#
+# Accepted sizes handled:
+#   iPhone 6.5"  portrait 1242x2688 / 1284x2778   landscape 2688x1242 / 2778x1284
+#   iPad 12.9"   portrait 2048x2732                landscape 2732x2048
+#
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+RAW_DIR="${RAW_DIR:-store/screenshots/raw}"
+OUT_DIR="${OUT_DIR:-store/screenshots/ios}"
+PAD_COLOR="${PAD_COLOR:-FFFFFF}"
+MODE="pad"
+FORCE_SIZE="${SIZE:-}"
+
+for arg in "$@"; do
+  case "$arg" in
+    --crop) MODE="crop" ;;
+    -h|--help) grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) echo "Unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
+
+command -v sips >/dev/null || { echo "✗ sips not found (macOS only)." >&2; exit 1; }
+mkdir -p "$RAW_DIR"
+
+shopt -s nullglob nocaseglob
+raws=("$RAW_DIR"/*.png "$RAW_DIR"/*.jpg "$RAW_DIR"/*.jpeg)
+shopt -u nocaseglob
+if (( ${#raws[@]} == 0 )); then
+  echo "No images in $RAW_DIR/ — drop your screenshots there and re-run." >&2
+  exit 0
+fi
+
+# Pick the exact target (TW TH SUBDIR) for a source WxH, honoring SIZE override.
+pick_target() {
+  local w=$1 h=$2
+  if [[ -n "$FORCE_SIZE" ]]; then
+    echo "${FORCE_SIZE%x*} ${FORCE_SIZE#*x} forced"; return
+  fi
+  awk -v w="$w" -v h="$h" '
+    function abs(x){ return x<0?-x:x }
+    BEGIN{
+      # orientation-independent shape ratio (short/long side)
+      lo = (w<h)? w : h; hi = (w<h)? h : w; r = lo/hi;
+      portrait = (h>=w);
+      # classify device: phone ~0.462, ipad ~0.750
+      if (abs(r-0.462) <= abs(r-0.750)) dev="iphone-6.5"; else dev="ipad-12.9";
+      a = w/h;  # source aspect (W/H)
+      # candidate targets for this device+orientation as "TWxTH"
+      n=0;
+      if (dev=="iphone-6.5") {
+        if (portrait){ c[n++]="1242x2688"; c[n++]="1284x2778"; }
+        else         { c[n++]="2688x1242"; c[n++]="2778x1284"; }
+      } else {
+        if (portrait) c[n++]="2048x2732"; else c[n++]="2732x2048";
+      }
+      # choose candidate whose aspect is closest to the source
+      best=""; bestd=1e9;
+      for(i=0;i<n;i++){ split(c[i],p,"x"); ta=p[1]/p[2]; d=abs(a-ta); if(d<bestd){bestd=d; best=c[i];} }
+      split(best,p,"x");
+      print p[1], p[2], dev;
+    }'
+}
+
+echo "Mode: $MODE   Pad color: #$PAD_COLOR"
+echo "─────────────────────────────────────────────"
+ok=0
+for src in "${raws[@]}"; do
+  [[ -e "$src" ]] || continue
+  W=$(sips -g pixelWidth  "$src" | awk '/pixelWidth/{print $2}')
+  H=$(sips -g pixelHeight "$src" | awk '/pixelHeight/{print $2}')
+  if [[ -z "$W" || -z "$H" ]]; then echo "! skip (unreadable): $(basename "$src")" >&2; continue; fi
+
+  read -r TW TH SUB < <(pick_target "$W" "$H")
+  dest_dir="$OUT_DIR/$SUB"; mkdir -p "$dest_dir"
+  base="$(basename "${src%.*}")"
+  out="$dest_dir/${base}.png"
+
+  if [[ "$MODE" == "pad" ]]; then
+    # contain: scale = min(TW/W, TH/H); resize then pad to exact target.
+    read -r NW NH < <(awk -v W="$W" -v H="$H" -v TW="$TW" -v TH="$TH" 'BEGIN{
+      s=(TW/W < TH/H)? TW/W : TH/H; nw=int(W*s+0.5); nh=int(H*s+0.5);
+      if(nw>TW)nw=TW; if(nh>TH)nh=TH; print nw, nh }')
+    sips --resampleHeightWidth "$NH" "$NW" "$src" --out "$out" >/dev/null 2>&1
+    sips --padToHeightWidth "$TH" "$TW" --padColor "$PAD_COLOR" "$out" --out "$out" >/dev/null 2>&1
+  else
+    # fill: scale = max(TW/W, TH/H); resize (over target) then center-crop to exact target.
+    read -r NW NH < <(awk -v W="$W" -v H="$H" -v TW="$TW" -v TH="$TH" 'BEGIN{
+      s=(TW/W > TH/H)? TW/W : TH/H; nw=int(W*s+0.999); nh=int(H*s+0.999);
+      if(nw<TW)nw=TW; if(nh<TH)nh=TH; print nw, nh }')
+    sips --resampleHeightWidth "$NH" "$NW" "$src" --out "$out" >/dev/null 2>&1
+    sips --cropToHeightWidth "$TH" "$TW" "$out" --out "$out" >/dev/null 2>&1
+  fi
+
+  # verify exact size
+  VW=$(sips -g pixelWidth  "$out" | awk '/pixelWidth/{print $2}')
+  VH=$(sips -g pixelHeight "$out" | awk '/pixelHeight/{print $2}')
+  if [[ "$VW" == "$TW" && "$VH" == "$TH" ]]; then
+    printf "✓ %-28s %sx%s → %-11s %sx%s\n" "$(basename "$src")" "$W" "$H" "$SUB" "$VW" "$VH"; ((ok++))
+  else
+    printf "✗ %-28s produced %sx%s (wanted %sx%s)\n" "$(basename "$src")" "$VW" "$VH" "$TW" "$TH" >&2
+  fi
+done
+echo "─────────────────────────────────────────────"
+echo "Done: $ok image(s) → $OUT_DIR/  (upload iphone-6.5/ to the 6.5\" slot, ipad-12.9/ to the iPad slot)"
