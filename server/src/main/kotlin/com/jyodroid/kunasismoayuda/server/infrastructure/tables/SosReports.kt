@@ -12,6 +12,10 @@ object SosReports : Table("sos_reports") {
     val region = varchar("region", 120).nullable()
     val message = text("message").nullable()
     val contactPhone = varchar("contact_phone", 40).nullable()
+    // ISO country code (V10, default 'CO'); scopes the public "safe" list per country.
+    val country = varchar("country", 2)
+    // Public name on an "I'm safe" check-in (V22); null for legacy/nameless rows and SOS reports.
+    val displayName = varchar("display_name", 120).nullable()
     val createdAt = datetime("created_at")
     val handledAt = datetime("handled_at").nullable()   // null = pending; set = archived
     val handledBy = varchar("handled_by", 120).nullable()

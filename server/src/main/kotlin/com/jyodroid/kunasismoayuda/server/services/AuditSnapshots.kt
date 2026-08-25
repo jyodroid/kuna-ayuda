@@ -70,11 +70,14 @@ data class SosSnapshot(
     val message: String?,
     val contactPhone: String?,
     val handledBy: String?,
+    val displayName: String? = null,
+    val country: String = "CO",
 ) {
-    fun toNewSos() = NewSosReport(status, latitude, longitude, region, message, contactPhone)
+    fun toNewSos() = NewSosReport(status, latitude, longitude, region, message, contactPhone, displayName, country)
 }
 
-fun SosReport.toSnapshot() = SosSnapshot(id, status, latitude, longitude, region, message, contactPhone, handledBy)
+fun SosReport.toSnapshot() =
+    SosSnapshot(id, status, latitude, longitude, region, message, contactPhone, handledBy, displayName, country)
 
 @Serializable
 data class SearchSnapshot(

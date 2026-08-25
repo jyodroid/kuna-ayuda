@@ -1,5 +1,6 @@
 package com.jyodroid.kunasismoayuda.core.data.remote
 
+import com.jyodroid.kunasismoayuda.core.domain.model.SafeCheckIn
 import com.jyodroid.kunasismoayuda.core.domain.model.SosReport
 import com.jyodroid.kunasismoayuda.core.domain.model.SosStats
 import com.jyodroid.kunasismoayuda.core.domain.model.SosStatus
@@ -13,6 +14,24 @@ data class SosRequestDto(
     val region: String? = null,
     val message: String? = null,
     val contactPhone: String? = null,
+    val displayName: String? = null,
+    val country: String = "CO",
+)
+
+/** A public "I'm safe" check-in (`GET /api/sos/safe`). Name + region + time only. */
+@Serializable
+data class SafeCheckInDto(
+    val id: Int,
+    val name: String,
+    val region: String? = null,
+    val createdAtEpochMs: Long,
+)
+
+fun SafeCheckInDto.toDomain(): SafeCheckIn = SafeCheckIn(
+    id = id,
+    name = name,
+    region = region,
+    createdAtEpochMs = createdAtEpochMs,
 )
 
 /** A report returned by the responder endpoint (`GET /api/sos`). Mirrors the server's SosResponse. */

@@ -51,9 +51,14 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.SubcomposeAsyncImage
 import com.jyodroid.kunasismoayuda.core.data.remote.defaultServerBaseUrl
+import com.jyodroid.kunasismoayuda.core.domain.model.SafeCheckIn
 import com.jyodroid.kunasismoayuda.core.domain.model.SearchReport
 import com.jyodroid.kunasismoayuda.core.domain.model.SearchStatus
 import com.jyodroid.kunasismoayuda.core.domain.model.SearchSubject
+import com.jyodroid.kunasismoayuda.core.domain.util.TimeAgo
+import com.jyodroid.kunasismoayuda.core.domain.util.TimeAgoUnit
+import com.jyodroid.kunasismoayuda.core.domain.util.relativeAgo
+import kotlin.time.Clock
 import androidx.compose.material3.Icon
 import org.jetbrains.compose.resources.painterResource
 import com.jyodroid.kunasismoayuda.resources.Res
@@ -64,6 +69,15 @@ import com.jyodroid.kunasismoayuda.resources.help_call
 import com.jyodroid.kunasismoayuda.resources.mod_delete
 import com.jyodroid.kunasismoayuda.resources.mod_delete_confirm
 import com.jyodroid.kunasismoayuda.resources.retry
+import com.jyodroid.kunasismoayuda.resources.safe_empty
+import com.jyodroid.kunasismoayuda.resources.safe_status
+import com.jyodroid.kunasismoayuda.resources.safe_unverified
+import com.jyodroid.kunasismoayuda.resources.search_tab_reports
+import com.jyodroid.kunasismoayuda.resources.search_tab_safe
+import com.jyodroid.kunasismoayuda.resources.time_days_ago
+import com.jyodroid.kunasismoayuda.resources.time_hours_ago
+import com.jyodroid.kunasismoayuda.resources.time_just_now
+import com.jyodroid.kunasismoayuda.resources.time_minutes_ago
 import com.jyodroid.kunasismoayuda.resources.search_empty
 import com.jyodroid.kunasismoayuda.resources.search_error
 import com.jyodroid.kunasismoayuda.resources.search_last_seen
@@ -78,6 +92,9 @@ import com.jyodroid.kunasismoayuda.resources.search_subject_pet
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
+/** The two lists that live under "Búsqueda y reencuentro": lost/found reports, and safe check-ins. */
+enum class ReunifyMode { REPORTS, SAFE }
+
 @Composable
 fun SearchScreen(
     state: SearchUiState,
@@ -88,9 +105,15 @@ fun SearchScreen(
     modifier: Modifier = Modifier,
     // Non-null only for a logged-in moderator — shows a delete affordance on each report. Null hides it.
     onDelete: ((Int) -> Unit)? = null,
+    // Public "I'm safe" reassurance list, shown under the "A salvo" toggle.
+    safeState: SafeUiState = SafeUiState(),
+    onSafeRetry: () -> Unit = {},
+    // Non-null only for a logged-in moderator — a per-card delete for fake/abusive safe posts.
+    onSafeDelete: ((Int) -> Unit)? = null,
 ) {
     // Photo currently shown full-screen (id + a description for accessibility); null = none.
     var fullscreen by remember { mutableStateOf<Pair<Int, String>?>(null) }
+    var mode by remember { mutableStateOf(ReunifyMode.REPORTS) }
 
     Box(modifier.fillMaxSize()) {
         // Cap the content width and centre it so cards don't stretch across wide screens (tablets,
@@ -98,6 +121,28 @@ fun SearchScreen(
         Column(
             Modifier.fillMaxHeight().widthIn(max = 640.dp).align(Alignment.TopCenter),
         ) {
+            // Reportes ↔ A salvo toggle (both live under Búsqueda y reencuentro).
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilterChip(
+                    selected = mode == ReunifyMode.REPORTS,
+                    onClick = { mode = ReunifyMode.REPORTS },
+                    label = { Text(stringResource(Res.string.search_tab_reports)) },
+                )
+                FilterChip(
+                    selected = mode == ReunifyMode.SAFE,
+                    onClick = { mode = ReunifyMode.SAFE },
+                    label = { Text(stringResource(Res.string.search_tab_safe)) },
+                )
+            }
+
+            if (mode == ReunifyMode.SAFE) {
+                SafeContent(safeState, onSafeRetry, onSafeDelete)
+                return@Column
+            }
+
             // Subject filter (pets / people).
             Row(
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
@@ -172,12 +217,15 @@ fun SearchScreen(
             }
         }
 
-        ExtendedFloatingActionButton(
-            onClick = onNew,
-            text = { Text(stringResource(Res.string.search_new)) },
-            icon = { Icon(painterResource(Res.drawable.ic_add), contentDescription = null) },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-        )
+        // "New report" only applies to lost/found; the safe list is check-in-from-SOS only.
+        if (mode == ReunifyMode.REPORTS) {
+            ExtendedFloatingActionButton(
+                onClick = onNew,
+                text = { Text(stringResource(Res.string.search_new)) },
+                icon = { Icon(painterResource(Res.drawable.ic_add), contentDescription = null) },
+                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            )
+        }
     }
 
     fullscreen?.let { (photoId, title) ->
@@ -348,6 +396,108 @@ private fun subjectLabel(subject: SearchSubject): StringResource = when (subject
 private fun statusLabel(status: SearchStatus): StringResource = when (status) {
     SearchStatus.LOST -> Res.string.search_status_lost
     SearchStatus.FOUND -> Res.string.search_status_found
+}
+
+/** The public "A salvo" list: named community check-ins (name · city · relative time). Read-only for
+ *  everyone; a logged-in moderator additionally gets a per-card delete for fake/abusive posts. */
+@Composable
+private fun SafeContent(state: SafeUiState, onRetry: () -> Unit, onDelete: ((Int) -> Unit)? = null) {
+    when {
+        state.isLoading -> Centered {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                CircularProgressIndicator()
+                Text(stringResource(Res.string.search_loading), Modifier.padding(top = 8.dp))
+            }
+        }
+
+        state.error -> Centered {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(stringResource(Res.string.search_error))
+                Button(onClick = onRetry, modifier = Modifier.padding(top = 8.dp).heightIn(min = 48.dp)) {
+                    Text(stringResource(Res.string.retry))
+                }
+            }
+        }
+
+        state.checkIns.isEmpty() -> Centered { Text(stringResource(Res.string.safe_empty)) }
+
+        else -> LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                Text(
+                    text = stringResource(Res.string.safe_unverified),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 4.dp),
+                )
+            }
+            items(state.checkIns, key = { it.id }) { item ->
+                SafeCard(item, onDelete = onDelete?.let { del -> { del(item.id) } })
+            }
+        }
+    }
+}
+
+@Composable
+private fun SafeCard(item: SafeCheckIn, onDelete: (() -> Unit)? = null) {
+    val now = remember(item.id) { Clock.System.now().toEpochMilliseconds() }
+    val place = item.region?.takeIf { it.isNotBlank() }
+    var confirming by remember { mutableStateOf(false) }
+    // "A salvo" is stated in text (never conveyed by the ✅ alone) for accessibility.
+    val meta = listOfNotNull(
+        stringResource(Res.string.safe_status),
+        place,
+        relativeAgoText(relativeAgo(now, item.createdAtEpochMs)),
+    ).joinToString(" · ")
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = "✅  ${item.name}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(meta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // Moderator-only delete (anti-abuse: fake / mocking posts) — shown only with a delete handler.
+            if (onDelete != null) {
+                OutlinedButton(
+                    onClick = { confirming = true },
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    modifier = Modifier.padding(top = 4.dp).heightIn(min = 48.dp),
+                ) {
+                    Text(stringResource(Res.string.mod_delete))
+                }
+            }
+        }
+    }
+
+    if (confirming && onDelete != null) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            title = { Text(stringResource(Res.string.mod_delete)) },
+            text = { Text(stringResource(Res.string.mod_delete_confirm)) },
+            confirmButton = {
+                TextButton(onClick = { confirming = false; onDelete() }) {
+                    Text(stringResource(Res.string.mod_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirming = false }) {
+                    Text(stringResource(Res.string.action_cancel))
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun relativeAgoText(ago: TimeAgo): String = when (ago.unit) {
+    TimeAgoUnit.JUST_NOW -> stringResource(Res.string.time_just_now)
+    TimeAgoUnit.MINUTES -> stringResource(Res.string.time_minutes_ago, ago.count)
+    TimeAgoUnit.HOURS -> stringResource(Res.string.time_hours_ago, ago.count)
+    TimeAgoUnit.DAYS -> stringResource(Res.string.time_days_ago, ago.count)
 }
 
 @Composable

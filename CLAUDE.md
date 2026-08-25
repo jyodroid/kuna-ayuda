@@ -88,7 +88,10 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   Peruana (national + filiales), CGBVP (bomberos) — in Lima and the seismic capitals, mirroring
   `core/domain PeruRegions.kt`. `V19__admin_audit_and_accounts.sql` — see the oversight-console note.
   `V20__collection_points.sql` adds a `collection_points` TEXT (JSON array of `{name,address,hours}`) to
-  `resource_posts` **and** `classify_cache` for the classified-post **drop-off/collection points** feature.)
+  `resource_posts` **and** `classify_cache` for the classified-post **drop-off/collection points** feature.
+  `V21__risk_flags.sql` adds `risk_flags` to `resource_posts`/`classify_cache`. `V22__sos_safe_name.sql`
+  adds `display_name` to `sos_reports` (with a `(country,status,created_at)` index) for the public "I'm
+  safe" reassurance list.)
 - **Flyway + fat jar (FIXED):** the shaded fat jar (`:server:shadowJar` → `java -jar`, the
   `:server:stage`/Heroku path) previously applied **0 migrations** — Flyway 11 registers its SQL
   resolvers + the config extensions that define the `V__`/`R__`/`U__` naming via
@@ -229,7 +232,10 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   moderation flow — approve→ACTIVE, **delete/resolve→CLOSED and scrubs the post's
   contact_phone/email/name + owner_secret** so contact is public only while a post is live; `DELETE` works
   on ACTIVE posts too, i.e. instant removal of a published post); `POST /api/sos` (public,
-  **not** rate-limited — never block someone in danger; accepts SOS or SAFE) + the **admin responder
+  **not** rate-limited — never block someone in danger; accepts SOS or SAFE, and a SAFE carries an
+  optional `displayName`+`country`) + **`GET /api/sos/safe?country=`** (public — the community **"I'm
+  safe" reassurance list**: named SAFE check-ins for a country, **name+region+time only**, never
+  coords/phone/message; last 14 days, ≤200) + the **admin responder
   lifecycle**: `GET /api/sos` (`?status=SOS|SAFE` filters — omit/`ALL` returns both, unknown falls back
   to both rather than erroring; `?archived=false` default = pending, `true` = archived, `all` = both) +
   `GET /api/sos/stats` (pending-vs-handled counts by kind) + `POST /api/sos/{id}/handle` (archive as
@@ -645,7 +651,17 @@ compile-enforced boundaries — mostly matters at larger scale); revisit post-la
 **Lost & Found / reunification** (`ui/search`): reachable from the aid board ("Búsqueda y reencuentro"),
 it lists community reports of **lost/found pets and people** (`SearchViewModel` over `SearchRepository`
 → `/api/search`), filterable by subject (pet/person) and state (lost/found), **direct-post** (no
-moderation on submit). A **logged-in moderator** browsing the list sees a per-card **Eliminar** (confirm
+moderation on submit). A top **[Reportes | A salvo]** toggle switches to the **public "I'm safe"
+reassurance list** (`SafeViewModel` over `SosRepository.listPublicSafe(country)` → `GET /api/sos/safe`):
+read-only cards showing **name · city · "hace N min"** (relative time via pure `core/domain util
+RelativeTime.relativeAgo`), for the selected country. A SAFE check-in is **inherently public** — the SOS
+screen's "Estoy a salvo" now needs a **name** and shows a **Publicar/Cancelar** confirm before it posts
+(no private-only path; publish or discard). No precise location/phone is ever public. A **logged-in
+moderator** browsing the "A salvo" list sees a per-card **Eliminar** (confirm) for fake/mocking posts —
+`SearchScreen(onSafeDelete=…)` gated by `session != null`, `SafeViewModel.delete` →
+`SosRepository.delete` → `DELETE /api/sos/{id}` (same as the console's SOS tab); plus the 60-day purge.
+The **app SOS responder view is SOS-only** (safe check-ins are the public list, moderatable there + the
+console). A **logged-in moderator** browsing the list sees a per-card **Eliminar** (confirm
 dialog) that removes an abusive report — `SearchScreen(onDelete=…)` gated by `session != null` in `App()`,
 `SearchViewModel.delete` → `SearchRepository.delete` → `DELETE /api/search/{id}` (admin); regular users
 never see it. (Console has the same via the Moderation → Búsqueda tab.) Reports carry an **optional photo**: `core:media`'s `ImagePicker` (expect/actual — Android system

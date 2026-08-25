@@ -1,6 +1,7 @@
 package com.jyodroid.kunasismoayuda.core.domain.repository
 
 import com.jyodroid.kunasismoayuda.core.domain.model.NewSos
+import com.jyodroid.kunasismoayuda.core.domain.model.SafeCheckIn
 import com.jyodroid.kunasismoayuda.core.domain.model.SosReport
 import com.jyodroid.kunasismoayuda.core.domain.model.SosSendResult
 import com.jyodroid.kunasismoayuda.core.domain.model.SosStats
@@ -22,6 +23,12 @@ interface SosRepository {
 
     /** Resume retrying any reports left over from a previous session. Call once at app start. */
     fun start()
+
+    /**
+     * Public reassurance list: named "I'm safe" check-ins for [country], newest first. No auth — this
+     * is community-visible (name + city + time only).
+     */
+    suspend fun listPublicSafe(country: String): List<SafeCheckIn>
 
     /**
      * Responder view (moderator-only, requires an active session). Lists submitted reports newest

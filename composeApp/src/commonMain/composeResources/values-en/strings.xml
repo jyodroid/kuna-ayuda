@@ -100,9 +100,6 @@
     <string name="sos_resp_loading">Loading alerts…</string>
     <string name="sos_resp_error">Couldn’t load. Retry.</string>
     <string name="sos_resp_empty">No reports.</string>
-    <string name="sos_resp_filter_all">All</string>
-    <string name="sos_resp_filter_sos">SOS</string>
-    <string name="sos_resp_filter_safe">Safe</string>
     <string name="sos_resp_badge_sos">SOS · needs help</string>
     <string name="sos_resp_badge_safe">Safe</string>
     <string name="sos_resp_directions">View on map</string>
@@ -127,7 +124,6 @@
     <string name="sos_resp_delete_confirm_msg">This is permanent and cannot be undone.</string>
     <string name="sos_resp_handled_by">Handled by %1$s</string>
     <string name="sos_resp_stat_sos_pending">SOS pending</string>
-    <string name="sos_resp_stat_safe_pending">Safe pending</string>
     <string name="sos_resp_stat_attended">Handled</string>
 
     <!-- Navigation -->
@@ -428,4 +424,19 @@
     <string name="tip_animals_4_title">Lost-pet finder</string>
     <string name="tip_animals_4_body">The community platform “Buscador de Personas y Mascotas — terremoto Colombia” lets you report and search for missing pets. It’s a community resource; verify details before acting.</string>
     <string name="desktop_number_copied">Number copied to clipboard</string>
+    <!-- Public "I'm safe" check-in + reassurance list -->
+    <string name="sos_field_name">Your name</string>
+    <string name="sos_safe_name_hint">Enter your name to publish that you're safe</string>
+    <string name="sos_safe_confirm_title">Publish that you're safe?</string>
+    <string name="sos_safe_confirm_body">This will be shown publicly, so your family can find you:</string>
+    <string name="sos_safe_publish">Publish</string>
+    <string name="search_tab_reports">Reports</string>
+    <string name="search_tab_safe">Safe</string>
+    <string name="safe_empty">No safe check-ins yet.</string>
+    <string name="safe_unverified">Community check-ins, unverified.</string>
+    <string name="safe_status">Safe</string>
+    <string name="time_just_now">just now</string>
+    <string name="time_minutes_ago">%1$d min ago</string>
+    <string name="time_hours_ago">%1$d h ago</string>
+    <string name="time_days_ago">%1$d d ago</string>
 </resources>

@@ -100,9 +100,6 @@
     <string name="sos_resp_loading">Cargando alertas…</string>
     <string name="sos_resp_error">No se pudo cargar. Reintenta.</string>
     <string name="sos_resp_empty">No hay reportes.</string>
-    <string name="sos_resp_filter_all">Todos</string>
-    <string name="sos_resp_filter_sos">SOS</string>
-    <string name="sos_resp_filter_safe">A salvo</string>
     <string name="sos_resp_badge_sos">SOS · necesita ayuda</string>
     <string name="sos_resp_badge_safe">A salvo</string>
     <string name="sos_resp_directions">Ver en el mapa</string>
@@ -127,7 +124,6 @@
     <string name="sos_resp_delete_confirm_msg">Esta acción es permanente y no se puede deshacer.</string>
     <string name="sos_resp_handled_by">Atendido por %1$s</string>
     <string name="sos_resp_stat_sos_pending">SOS sin atender</string>
-    <string name="sos_resp_stat_safe_pending">A salvo pendientes</string>
     <string name="sos_resp_stat_attended">Atendidos</string>
 
     <!-- Navigation -->
@@ -428,4 +424,19 @@
     <string name="tip_animals_4_title">Buscador de mascotas perdidas</string>
     <string name="tip_animals_4_body">La plataforma comunitaria «Buscador de Personas y Mascotas — terremoto Colombia» permite reportar y buscar mascotas extraviadas. Es un recurso de la comunidad; verifica los datos antes de actuar.</string>
     <string name="desktop_number_copied">Número copiado al portapapeles</string>
+    <!-- Public "I'm safe" check-in + reassurance list -->
+    <string name="sos_field_name">Tu nombre</string>
+    <string name="sos_safe_name_hint">Escribe tu nombre para publicar que estás a salvo</string>
+    <string name="sos_safe_confirm_title">¿Publicar que estás a salvo?</string>
+    <string name="sos_safe_confirm_body">Se mostrará públicamente, para que tu familia te encuentre:</string>
+    <string name="sos_safe_publish">Publicar</string>
+    <string name="search_tab_reports">Reportes</string>
+    <string name="search_tab_safe">A salvo</string>
+    <string name="safe_empty">Aún no hay avisos de personas a salvo.</string>
+    <string name="safe_unverified">Avisos de la comunidad, sin verificar.</string>
+    <string name="safe_status">A salvo</string>
+    <string name="time_just_now">hace un momento</string>
+    <string name="time_minutes_ago">hace %1$d min</string>
+    <string name="time_hours_ago">hace %1$d h</string>
+    <string name="time_days_ago">hace %1$d d</string>
 </resources>

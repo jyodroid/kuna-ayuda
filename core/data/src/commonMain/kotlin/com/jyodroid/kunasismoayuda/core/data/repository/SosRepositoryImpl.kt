@@ -5,6 +5,7 @@ import com.jyodroid.kunasismoayuda.core.data.offline.SosOutbox
 import com.jyodroid.kunasismoayuda.core.data.remote.SosApi
 import com.jyodroid.kunasismoayuda.core.data.remote.toDomain
 import com.jyodroid.kunasismoayuda.core.domain.model.NewSos
+import com.jyodroid.kunasismoayuda.core.domain.model.SafeCheckIn
 import com.jyodroid.kunasismoayuda.core.domain.model.SosReport
 import com.jyodroid.kunasismoayuda.core.domain.model.SosSendResult
 import com.jyodroid.kunasismoayuda.core.domain.model.SosStats
@@ -27,6 +28,9 @@ class SosRepositoryImpl(
     override suspend fun send(sos: NewSos): SosSendResult = outbox.enqueue(sos)
 
     override fun start() = outbox.start()
+
+    override suspend fun listPublicSafe(country: String): List<SafeCheckIn> =
+        api.listPublicSafe(country).map { it.toDomain() }
 
     override suspend fun listActive(status: SosStatus?, archived: Boolean?): List<SosReport> =
         api.listActive(status?.name, archived, sessionManager.requireToken()).map { it.toDomain() }

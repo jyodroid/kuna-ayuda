@@ -41,6 +41,10 @@ class SosApi(
             parameter("archived", if (archived == null) "all" else archived.toString())
         }.body()
 
+    /** Public reassurance list: named "I'm safe" check-ins for [country] (no auth). */
+    suspend fun listPublicSafe(country: String): List<SafeCheckInDto> =
+        client.get("$baseUrl/api/sos/safe") { parameter("country", country) }.body()
+
     /** Dashboard counts (admin-only). */
     suspend fun stats(token: String): SosStatsDto =
         client.get("$baseUrl/api/sos/stats") { bearerAuth(token) }.body()

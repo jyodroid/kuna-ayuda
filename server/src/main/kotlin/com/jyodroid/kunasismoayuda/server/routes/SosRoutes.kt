@@ -29,6 +29,12 @@ fun Route.sosRoutes(service: SosService, audit: AuditService) = route("/api/sos"
         call.respond(HttpStatusCode.Created, service.create(request))
     }
 
+    // Public reassurance list: named "I'm safe" check-ins for a country (name + region + time only).
+    get("/safe") {
+        val country = call.request.queryParameters["country"] ?: SosService.DEFAULT_COUNTRY
+        call.respond(service.listPublicSafe(country))
+    }
+
     authenticate {
         // Responder list. `?status=SOS|SAFE` filters kind (omit/ALL = both); `?archived=true` shows the
         // archived (handled) list, `?archived=all` shows both, absent/`false` = pending only.

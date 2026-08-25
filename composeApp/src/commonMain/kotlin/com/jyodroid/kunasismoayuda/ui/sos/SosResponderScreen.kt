@@ -15,7 +15,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SegmentedButton
@@ -63,9 +62,6 @@ import com.jyodroid.kunasismoayuda.resources.sos_resp_delete_confirm_title
 import com.jyodroid.kunasismoayuda.resources.sos_resp_directions
 import com.jyodroid.kunasismoayuda.resources.sos_resp_empty
 import com.jyodroid.kunasismoayuda.resources.sos_resp_error
-import com.jyodroid.kunasismoayuda.resources.sos_resp_filter_all
-import com.jyodroid.kunasismoayuda.resources.sos_resp_filter_safe
-import com.jyodroid.kunasismoayuda.resources.sos_resp_filter_sos
 import com.jyodroid.kunasismoayuda.resources.sos_resp_handled_by
 import com.jyodroid.kunasismoayuda.resources.sos_resp_loading
 import com.jyodroid.kunasismoayuda.resources.sos_resp_no_location
@@ -79,7 +75,6 @@ import com.jyodroid.kunasismoayuda.resources.sos_prox_no_location_group
 import com.jyodroid.kunasismoayuda.resources.sos_prox_refresh
 import com.jyodroid.kunasismoayuda.resources.sos_prox_same_city
 import com.jyodroid.kunasismoayuda.resources.sos_resp_stat_attended
-import com.jyodroid.kunasismoayuda.resources.sos_resp_stat_safe_pending
 import com.jyodroid.kunasismoayuda.resources.sos_resp_stat_sos_pending
 import com.jyodroid.kunasismoayuda.resources.sos_resp_view_active
 import com.jyodroid.kunasismoayuda.resources.sos_resp_view_archived
@@ -88,7 +83,6 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun SosResponderScreen(
     state: SosResponderUiState,
-    onFilterChange: (SosStatus?) -> Unit,
     onViewChange: (Boolean) -> Unit,
     onArchive: (Int) -> Unit,
     onReopen: (Int) -> Unit,
@@ -105,7 +99,6 @@ fun SosResponderScreen(
     Column(modifier.fillMaxSize()) {
         state.stats?.let { StatsRow(it) }
         ViewToggle(showArchived = state.showArchived, onViewChange = onViewChange)
-        FilterRow(selected = state.filter, onFilterChange = onFilterChange)
         // Proximity grouping is for the active list (who to respond to now).
         if (!state.showArchived) {
             NearMeBar(hasLocation = state.moderatorLat != null, denied = state.locationDenied, onRequestLocation = onRequestLocation)
@@ -213,11 +206,6 @@ private fun StatsRow(stats: SosStats) {
             modifier = Modifier.weight(1f),
         )
         StatCell(
-            value = stats.pendingSafe,
-            label = stringResource(Res.string.sos_resp_stat_safe_pending),
-            modifier = Modifier.weight(1f),
-        )
-        StatCell(
             value = stats.handledTotal,
             label = stringResource(Res.string.sos_resp_stat_attended),
             modifier = Modifier.weight(1f),
@@ -255,30 +243,6 @@ private fun ViewToggle(showArchived: Boolean, onViewChange: (Boolean) -> Unit) {
             onClick = { onViewChange(true) },
             shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
         ) { Text(stringResource(Res.string.sos_resp_view_archived)) }
-    }
-}
-
-@Composable
-private fun FilterRow(selected: SosStatus?, onFilterChange: (SosStatus?) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        FilterChip(
-            selected = selected == SosStatus.SOS,
-            onClick = { onFilterChange(SosStatus.SOS) },
-            label = { Text(stringResource(Res.string.sos_resp_filter_sos)) },
-        )
-        FilterChip(
-            selected = selected == SosStatus.SAFE,
-            onClick = { onFilterChange(SosStatus.SAFE) },
-            label = { Text(stringResource(Res.string.sos_resp_filter_safe)) },
-        )
-        FilterChip(
-            selected = selected == null,
-            onClick = { onFilterChange(null) },
-            label = { Text(stringResource(Res.string.sos_resp_filter_all)) },
-        )
     }
 }
 

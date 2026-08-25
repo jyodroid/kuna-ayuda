@@ -100,9 +100,6 @@
     <string name="sos_resp_loading">Caricamento allerte…</string>
     <string name="sos_resp_error">Caricamento non riuscito. Riprova.</string>
     <string name="sos_resp_empty">Nessuna segnalazione.</string>
-    <string name="sos_resp_filter_all">Tutte</string>
-    <string name="sos_resp_filter_sos">SOS</string>
-    <string name="sos_resp_filter_safe">Al sicuro</string>
     <string name="sos_resp_badge_sos">SOS · serve aiuto</string>
     <string name="sos_resp_badge_safe">Al sicuro</string>
     <string name="sos_resp_directions">Vedi sulla mappa</string>
@@ -127,7 +124,6 @@
     <string name="sos_resp_delete_confirm_msg">L\'operazione è definitiva e non può essere annullata.</string>
     <string name="sos_resp_handled_by">Gestita da %1$s</string>
     <string name="sos_resp_stat_sos_pending">SOS in attesa</string>
-    <string name="sos_resp_stat_safe_pending">Al sicuro in attesa</string>
     <string name="sos_resp_stat_attended">Gestite</string>
 
     <!-- Navigation -->
@@ -428,4 +424,19 @@
     <string name="tip_animals_4_title">Ricerca animali smarriti</string>
     <string name="tip_animals_4_body">La piattaforma della community “Buscador de Personas y Mascotas — terremoto Colombia” consente di segnalare e cercare animali smarriti. È una risorsa della community; verifica i dettagli prima di agire.</string>
     <string name="desktop_number_copied">Numero copiato negli appunti</string>
+    <!-- Public "I'm safe" check-in + reassurance list -->
+    <string name="sos_field_name">Il tuo nome</string>
+    <string name="sos_safe_name_hint">Inserisci il tuo nome per pubblicare che stai bene</string>
+    <string name="sos_safe_confirm_title">Pubblicare che stai bene?</string>
+    <string name="sos_safe_confirm_body">Sarà mostrato pubblicamente, così la tua famiglia può ritrovarti:</string>
+    <string name="sos_safe_publish">Pubblica</string>
+    <string name="search_tab_reports">Segnalazioni</string>
+    <string name="search_tab_safe">Al sicuro</string>
+    <string name="safe_empty">Ancora nessun avviso di persone al sicuro.</string>
+    <string name="safe_unverified">Avvisi della comunità, non verificati.</string>
+    <string name="safe_status">Al sicuro</string>
+    <string name="time_just_now">poco fa</string>
+    <string name="time_minutes_ago">%1$d min fa</string>
+    <string name="time_hours_ago">%1$d h fa</string>
+    <string name="time_days_ago">%1$d g fa</string>
 </resources>

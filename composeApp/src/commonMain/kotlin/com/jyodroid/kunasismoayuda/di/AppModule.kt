@@ -13,6 +13,7 @@ import com.jyodroid.kunasismoayuda.ui.board.BoardViewModel
 import com.jyodroid.kunasismoayuda.ui.fires.FiresViewModel
 import com.jyodroid.kunasismoayuda.ui.moderation.ModerationViewModel
 import com.jyodroid.kunasismoayuda.ui.quakes.QuakesViewModel
+import com.jyodroid.kunasismoayuda.ui.search.SafeViewModel
 import com.jyodroid.kunasismoayuda.ui.search.SearchViewModel
 import com.jyodroid.kunasismoayuda.ui.settings.AppSettingsViewModel
 import com.jyodroid.kunasismoayuda.ui.shelters.ShelterAdminViewModel
@@ -37,6 +38,7 @@ val appModule = module {
     viewModelOf(::ShelterAdminViewModel)
     viewModelOf(::BoardViewModel)
     viewModelOf(::SearchViewModel)
+    viewModelOf(::SafeViewModel)
     viewModelOf(::SosViewModel)
     viewModelOf(::SosResponderViewModel)
     viewModelOf(::AuthViewModel)

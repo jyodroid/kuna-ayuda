@@ -66,12 +66,18 @@ class SosViewModel(
     private val _phase = MutableStateFlow(SosPhase.IDLE)
     private val _precise = MutableStateFlow(false)
 
+    /** The selected country, so a public "I'm safe" check-in lands on the right country's list. */
+    var country: String = "CO"
+        private set
+
+    fun setCountry(code: String) { country = code }
+
     val state: StateFlow<SosUiState> =
         combine(_phase, _precise, repository.pending) { phase, precise, pending ->
             SosUiState(phase = phase, preciseLocation = precise, pending = pending)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SosUiState())
 
-    fun sendSos(region: String, message: String, phone: String) {
+    fun sendSos(region: String, message: String, phone: String, name: String = "") {
         _phase.value = SosPhase.LOCATING
         viewModelScope.launch {
             val coords = when (val result = locationProvider.current()) {
@@ -89,6 +95,8 @@ class SosViewModel(
                         region = region.trim().ifBlank { null },
                         message = message.trim().ifBlank { null },
                         contactPhone = phone.trim().ifBlank { null },
+                        displayName = name.trim().ifBlank { null },
+                        country = country,
                     ),
                 )
             }
@@ -102,7 +110,8 @@ class SosViewModel(
         }
     }
 
-    fun sendSafe(region: String, phone: String) {
+    /** Publish a public "I'm safe" check-in. [name] is required (the poster confirmed it goes public). */
+    fun sendSafe(name: String, region: String) {
         _phase.value = SosPhase.SENDING
         viewModelScope.launch {
             runCatching {
@@ -113,7 +122,9 @@ class SosViewModel(
                         longitude = null,
                         region = region.trim().ifBlank { null },
                         message = null,
-                        contactPhone = phone.trim().ifBlank { null },
+                        contactPhone = null,
+                        displayName = name.trim().ifBlank { null },
+                        country = country,
                     ),
                 )
             }

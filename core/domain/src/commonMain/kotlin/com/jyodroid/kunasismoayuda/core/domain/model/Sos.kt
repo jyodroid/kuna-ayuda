@@ -5,7 +5,7 @@ enum class SosStatus { SOS, SAFE }
 /** Whether a report was delivered to the server now, or stored offline to be retried later. */
 enum class SosSendResult { SENT, QUEUED }
 
-/** A geolocated SOS or an "I'm safe" check-in the user sends to responders. */
+/** A geolocated SOS or an "I'm safe" check-in the user sends. */
 data class NewSos(
     val status: SosStatus,
     val latitude: Double?,
@@ -13,6 +13,21 @@ data class NewSos(
     val region: String?,
     val message: String?,
     val contactPhone: String?,
+    // Public name on a SAFE check-in (required to appear on the public list). Optional for SOS.
+    val displayName: String? = null,
+    // ISO country code so a SAFE check-in shows on the right country's public list.
+    val country: String = "CO",
+)
+
+/**
+ * A public "I'm safe" check-in shown on the community reassurance list (Búsqueda y reencuentro → A
+ * salvo). Name + city + time only — never precise location, phone, or message.
+ */
+data class SafeCheckIn(
+    val id: Int,
+    val name: String,
+    val region: String?,
+    val createdAtEpochMs: Long,
 )
 
 /**

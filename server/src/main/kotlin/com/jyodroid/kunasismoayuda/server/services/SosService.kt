@@ -1,8 +1,10 @@
 package com.jyodroid.kunasismoayuda.server.services
 
 import com.jyodroid.kunasismoayuda.server.domain.models.NewSosReport
+import com.jyodroid.kunasismoayuda.server.domain.models.SafeCheckIn
 import com.jyodroid.kunasismoayuda.server.domain.models.SosReport
 import com.jyodroid.kunasismoayuda.server.domain.models.SosStats
+import com.jyodroid.kunasismoayuda.server.routes.dto.SafeCheckInResponse
 import com.jyodroid.kunasismoayuda.server.domain.repositories.SosRepository
 import com.jyodroid.kunasismoayuda.server.routes.dto.SosRequest
 import com.jyodroid.kunasismoayuda.server.routes.dto.SosResponse
@@ -12,6 +14,9 @@ class SosService(private val repository: SosRepository) {
 
     companion object {
         val STATUSES = setOf("SOS", "SAFE")
+        const val DEFAULT_COUNTRY = "CO"
+        const val SAFE_WINDOW_DAYS = 14L
+        const val SAFE_LIMIT = 200
     }
 
     fun create(request: SosRequest): SosResponse = repository.create(
@@ -22,8 +27,18 @@ class SosService(private val repository: SosRepository) {
             region = request.region?.trim()?.ifBlank { null },
             message = request.message?.trim()?.ifBlank { null },
             contactPhone = request.contactPhone?.trim()?.ifBlank { null },
+            displayName = request.displayName?.trim()?.take(120)?.ifBlank { null },
+            country = request.country?.trim()?.uppercase()?.take(2)?.ifBlank { null } ?: DEFAULT_COUNTRY,
         ),
     ).toResponse()
+
+    /** Public reassurance list of named SAFE check-ins for [country] (newest first). */
+    fun listPublicSafe(country: String): List<SafeCheckInResponse> =
+        repository.listPublicSafe(
+            country = country.trim().uppercase().take(2).ifBlank { DEFAULT_COUNTRY },
+            sinceDays = SAFE_WINDOW_DAYS,
+            limit = SAFE_LIMIT,
+        ).map { it.toSafeResponse() }
 
     /**
      * Responder view. [status] filters by "SOS" or "SAFE" (case-insensitive); "ALL"/null returns both.
@@ -64,8 +79,16 @@ class SosService(private val repository: SosRepository) {
         region = region,
         message = message,
         contactPhone = contactPhone,
+        displayName = displayName,
         createdAt = createdAt.toString(),
         handledAt = handledAt?.toString(),
         handledBy = handledBy,
+    )
+
+    private fun SafeCheckIn.toSafeResponse() = SafeCheckInResponse(
+        id = id,
+        name = displayName,
+        region = region,
+        createdAtEpochMs = createdAtEpochMs,
     )
 }

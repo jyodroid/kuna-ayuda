@@ -106,6 +106,7 @@ import com.jyodroid.kunasismoayuda.ui.overview.OverviewScreen
 import com.jyodroid.kunasismoayuda.ui.quakes.QuakeDetailScreen
 import com.jyodroid.kunasismoayuda.ui.quakes.QuakesViewModel
 import com.jyodroid.kunasismoayuda.ui.search.SearchCreateScreen
+import com.jyodroid.kunasismoayuda.ui.search.SafeViewModel
 import com.jyodroid.kunasismoayuda.ui.search.SearchScreen
 import com.jyodroid.kunasismoayuda.ui.search.SearchViewModel
 import com.jyodroid.kunasismoayuda.ui.settings.AppSettingsViewModel
@@ -220,6 +221,8 @@ private fun AppContent(
     val searchViewModel: SearchViewModel = koinViewModel()
     val searchState by searchViewModel.state.collectAsStateWithLifecycle()
     val searchCreateState by searchViewModel.createState.collectAsStateWithLifecycle()
+    val safeViewModel: SafeViewModel = koinViewModel()
+    val safeState by safeViewModel.state.collectAsStateWithLifecycle()
     val sosViewModel: SosViewModel = koinViewModel()
     val sosState by sosViewModel.state.collectAsStateWithLifecycle()
     val beaconState by sosViewModel.beaconState.collectAsStateWithLifecycle()
@@ -234,6 +237,8 @@ private fun AppContent(
         sheltersViewModel.setCountry(country)
         boardViewModel.setCountry(country)
         searchViewModel.setCountry(country)
+        safeViewModel.setCountry(country)
+        sosViewModel.setCountry(country.code)
     }
 
     // The headline quake is the STRONGEST event within the last ~month (not the impact-ranked first):
@@ -590,6 +595,10 @@ private fun AppContent(
                     // A logged-in moderator can remove abusive Lost & Found reports (anti-abuse); regular
                     // users never see the delete affordance.
                     onDelete = if (session != null) searchViewModel::delete else null,
+                    safeState = safeState,
+                    onSafeRetry = safeViewModel::load,
+                    // A moderator can delete a fake/mocking "I'm safe" post; regular users can't.
+                    onSafeDelete = if (session != null) safeViewModel::delete else null,
                 )
             }
             composable(ROUTE_SEARCH_CREATE) {
@@ -712,7 +721,6 @@ private fun AppContent(
                     val responderState by responderViewModel.state.collectAsStateWithLifecycle()
                     SosResponderScreen(
                         state = responderState,
-                        onFilterChange = responderViewModel::setFilter,
                         onViewChange = responderViewModel::setShowArchived,
                         onArchive = responderViewModel::archive,
                         onReopen = responderViewModel::reopen,

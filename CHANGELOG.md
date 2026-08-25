@@ -4,6 +4,25 @@ All notable changes to Kuna Ayuda. Format based on [Keep a Changelog](https://ke
 this project uses [Semantic Versioning](https://semver.org/). The version lives in
 `gradle/libs.versions.toml` (`desktopPackageVersion`) and is enforced against the git tag by CI.
 
+## [1.4.0] — 2026-08-25
+
+### Added
+- **Public "I'm safe" list.** An "Estoy a salvo" check-in is now a public reassurance post so your
+  family can see you're OK. It requires a **name** and shows a **Publicar / Cancelar** confirmation
+  before posting — accept publishes, cancel discards (nothing is stored). It appears under **Búsqueda y
+  reencuentro → A salvo** as **name · city · "hace N min"**, scoped to the selected country. Only
+  name + city + time are ever public — never precise location, phone, or message.
+
+### Changed
+- The moderator **SOS responder view is now SOS-only** (people who need help); safe check-ins are the
+  public list, and are still moderatable from the web console.
+- Retention unchanged: safe check-ins hard-purge at 60 days; a moderator can delete one.
+
+### Server
+- Migration **V22** adds `display_name` to `sos_reports` and a public `GET /api/sos/safe` endpoint.
+  **Backwards compatible:** older app versions keep working — the new request fields are optional, and
+  a check-in without a name simply doesn't appear on the public list. Runs automatically on deploy.
+
 ## [1.3.0] — 2026-08-22
 
 ### Added

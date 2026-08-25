@@ -2,6 +2,7 @@ package com.jyodroid.kunasismoayuda.server.infrastructure.repositories
 
 import com.jyodroid.kunasismoayuda.server.config.DatabaseFactory
 import com.jyodroid.kunasismoayuda.server.domain.models.NewSosReport
+import com.jyodroid.kunasismoayuda.server.domain.models.SafeCheckIn
 import com.jyodroid.kunasismoayuda.server.domain.models.SosReport
 import com.jyodroid.kunasismoayuda.server.domain.models.SosStats
 import com.jyodroid.kunasismoayuda.server.domain.repositories.SosRepository
@@ -9,6 +10,7 @@ import com.jyodroid.kunasismoayuda.server.infrastructure.tables.SosReports
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.deleteWhere
@@ -17,6 +19,7 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import java.time.LocalDateTime
+import java.time.ZoneId
 
 class SosRepositoryImpl : SosRepository {
 
@@ -28,6 +31,8 @@ class SosRepositoryImpl : SosRepository {
             it[region] = report.region
             it[message] = report.message
             it[contactPhone] = report.contactPhone
+            it[country] = report.country
+            it[displayName] = report.displayName
             it[createdAt] = LocalDateTime.now()
         } get SosReports.id
 
@@ -82,6 +87,29 @@ class SosRepositoryImpl : SosRepository {
         }
     }
 
+    override fun listPublicSafe(country: String, sinceDays: Long, limit: Int): List<SafeCheckIn> {
+        if (!DatabaseFactory.initialized) return emptyList()
+        val cutoff = LocalDateTime.now().minusDays(sinceDays)
+        return transaction {
+            SosReports.selectAll()
+                .where { SosReports.status eq "SAFE" }
+                .andWhere { SosReports.country eq country }
+                .andWhere { SosReports.displayName.isNotNull() }
+                .andWhere { SosReports.createdAt greaterEq cutoff }
+                .orderBy(SosReports.createdAt, SortOrder.DESC)
+                .limit(limit)
+                .map {
+                    SafeCheckIn(
+                        id = it[SosReports.id],
+                        displayName = it[SosReports.displayName]!!,
+                        region = it[SosReports.region],
+                        createdAtEpochMs = it[SosReports.createdAt]
+                            .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                    )
+                }
+        }
+    }
+
     override fun deleteOlderThan(cutoff: LocalDateTime): Int {
         if (!DatabaseFactory.initialized) return 0
         return transaction {
@@ -114,6 +142,8 @@ class SosRepositoryImpl : SosRepository {
         region = this[SosReports.region],
         message = this[SosReports.message],
         contactPhone = this[SosReports.contactPhone],
+        displayName = this[SosReports.displayName],
+        country = this[SosReports.country],
         createdAt = this[SosReports.createdAt],
         handledAt = this[SosReports.handledAt],
         handledBy = this[SosReports.handledBy],

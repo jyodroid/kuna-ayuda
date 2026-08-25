@@ -100,9 +100,6 @@
     <string name="sos_resp_loading">Memuat peringatan…</string>
     <string name="sos_resp_error">Tidak dapat memuat. Coba lagi.</string>
     <string name="sos_resp_empty">Tidak ada laporan.</string>
-    <string name="sos_resp_filter_all">Semua</string>
-    <string name="sos_resp_filter_sos">SOS</string>
-    <string name="sos_resp_filter_safe">Selamat</string>
     <string name="sos_resp_badge_sos">SOS · butuh bantuan</string>
     <string name="sos_resp_badge_safe">Selamat</string>
     <string name="sos_resp_directions">Lihat di peta</string>
@@ -127,7 +124,6 @@
     <string name="sos_resp_delete_confirm_msg">Tindakan ini permanen dan tidak dapat dibatalkan.</string>
     <string name="sos_resp_handled_by">Ditangani oleh %1$s</string>
     <string name="sos_resp_stat_sos_pending">SOS tertunda</string>
-    <string name="sos_resp_stat_safe_pending">Selamat tertunda</string>
     <string name="sos_resp_stat_attended">Ditangani</string>
 
     <!-- Navigation -->
@@ -428,4 +424,19 @@
     <string name="tip_animals_4_title">Pencari hewan hilang</string>
     <string name="tip_animals_4_body">Platform komunitas “Buscador de Personas y Mascotas — terremoto Colombia” memungkinkan Anda melaporkan dan mencari hewan yang hilang. Ini sumber komunitas; verifikasi data sebelum bertindak.</string>
     <string name="desktop_number_copied">Nomor disalin ke papan klip</string>
+    <!-- Public "I'm safe" check-in + reassurance list -->
+    <string name="sos_field_name">Nama Anda</string>
+    <string name="sos_safe_name_hint">Masukkan nama Anda untuk mengumumkan bahwa Anda selamat</string>
+    <string name="sos_safe_confirm_title">Umumkan bahwa Anda selamat?</string>
+    <string name="sos_safe_confirm_body">Ini akan ditampilkan secara publik, agar keluarga Anda dapat menemukan Anda:</string>
+    <string name="sos_safe_publish">Umumkan</string>
+    <string name="search_tab_reports">Laporan</string>
+    <string name="search_tab_safe">Selamat</string>
+    <string name="safe_empty">Belum ada kabar orang yang selamat.</string>
+    <string name="safe_unverified">Kabar dari komunitas, belum terverifikasi.</string>
+    <string name="safe_status">Selamat</string>
+    <string name="time_just_now">baru saja</string>
+    <string name="time_minutes_ago">%1$d mnt lalu</string>
+    <string name="time_hours_ago">%1$d jam lalu</string>
+    <string name="time_days_ago">%1$d hr lalu</string>
 </resources>

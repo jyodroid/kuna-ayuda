@@ -18,6 +18,8 @@ data class QueuedSos(
     val region: String? = null,
     val message: String? = null,
     val contactPhone: String? = null,
+    val displayName: String? = null,
+    val country: String = "CO",
     val createdAtEpochMs: Long,
     val attempts: Int = 0,
 ) {
@@ -28,6 +30,8 @@ data class QueuedSos(
         region = region,
         message = message,
         contactPhone = contactPhone,
+        displayName = displayName,
+        country = country,
     )
 
     companion object {
@@ -39,6 +43,8 @@ data class QueuedSos(
             region = sos.region,
             message = sos.message,
             contactPhone = sos.contactPhone,
+            displayName = sos.displayName,
+            country = sos.country,
             createdAtEpochMs = createdAtEpochMs,
         )
     }
