@@ -143,9 +143,12 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   **conflict-aware**: skips an entity a *different* mod changed later) restores from the snapshots (repo
   additions: `Shelter.find/reactivate`, `Board.restore`, `Search.find/reopen`, `Sos.find`; SOS/search
   deletes are re-created from the snapshot). **Disable** neutralises a rogue mod instantly: `requireAdmin`/
-  `requireSuperAdmin` also verify `enabled` (one DB lookup), so a disabled account's still-valid 12h JWT
-  stops working. **Passwords:** self-service `POST /api/auth/password` (current+new, any moderator) +
-  super-admin `POST /api/admins/{id}/password` (reset). **Super-admin read/act API** (all
+  `requireSuperAdmin` also verify `enabled` (one DB lookup) **and that the account still exists** (a
+  self-deleted/removed account's still-valid 12h JWT now 401s — `ensureEnabled` in `routes/RouteSecurity`,
+  DB-mode only). **Passwords:** self-service `POST /api/auth/password` (current+new, any moderator) +
+  super-admin `POST /api/admins/{id}/password` (reset). **Self-service account deletion:**
+  `POST /api/auth/account/delete` (current password confirms; **refuses the SUPERADMIN owner**;
+  `AuthService.deleteOwnAccount`, audited `ADMIN_DELETE` note=`self`, covered by `AuthServiceTest` mockk). **Super-admin read/act API** (all
   `requireSuperAdmin`): `GET /api/audit` (filters actor/action/entity/reverted, paginated),
   `GET /api/audit/moderators` (per-mod activity), `POST /api/audit/{id}/revert`,
   `POST /api/audit/revert-all?moderator=`. `AuditServiceTest` (mockk) covers revert inverses + conflict
@@ -155,7 +158,8 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   built via **`:server:buildConsole`** (manual, like `:server:buildLanding`) into
   `server/src/main/resources/console/`. Login → JWT in `sessionStorage`; `src/api.ts` attaches `Bearer` +
   `X-App-Key` (same baked deterrent as the app) and signs out on 401. **Role-gated:** any moderator sees
-  only "Change my password"; SUPERADMIN sees Audit (filter table + before/after diff + revert), Moderators
+  "Change my password" **+ "Delete my account"** (a `DeleteAccountPanel` — password-confirmed, hidden for
+  the SUPERADMIN owner; on success it clears the local session → back to login); SUPERADMIN sees Audit (filter table + before/after diff + revert), Moderators
   (activity, disable/enable, reset password, revert-all), and Moderation — board (**Pendientes** approve/reject
   + **Publicados** list with delete via `GET /api/board/active`), **Búsqueda** (Lost & Found list + delete),
   shelters, and SOS. The landing footer has a discreet **"Moderadores" → /console** link (regular mods use it for the

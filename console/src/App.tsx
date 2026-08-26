@@ -97,7 +97,13 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
         {tab === "audit" && <AuditPanel />}
         {tab === "moderators" && <ModeratorsPanel />}
         {tab === "moderation" && <ModerationPanel />}
-        {tab === "password" && <PasswordPanel />}
+        {tab === "password" && (
+          <div className="space-y-6">
+            <PasswordPanel />
+            {/* The SUPERADMIN owner can't delete their own account (server refuses); hide it for them. */}
+            {!isSuper && <DeleteAccountPanel onSignOut={onSignOut} />}
+          </div>
+        )}
       </main>
     </div>
   );
@@ -543,5 +549,59 @@ function PasswordPanel() {
       <PasswordInput value={confirmPw} onChange={setConfirmPw} placeholder="Repetir nueva contraseña" />
       <button className="btn-primary w-full">Actualizar</button>
     </form>
+  );
+}
+
+/** Self-service account deletion (any non-owner moderator). Confirms with the current password, then
+ *  ends the local session — the account (and its token) are gone server-side. */
+function DeleteAccountPanel({ onSignOut }: { onSignOut: () => void }) {
+  const [current, setCurrent] = useState("");
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const submit = async () => {
+    setErr(""); setBusy(true);
+    try {
+      await auth.deleteAccount(current);
+      onSignOut(); // account gone → drop the local session and return to login
+    } catch (e: any) {
+      setErr(e?.message ?? "No se pudo eliminar la cuenta");
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="max-w-sm bg-white rounded-lg shadow p-6 space-y-3 border border-danger/40">
+      <h2 className="font-semibold text-danger">Eliminar mi cuenta</h2>
+      <p className="text-sm text-neutral-600">
+        Acción permanente: perderás el acceso de moderador de inmediato. No se puede deshacer.
+      </p>
+      {err && <p className="text-sm text-danger bg-danger-muted rounded p-2">{err}</p>}
+      <PasswordInput value={current} onChange={setCurrent} placeholder="Contraseña actual" />
+      {!confirming ? (
+        <button
+          className="bg-danger text-white rounded-md px-4 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-60 w-full"
+          disabled={!current}
+          onClick={() => setConfirming(true)}
+        >Eliminar mi cuenta</button>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-sm font-medium">¿Seguro? Esto no se puede deshacer.</p>
+          <div className="flex gap-2">
+            <button
+              className="bg-danger text-white rounded-md px-4 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-60 flex-1"
+              disabled={busy}
+              onClick={submit}
+            >{busy ? "Eliminando…" : "Sí, eliminar"}</button>
+            <button
+              className="border border-neutral-300 rounded-md px-4 py-2 text-sm flex-1"
+              disabled={busy}
+              onClick={() => { setConfirming(false); setErr(""); }}
+            >Cancelar</button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

@@ -5,6 +5,7 @@ import com.jyodroid.kunasismoayuda.server.domain.models.AuditAction
 import com.jyodroid.kunasismoayuda.server.error.ErrorCode
 import com.jyodroid.kunasismoayuda.server.error.appError
 import com.jyodroid.kunasismoayuda.server.routes.dto.ChangePasswordRequest
+import com.jyodroid.kunasismoayuda.server.routes.dto.DeleteAccountRequest
 import com.jyodroid.kunasismoayuda.server.routes.dto.LoginRequest
 import com.jyodroid.kunasismoayuda.server.routes.dto.LoginResponse
 import com.jyodroid.kunasismoayuda.server.services.AuditService
@@ -51,6 +52,18 @@ fun Route.authRoutes(service: AuthService, audit: AuditService) = route("/api/au
                 ?: throw appError(ErrorCode.UNAUTHORIZED, "Not authenticated", HttpStatusCode.Unauthorized)
             service.changeOwnPassword(email, req.currentPassword, req.newPassword)
             audit.adminEvent(actor(), AuditAction.PASSWORD_CHANGE, adminId = null, note = "self")
+            call.respond(HttpStatusCode.NoContent)
+        }
+
+        // Self-service: a moderator deletes their own account (current password required). The
+        // SUPERADMIN owner is refused (403). Their token stops working immediately afterwards.
+        post("/account/delete") {
+            requireAdmin()
+            val req = call.receive<DeleteAccountRequest>()
+            val email = callerEmail()
+                ?: throw appError(ErrorCode.UNAUTHORIZED, "Not authenticated", HttpStatusCode.Unauthorized)
+            val deleted = service.deleteOwnAccount(email, req.currentPassword)
+            audit.adminEvent(actor(), AuditAction.ADMIN_DELETE, adminId = deleted.id, note = "self")
             call.respond(HttpStatusCode.NoContent)
         }
     }

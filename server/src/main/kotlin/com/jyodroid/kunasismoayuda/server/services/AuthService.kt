@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.jyodroid.kunasismoayuda.server.config.JwtConfig
 import com.jyodroid.kunasismoayuda.server.domain.models.AdminUser
+import com.jyodroid.kunasismoayuda.server.domain.models.Roles
 import com.jyodroid.kunasismoayuda.server.domain.repositories.AdminUserRepository
 import com.jyodroid.kunasismoayuda.server.error.ErrorCode
 import com.jyodroid.kunasismoayuda.server.error.appError
@@ -53,6 +54,25 @@ class AuthService(
         }
         PasswordPolicy.requireStrong(newPassword)
         repository.updatePassword(user.id, PasswordPolicy.hash(newPassword))
+    }
+
+    /**
+     * Self-service account deletion (any moderator, via the web console). Verifies the current password
+     * first, and refuses the SUPERADMIN **owner** — the app must always keep its owner. Returns the
+     * deleted account (for the audit snapshot). After this, the account's still-valid JWT stops working
+     * (requireAdmin's enabled-check now also rejects a missing account).
+     */
+    fun deleteOwnAccount(email: String, currentPassword: String): AdminUser {
+        val user = repository.findByEmail(email.trim().lowercase())
+            ?: throw appError(ErrorCode.UNAUTHORIZED, "Invalid credentials", HttpStatusCode.Unauthorized)
+        if (!BCrypt.checkpw(currentPassword, user.passwordHash)) {
+            throw appError(ErrorCode.UNAUTHORIZED, "Current password is incorrect", HttpStatusCode.Unauthorized)
+        }
+        if (Roles.isSuperAdmin(user.role)) {
+            throw appError(ErrorCode.FORBIDDEN, "The owner account can't be deleted", HttpStatusCode.Forbidden)
+        }
+        repository.deleteById(user.id)
+        return user
     }
 
     private fun issueToken(user: AdminUser): String =

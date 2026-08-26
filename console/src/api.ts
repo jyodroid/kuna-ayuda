@@ -147,6 +147,9 @@ export const auth = {
     api<{ token: string; role: string }>("/api/auth/login", { method: "POST", auth: false, body: { email, password } }),
   changePassword: (currentPassword: string, newPassword: string) =>
     api<void>("/api/auth/password", { method: "POST", body: { currentPassword, newPassword } }),
+  // Self-service account deletion (any non-owner moderator). Current password confirms intent.
+  deleteAccount: (currentPassword: string) =>
+    api<void>("/api/auth/account/delete", { method: "POST", body: { currentPassword } }),
 };
 
 export const audit = {

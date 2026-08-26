@@ -20,3 +20,9 @@ data class ChangePasswordRequest(
     val currentPassword: String,
     val newPassword: String,
 )
+
+/** Self-service account deletion (any non-owner moderator). Current password confirms intent. */
+@Serializable
+data class DeleteAccountRequest(
+    val currentPassword: String,
+)

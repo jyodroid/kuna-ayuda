@@ -1,5 +1,6 @@
 package com.jyodroid.kunasismoayuda.server.routes
 
+import com.jyodroid.kunasismoayuda.server.config.DatabaseFactory
 import com.jyodroid.kunasismoayuda.server.domain.models.Actor
 import com.jyodroid.kunasismoayuda.server.domain.models.Roles
 import com.jyodroid.kunasismoayuda.server.domain.repositories.AdminUserRepository
@@ -50,8 +51,14 @@ internal fun RoutingContext.requireSuperAdmin() {
  */
 private fun RoutingContext.ensureEnabled() {
     val email = callerEmail() ?: return
+    // DB-less mode has no accounts to check (login can't succeed without a DB anyway).
+    if (!DatabaseFactory.initialized) return
     val user = call.application.get<AdminUserRepository>().findByEmail(email)
-    if (user != null && !user.enabled) {
+    if (user == null) {
+        // The account was deleted (self-service or by a super-admin) — a still-valid 12h JWT stops here.
+        throw appError(ErrorCode.UNAUTHORIZED, "This moderator account no longer exists", HttpStatusCode.Unauthorized)
+    }
+    if (!user.enabled) {
         throw appError(ErrorCode.FORBIDDEN, "This moderator account is disabled", HttpStatusCode.Forbidden)
     }
 }
