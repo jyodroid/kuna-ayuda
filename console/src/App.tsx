@@ -34,7 +34,11 @@ function Login({ onLogin }: { onLogin: () => void }) {
       session.set(r.token, r.role, email.trim().toLowerCase());
       onLogin();
     } catch (err: any) {
-      setError(err?.message ?? "No se pudo iniciar sesión");
+      // 401 = the account doesn't exist (e.g. it was deleted) or the password is wrong. Kept generic
+      // on purpose so login can't be used to probe which emails are registered.
+      setError(err?.status === 401
+        ? "Correo o contraseña incorrectos, o la cuenta ya no existe."
+        : (err?.message ?? "No se pudo iniciar sesión"));
     } finally {
       setBusy(false);
     }

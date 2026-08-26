@@ -46,7 +46,9 @@ export async function api<T>(path: string, opts: Options = {}): Promise<T> {
     headers,
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
-  if (res.status === 401) {
+  // A 401 on an AUTHENTICATED request means the session expired or the account was removed → sign out.
+  // A 401 on the login request itself (auth:false) is just bad credentials — let it surface below.
+  if (res.status === 401 && opts.auth !== false) {
     session.clear();
     window.dispatchEvent(new Event("kuna-unauthorized"));
     throw new ApiError(401, "Sesión expirada");
