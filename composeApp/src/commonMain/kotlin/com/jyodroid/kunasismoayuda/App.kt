@@ -35,6 +35,7 @@ import com.jyodroid.kunasismoayuda.core.domain.model.Country
 import com.jyodroid.kunasismoayuda.core.domain.model.CountryEmergency
 import com.jyodroid.kunasismoayuda.core.domain.model.Quake
 import com.jyodroid.kunasismoayuda.core.domain.util.Geo
+import com.jyodroid.kunasismoayuda.core.domain.util.mostRecentQuake
 import kotlin.time.Clock
 import com.jyodroid.kunasismoayuda.core.location.Coordinates
 import com.jyodroid.kunasismoayuda.core.location.LocationProvider
@@ -246,11 +247,24 @@ private fun AppContent(
     // quake below a smaller one near a city, which would wrongly feature an aftershock. Magnitude is
     // the honest "most significant" signal; the month window keeps a stale giant from dominating once
     // it's old, but falls back to the strongest overall if the whole feed is older. Réplicas follow.
+    val nowMillis = Clock.System.now().toEpochMilliseconds()
     val featuredQuake = remember(state.quakes) {
         pickFeaturedQuake(state.quakes, Clock.System.now().toEpochMilliseconds())
     }
+    // A fresh quake weaker than the headline would otherwise be hidden by the strongest-wins rule.
+    // Surface the newest event too, but only when it's genuinely recent and not already the headline.
+    val recentQuake = remember(state.quakes) {
+        mostRecentQuake(
+            state.quakes,
+            Clock.System.now().toEpochMilliseconds(),
+            RECENT_QUAKE_WINDOW_MS,
+            excludeId = featuredQuake?.id,
+        )
+    }
     val featuredAffected = featuredQuake?.let { viewModel.affectedRegions(it) } ?: emptyList()
     val aftershocks = featuredQuake?.let { viewModel.aftershocks(it) } ?: emptyList()
+    // The quake whose detail is open — set from whichever bubble was tapped; falls back to the headline.
+    var selectedQuake by remember { mutableStateOf<Quake?>(null) }
 
     // Wildfire vertical (second hazard): the worst active fire + the places near any fire, derived the
     // same way quakes are. Keyed on the fire feed so both recompute exactly when it changes.
@@ -453,6 +467,8 @@ private fun AppContent(
                 OverviewScreen(
                     state = state,
                     featuredQuake = featuredQuake,
+                    recentQuake = recentQuake,
+                    nowMillis = nowMillis,
                     affectedRegions = featuredAffected,
                     shelters = shelters,
                     boardSummary = boardSummary,
@@ -467,19 +483,27 @@ private fun AppContent(
                         boardViewModel.load()
                         boardViewModel.loadSummary()
                     },
-                    onQuakeTap = { navController.navigate(ROUTE_QUAKE_DETAIL) },
+                    onQuakeTap = {
+                        selectedQuake = featuredQuake
+                        navController.navigate(ROUTE_QUAKE_DETAIL)
+                    },
+                    onRecentQuakeTap = {
+                        selectedQuake = recentQuake
+                        navController.navigate(ROUTE_QUAKE_DETAIL)
+                    },
                     onFireTap = { navController.navigate(ROUTE_FIRES) },
                     onSheltersTap = { navController.navigateTop(ROUTE_SHELTERS) },
                     onNetworkTap = { navController.navigateTop(ROUTE_BOARD) },
                 )
             }
             composable(ROUTE_QUAKE_DETAIL) {
-                // The only place quake/réplica detail appears (never on the map).
-                featuredQuake?.let {
+                // The only place quake/réplica detail appears (never on the map). Shows whichever quake
+                // was tapped (featured or recent), with that quake's own affected places + réplicas.
+                (selectedQuake ?: featuredQuake)?.let { q ->
                     QuakeDetailScreen(
-                        quake = it,
-                        affectedRegions = featuredAffected,
-                        aftershocks = aftershocks,
+                        quake = q,
+                        affectedRegions = viewModel.affectedRegions(q),
+                        aftershocks = viewModel.aftershocks(q),
                     )
                 }
             }
@@ -747,6 +771,8 @@ private fun AppContent(
 
 /** How recent a quake must be to headline the Overview before we fall back to the all-time strongest. */
 private const val FEATURED_WINDOW_DAYS = 30L
+/** How fresh the newest quake must be to earn its own "Actividad reciente" bubble (48 h). */
+private const val RECENT_QUAKE_WINDOW_MS = 48L * 60L * 60L * 1000L
 
 /**
  * The headline quake: the strongest (max magnitude) event within the last [FEATURED_WINDOW_DAYS]. If

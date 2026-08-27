@@ -20,6 +20,8 @@
 
     <!-- Overview tab -->
     <string name="overview_quake_hint">Tocca per vedere i dettagli e le scosse di assestamento</string>
+    <string name="overview_recent_quake_title">Attività recente</string>
+    <string name="overview_quake_today">Oggi</string>
     <string name="overview_shelters_title">Punti di aiuto</string>
     <string name="overview_shelters_count">%1$d punti in %2$d località</string>
     <string name="overview_network_title">Rete di aiuto</string>

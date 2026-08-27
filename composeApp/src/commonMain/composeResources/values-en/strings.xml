@@ -20,6 +20,8 @@
 
     <!-- Overview tab -->
     <string name="overview_quake_hint">Tap to see detail and aftershocks</string>
+    <string name="overview_recent_quake_title">Recent activity</string>
+    <string name="overview_quake_today">Today</string>
     <string name="overview_shelters_title">Help centers</string>
     <string name="overview_shelters_count">%1$d centers across %2$d places</string>
     <string name="overview_network_title">Aid network</string>

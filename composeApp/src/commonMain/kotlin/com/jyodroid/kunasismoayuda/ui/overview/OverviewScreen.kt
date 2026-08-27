@@ -16,12 +16,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,6 +43,10 @@ import com.jyodroid.kunasismoayuda.core.domain.model.Country
 import com.jyodroid.kunasismoayuda.core.domain.model.Fire
 import com.jyodroid.kunasismoayuda.core.domain.model.Quake
 import com.jyodroid.kunasismoayuda.core.domain.model.Shelter
+import com.jyodroid.kunasismoayuda.core.domain.util.TimeAgo
+import com.jyodroid.kunasismoayuda.core.domain.util.TimeAgoUnit
+import com.jyodroid.kunasismoayuda.core.domain.util.isToday
+import com.jyodroid.kunasismoayuda.core.domain.util.relativeAgo
 import com.jyodroid.kunasismoayuda.resources.Res
 import com.jyodroid.kunasismoayuda.resources.country_change
 import com.jyodroid.kunasismoayuda.resources.country_colombia
@@ -60,9 +66,15 @@ import com.jyodroid.kunasismoayuda.resources.overview_fire_title
 import com.jyodroid.kunasismoayuda.resources.overview_network_counts
 import com.jyodroid.kunasismoayuda.resources.overview_network_title
 import com.jyodroid.kunasismoayuda.resources.overview_quake_hint
+import com.jyodroid.kunasismoayuda.resources.overview_quake_today
+import com.jyodroid.kunasismoayuda.resources.overview_recent_quake_title
 import com.jyodroid.kunasismoayuda.resources.overview_shelters_count
 import com.jyodroid.kunasismoayuda.resources.overview_shelters_title
 import com.jyodroid.kunasismoayuda.resources.retry
+import com.jyodroid.kunasismoayuda.resources.time_days_ago
+import com.jyodroid.kunasismoayuda.resources.time_hours_ago
+import com.jyodroid.kunasismoayuda.resources.time_just_now
+import com.jyodroid.kunasismoayuda.resources.time_minutes_ago
 import com.jyodroid.kunasismoayuda.ui.board.BoardSummary
 import com.jyodroid.kunasismoayuda.ui.fires.FirePlace
 import com.jyodroid.kunasismoayuda.ui.fires.FireIntensityBadge
@@ -82,6 +94,8 @@ import org.jetbrains.compose.resources.stringResource
 fun OverviewScreen(
     state: QuakesUiState,
     featuredQuake: Quake?,
+    recentQuake: Quake?,
+    nowMillis: Long,
     affectedRegions: List<AffectedRegion>,
     shelters: List<Shelter>,
     boardSummary: BoardSummary,
@@ -91,6 +105,7 @@ fun OverviewScreen(
     onCountryChange: (Country) -> Unit,
     onRefresh: () -> Unit,
     onQuakeTap: () -> Unit,
+    onRecentQuakeTap: () -> Unit,
     onFireTap: () -> Unit,
     onSheltersTap: () -> Unit,
     onNetworkTap: () -> Unit,
@@ -145,7 +160,12 @@ fun OverviewScreen(
                         item { SheltersSummary(shelters, affectedRegions, onSheltersTap) }
                         item { NetworkSummary(boardSummary, onNetworkTap) }
                         item { AffectedPlaces(affectedRegions) }
-                        item { QuakeBubble(featuredQuake, onQuakeTap) }
+                        item { QuakeBubble(featuredQuake, nowMillis, onQuakeTap) }
+                        // A fresh quake weaker than the headline would otherwise be invisible; surface
+                        // it here (only when it differs from the strongest — see mostRecentQuake).
+                        if (recentQuake != null) {
+                            item { RecentQuakeBubble(recentQuake, nowMillis, onRecentQuakeTap) }
+                        }
                         item { FireBubble(featuredFire, featuredFireNear, onFireTap) }
                         item { AppVersionFooter() }
                     }
@@ -217,7 +237,7 @@ private fun Country.labelRes() = when (this) {
 }
 
 @Composable
-private fun QuakeBubble(quake: Quake?, onTap: () -> Unit) {
+private fun QuakeBubble(quake: Quake?, nowMillis: Long, onTap: () -> Unit) {
     val hint = stringResource(Res.string.overview_quake_hint)
     Card(
         modifier = Modifier
@@ -235,7 +255,15 @@ private fun QuakeBubble(quake: Quake?, onTap: () -> Unit) {
             } else {
                 MagnitudeBadge(quake.magnitude, size = 56)
                 Column {
-                    Text(quake.place, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(quake.place, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        // A "Hoy" badge when the strongest event is itself fresh (< 24h), so a quake
+                        // that headlines today still reads as today despite the absolute timestamp.
+                        if (isToday(nowMillis, quake.timeMillis)) TodayBadge()
+                    }
                     Text(
                         formatQuakeTime(quake.timeMillis),
                         style = MaterialTheme.typography.bodySmall,
@@ -250,6 +278,81 @@ private fun QuakeBubble(quake: Quake?, onTap: () -> Unit) {
             }
         }
     }
+}
+
+/**
+ * The most-recent-quake bubble: highlights fresh seismic activity that isn't the headline (which is the
+ * strongest, not the newest). Uses **relative** time ("hace N h") — freshness reads naturally that way,
+ * whereas the featured bubble keeps an absolute date for a possibly-historical "most relevant" event.
+ */
+@Composable
+private fun RecentQuakeBubble(quake: Quake, nowMillis: Long, onTap: () -> Unit) {
+    val hint = stringResource(Res.string.overview_quake_hint)
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clickable(onClick = onTap),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                stringResource(Res.string.overview_recent_quake_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.semantics { heading() },
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                MagnitudeBadge(quake.magnitude, size = 56)
+                Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(quake.place, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        if (isToday(nowMillis, quake.timeMillis)) TodayBadge()
+                    }
+                    Text(
+                        relativeAgoText(relativeAgo(nowMillis, quake.timeMillis)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        hint,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Small "Hoy" chip. Freshness is stated in text (never colour alone); not red — red is reserved for SOS. */
+@Composable
+private fun TodayBadge() {
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        shape = RoundedCornerShape(8.dp),
+    ) {
+        Text(
+            stringResource(Res.string.overview_quake_today),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        )
+    }
+}
+
+@Composable
+private fun relativeAgoText(ago: TimeAgo): String = when (ago.unit) {
+    TimeAgoUnit.JUST_NOW -> stringResource(Res.string.time_just_now)
+    TimeAgoUnit.MINUTES -> stringResource(Res.string.time_minutes_ago, ago.count)
+    TimeAgoUnit.HOURS -> stringResource(Res.string.time_hours_ago, ago.count)
+    TimeAgoUnit.DAYS -> stringResource(Res.string.time_days_ago, ago.count)
 }
 
 @Composable

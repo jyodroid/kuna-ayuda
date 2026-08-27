@@ -20,6 +20,8 @@
 
     <!-- Overview tab -->
     <string name="overview_quake_hint">Ketuk untuk melihat detail dan gempa susulan</string>
+    <string name="overview_recent_quake_title">Aktivitas terbaru</string>
+    <string name="overview_quake_today">Hari ini</string>
     <string name="overview_shelters_title">Pusat bantuan</string>
     <string name="overview_shelters_count">%1$d pusat di %2$d tempat</string>
     <string name="overview_network_title">Jaringan bantuan</string>

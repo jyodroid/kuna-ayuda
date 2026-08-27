@@ -20,6 +20,8 @@
 
     <!-- Overview tab -->
     <string name="overview_quake_hint">Toca para ver el detalle y las réplicas</string>
+    <string name="overview_recent_quake_title">Actividad reciente</string>
+    <string name="overview_quake_today">Hoy</string>
     <string name="overview_shelters_title">Centros de ayuda</string>
     <string name="overview_shelters_count">%1$d centros en %2$d lugares</string>
     <string name="overview_network_title">Red de ayuda</string>

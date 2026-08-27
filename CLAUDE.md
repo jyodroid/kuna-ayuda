@@ -555,11 +555,21 @@ Channels and safety Tips — merged so we stay at 5 tabs). Nav labels are center
   It has a **country switcher** at the top and is wrapped in a **`PullToRefreshBox`** (pull to retry;
   the error state also shows a Retry button — a network hiccup or the server not-yet-reachable at
   launch is recoverable without a restart). It shows:
-  a **quake bubble** (the **strongest** recent quake — `quakes.maxByOrNull { magnitude }`, NOT the
-  impact-ranked first, so a sparsely-seeded country like Indonesia doesn't headline a nearby aftershock
-  over a distant major quake; tapping it pushes `ROUTE_QUAKE_DETAIL` = `QuakeDetailScreen` with its
-  **réplicas**, the *only* place
-  quake detail appears), **shelters per location** (grouped by city, affected cities first), **aid
+  a **quake bubble** (the **strongest** recent quake — `pickFeaturedQuake` in `App.kt`: strongest by
+  magnitude within the last 30 days, NOT the impact-ranked first nor the newest, so a sparsely-seeded
+  country like Indonesia doesn't headline a nearby aftershock over a distant major quake; tapping it
+  pushes `ROUTE_QUAKE_DETAIL` = `QuakeDetailScreen` with its **réplicas**, the *only* place quake detail
+  appears). Because "strongest" hides a **fresh but weaker** quake (a real event that happened today but
+  is smaller than a prior one in the feed), a second **"Actividad reciente" bubble** shows the **newest**
+  quake — `core/domain/util/QuakeRecency.kt` `mostRecentQuake(...)`: the max-`timeMillis` event, but
+  only when it's within a **48 h** window (`RECENT_QUAKE_WINDOW_MS`) **and** isn't already the headline
+  (`excludeId = featured.id`, so no duplicate). Both bubbles show a **"Hoy" badge** when their quake is
+  `isToday` (< 24 h); the featured bubble keeps an **absolute** timestamp (a possibly-historical "most
+  relevant" event) while the recent bubble uses **relative** time ("hace N h", reusing `relativeAgo` +
+  the `time_*` strings) — the deliberate absolute/relative split is the point of the two cards. Tapping
+  either sets `selectedQuake` (mirrors `selectedFire`) and the detail route renders
+  `selectedQuake ?: featuredQuake` with that quake's own affected places + réplicas. Covered by
+  `QuakeRecencyTest`. Then **shelters per location** (grouped by city, affected cities first), **aid
   network** offers vs requests (`BoardViewModel.summary`), and the **affected places** list. Réplicas
   come from `IdentifyAftershocksUseCase` (core/domain/usecase — spatial/temporal cluster heuristic,
   120 km / ±3 days, reusing `Geo.distanceKm`), surfaced via `QuakesViewModel.aftershocks(quake)`.

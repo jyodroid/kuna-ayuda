@@ -4,6 +4,16 @@ All notable changes to Kuna Ayuda. Format based on [Keep a Changelog](https://ke
 this project uses [Semantic Versioning](https://semver.org/). The version lives in
 `gradle/libs.versions.toml` (`desktopPackageVersion`) and is enforced against the git tag by CI.
 
+## [1.5.0] — 2026-08-26
+
+### Added
+- **"Actividad reciente" quake bubble on Overview.** A fresh earthquake that's weaker than a bigger
+  recent one used to be invisible (the home headline always shows the *strongest* quake). Now a second
+  bubble surfaces the **newest** quake when it happened in the last 48 h and isn't already the headline,
+  with **relative time** ("hace 3 h") and a **"Hoy"** badge. The headline (strongest) bubble also shows
+  the "Hoy" badge when it's itself less than a day old. Tapping either opens that quake's detail and
+  aftershocks.
+
 ## [1.4.0] — 2026-08-25
 
 ### Added
