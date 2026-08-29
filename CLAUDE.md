@@ -227,7 +227,21 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   array — a **signal only, never an auto-reject** (like the fact-check note): persisted on the post +
   memoized (`risk_flags` TEXT via `infrastructure/RiskFlagsJson`, **V21**) and shown as a caution block
   (`ui/board RiskFlagsBlock`) in the classify preview, the app moderation queue, and the console board queue.
-  Both bumps moved `PROMPT_VERSION`→`v5`. Then `POST /api/board/{id}/resolve`
+  Both bumps moved `PROMPT_VERSION`→`v5`. **Editable preview + one-primary-phone (v6):** the classify
+  preview is **editable** — the poster reviews and can correct the core fields (kind, resourceType,
+  region, description, contact name, contact **phone**) before sending, via a third confirm endpoint
+  `POST /api/board/classify/confirm-edit` (`ConfirmClassifyRequest{cacheRef,…}`, `service.confirmEdited`):
+  it persists the poster's edited content but keeps the **moderation signals** (factCheck, riskFlags) +
+  the read-only **collectionPoints** from the cached classify (by `cacheRef`), so a poster can't strip
+  them. Both the text and image previews carry a `cacheRef`, so this one endpoint serves both;
+  `BoardViewModel.confirmClassified(EditedClassifiedPost)` → `ResourceBoardRepository.confirmClassifiedEdited`
+  → `BoardApi.confirmEdit`. The old `/classify/confirm` (text) + `/classify/confirm-ref` (image) endpoints
+  are **kept for back-compat** with already-shipped app binaries (the new app uses only confirm-edit). The
+  `contactPhone` extraction rule was tightened — **a single primary callable number** (if a post lists
+  several, the first goes here and ALL stay in `description`; never two numbers merged like "1111 2222",
+  which broke the "call" action) — moving `PROMPT_VERSION`→`v6`. `ui/board/ClassifyPostScreen` renders the
+  preview's core fields as editable chips/`OutlinedTextField`s (collection points + fact-check + risk
+  flags stay read-only). Then `POST /api/board/{id}/resolve`
   (**public, device-gated** — the creating device closes its own post by presenting the `owner_secret`
   the server issued at creation and returned once in the create response; no auth, the secret IS the
   identity; constant-time compare; RESOLVED→204 / not-owner→403 / missing→404) + `GET /api/board/pending`

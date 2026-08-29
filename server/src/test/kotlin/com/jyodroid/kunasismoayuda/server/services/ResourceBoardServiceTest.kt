@@ -51,6 +51,8 @@ class ResourceBoardServiceTest {
                 factCheck = post.factCheck,
                 country = post.country,
                 ownerSecret = post.ownerSecret,
+                collectionPoints = post.collectionPoints,
+                riskFlags = post.riskFlags,
                 createdAt = LocalDateTime.now(),
             )
             posts.add(row)
@@ -226,6 +228,73 @@ class ResourceBoardServiceTest {
         assertEquals("classified", post.source)
         assertEquals("OFFER", post.kind) // override applied
         assertEquals("Se necesita agua en Quibdó", post.rawText)
+    }
+
+    // ---- edited confirm -------------------------------------------------------------------------
+
+    private fun cacheEntry() = ClassifyCacheEntry(
+        kind = "REQUEST",
+        resourceType = "WATER",
+        region = "Quibdó",
+        description = "Se necesita agua.",
+        contactPhone = "3001111111 3002222222", // the bad two-number join the poster will fix
+        contactName = "Cruz Roja",
+        factCheck = "Nota de verificación",
+        checked = true,
+        collectionPoints = listOf(
+            com.jyodroid.kunasismoayuda.server.domain.models.CollectionPoint("Parroquia", "Calle 5", "8-12"),
+        ),
+        riskFlags = listOf("ASKS_FOR_MONEY"),
+    )
+
+    @Test
+    fun confirm_edited_persists_edits_and_keeps_cached_signals() {
+        val repo = FakeBoardRepo()
+        val cache = FakeCache().apply { put("ref-1", cacheEntry()) }
+        val (svc, _, _) = service(repo = repo, cache = cache)
+
+        svc.confirmEdited(
+            com.jyodroid.kunasismoayuda.server.routes.dto.ConfirmClassifyRequest(
+                cacheRef = "ref-1",
+                kind = "OFFER",              // poster corrected the kind
+                resourceType = "FOOD",       // and the type
+                region = "Cali",             // and the region
+                description = "Entregamos comida.",
+                contactPhone = "3001111111", // fixed to a single number
+                contactName = "Voluntarios",
+                rawText = "texto original",
+                country = "CO",
+            ),
+        )
+
+        val post = repo.posts.single()
+        // Edited content is what the poster sent.
+        assertEquals("PENDING", post.status)
+        assertEquals("classified", post.source)
+        assertEquals("OFFER", post.kind)
+        assertEquals("FOOD", post.resourceType)
+        assertEquals("Cali", post.region)
+        assertEquals("3001111111", post.contactPhone)
+        assertEquals("Voluntarios", post.contactName)
+        assertEquals("texto original", post.rawText)
+        // Moderation signals + collection points are kept from the cache (not the client).
+        assertEquals("Nota de verificación", post.factCheck)
+        assertEquals(listOf("ASKS_FOR_MONEY"), post.riskFlags)
+        assertEquals(1, post.collectionPoints.size)
+        assertEquals("Parroquia", post.collectionPoints.single().name)
+    }
+
+    @Test
+    fun confirm_edited_with_an_expired_cache_ref_is_rejected() {
+        val (svc, _, _) = service()
+        assertThrows<ClassifyExpiredException> {
+            svc.confirmEdited(
+                com.jyodroid.kunasismoayuda.server.routes.dto.ConfirmClassifyRequest(
+                    cacheRef = "missing", kind = "REQUEST", resourceType = "WATER",
+                    region = "Cali", description = "agua",
+                ),
+            )
+        }
     }
 
     // ---- usage cap ------------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 package com.jyodroid.kunasismoayuda.core.domain.repository
 
 import com.jyodroid.kunasismoayuda.core.domain.model.ClassifiedPreview
+import com.jyodroid.kunasismoayuda.core.domain.model.EditedClassifiedPost
 import com.jyodroid.kunasismoayuda.core.domain.model.NewResourcePost
 import com.jyodroid.kunasismoayuda.core.domain.model.PostKind
 import com.jyodroid.kunasismoayuda.core.domain.model.ResourcePost
@@ -19,22 +20,29 @@ interface ResourceBoardRepository {
 
     /**
      * Step 1: classify a pasted post and return a **preview** for the poster to review. Nothing is
-     * queued yet — the poster confirms via [confirmClassification]. [kind] is the poster's own
-     * REQUEST/OFFER choice; when non-null it overrides the model's guess.
+     * queued yet — the poster reviews/edits it and confirms via [confirmClassifiedEdited]. [kind] is the
+     * poster's own REQUEST/OFFER choice; when non-null it overrides the model's guess.
      */
     suspend fun previewClassification(text: String, country: String = "CO", kind: PostKind? = null): ClassifiedPreview
 
-    /** Step 2: the poster confirmed the preview → queue it as a moderated (pending) post. */
-    suspend fun confirmClassification(text: String, country: String = "CO", kind: PostKind? = null): ResourcePost
-
     /**
      * Image intake — classify a SCREENSHOT/photo of a post via vision (Instagram blocks copying text).
-     * Returns a preview (with a `cacheRef` used by [confirmClassificationImage]).
+     * Returns a preview (with a `cacheRef` used by [confirmClassifiedEdited]).
      */
     suspend fun previewClassificationImage(bytes: ByteArray, mime: String, country: String = "CO", kind: PostKind? = null): ClassifiedPreview
 
-    /** Confirm an image classify by the preview's `cacheRef` (no image re-upload) → queue PENDING. */
-    suspend fun confirmClassificationImage(cacheRef: String, country: String = "CO", kind: PostKind? = null): ResourcePost
+    /**
+     * Step 2: the poster reviewed and (optionally) corrected the preview → queue it as a moderated
+     * (pending) post. [cacheRef] (from the preview) lets the server keep the moderation signals +
+     * collection points; [rawText] is the original pasted text (text path) or null (image path). Serves
+     * both the text and image paths.
+     */
+    suspend fun confirmClassifiedEdited(
+        edited: EditedClassifiedPost,
+        cacheRef: String,
+        rawText: String?,
+        country: String = "CO",
+    ): ResourcePost
 
     // --- Moderator-only (require an authenticated ADMIN session) ---
 

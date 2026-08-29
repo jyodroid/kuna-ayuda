@@ -4,6 +4,18 @@ All notable changes to Kuna Ayuda. Format based on [Keep a Changelog](https://ke
 this project uses [Semantic Versioning](https://semver.org/). The version lives in
 `gradle/libs.versions.toml` (`desktopPackageVersion`) and is enforced against the git tag by CI.
 
+## [1.5.1] — 2026-08-29
+
+### Added
+- **Editable classify preview.** After pasting a post or a screenshot, you can now correct what the AI
+  extracted — kind, type, region, description, contact name and phone — before sending it for review.
+  (The moderator signals and drop-off points stay read-only.)
+
+### Fixed
+- **Phone with two numbers.** When a post listed two phone numbers, the "call" button dialed a broken,
+  merged number. The AI now keeps a single callable number in the contact field (all numbers stay in
+  the description), and you can edit it in the preview.
+
 ## [1.5.0] — 2026-08-26
 
 ### Added

@@ -9,6 +9,7 @@ import com.jyodroid.kunasismoayuda.server.domain.repositories.ClassifyCacheEntry
 import com.jyodroid.kunasismoayuda.server.domain.repositories.ClassifyCacheRepository
 import com.jyodroid.kunasismoayuda.server.domain.repositories.ResourceBoardRepository
 import com.jyodroid.kunasismoayuda.server.routes.dto.ClassifyPreviewResponse
+import com.jyodroid.kunasismoayuda.server.routes.dto.ConfirmClassifyRequest
 import com.jyodroid.kunasismoayuda.server.routes.dto.ResourcePostRequest
 import com.jyodroid.kunasismoayuda.server.routes.dto.ResourcePostResponse
 import com.jyodroid.kunasismoayuda.server.upstream.FactCheckClient
@@ -49,7 +50,8 @@ class ResourceBoardService(
         const val STATUS_PENDING = "PENDING"
         // Bump when the extraction prompt changes, to invalidate the classify_cache (keyed on this).
         // v5: added vision (screenshot) intake + riskFlags to the extraction.
-        private const val PROMPT_VERSION = "v5"
+        // v6: contactPhone = a single primary callable number (never two numbers merged).
+        private const val PROMPT_VERSION = "v6"
         private val random = SecureRandom()
     }
 
@@ -135,6 +137,34 @@ class ResourceBoardService(
     fun confirmFromCache(cacheRef: String, country: String = "CO", kindOverride: String? = null): ResourcePostResponse {
         val entry = classifyCache.get(cacheRef) ?: throw ClassifyExpiredException()
         return entry.queue(kindOverride, country, rawText = null)
+    }
+
+    /**
+     * Step 2 (edited) — the poster reviewed the preview and CORRECTED the core fields; queue those. The
+     * moderation signals (factCheck, riskFlags) and the read-only collectionPoints come from the cached
+     * classify (by [ConfirmClassifyRequest.cacheRef]) so the poster can't strip them. Serves both the
+     * text and image paths (both previews carry a cacheRef); no new paid call.
+     */
+    fun confirmEdited(req: ConfirmClassifyRequest): ResourcePostResponse {
+        val entry = classifyCache.get(req.cacheRef) ?: throw ClassifyExpiredException()
+        return repository.create(
+            NewResourcePost(
+                kind = resolveKind(req.kind, entry.kind),
+                resourceType = req.resourceType.uppercase().takeIf { it in TYPES } ?: entry.resourceType,
+                region = req.region.trim(),
+                description = req.description.trim(),
+                contactPhone = req.contactPhone?.trim()?.ifBlank { null },
+                contactEmail = null,
+                contactName = req.contactName?.trim()?.ifBlank { null },
+                status = STATUS_PENDING,
+                source = "classified",
+                rawText = req.rawText?.trim()?.ifBlank { null },
+                factCheck = entry.factCheck,             // moderation signal — kept from cache, not client
+                country = req.country,
+                collectionPoints = entry.collectionPoints, // read-only — kept from cache
+                riskFlags = entry.riskFlags,             // moderation signal — kept from cache, not client
+            ),
+        ).toResponse()
     }
 
     /**

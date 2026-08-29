@@ -9,6 +9,7 @@ import com.jyodroid.kunasismoayuda.server.error.ErrorCode
 import com.jyodroid.kunasismoayuda.server.error.appError
 import com.jyodroid.kunasismoayuda.server.services.UsageLimitReachedException
 import com.jyodroid.kunasismoayuda.server.routes.dto.ClassifyRequest
+import com.jyodroid.kunasismoayuda.server.routes.dto.ConfirmClassifyRequest
 import com.jyodroid.kunasismoayuda.server.routes.dto.ConfirmRefRequest
 import com.jyodroid.kunasismoayuda.server.routes.dto.ResolveRequest
 import com.jyodroid.kunasismoayuda.server.routes.dto.ResourcePostRequest
@@ -100,6 +101,15 @@ fun Route.resourceBoardRoutes(service: ResourceBoardService, audit: AuditService
                 throw appError(ErrorCode.VALIDATION, "cacheRef is required", HttpStatusCode.BadRequest)
             }
             val created = classifyGuarded { service.confirmFromCache(req.cacheRef, req.country, req.kind) }
+            call.respond(HttpStatusCode.Created, created)
+        }
+
+        // Step 2 (edited) — the poster corrected the preview's core fields and confirms. The moderation
+        // signals + collection points come from the cache (see confirmEdited); no new paid call.
+        post("/classify/confirm-edit") {
+            val req = call.receive<ConfirmClassifyRequest>()
+            validateConfirmEdit(req)
+            val created = classifyGuarded { service.confirmEdited(req) }
             call.respond(HttpStatusCode.Created, created)
         }
 
@@ -233,6 +243,19 @@ private suspend fun <T> classifyGuarded(block: suspend () -> T): T = try {
     throw appError(ErrorCode.VALIDATION, "Could not classify this text", HttpStatusCode.UnprocessableEntity)
 } catch (e: AnthropicCallException) {
     throw appError(ErrorCode.UPSTREAM_UNAVAILABLE, e.message ?: "AI call failed", HttpStatusCode.BadGateway)
+}
+
+/** Validates an edited-preview confirm (poster-corrected content) before it's queued for moderation. */
+private fun validateConfirmEdit(req: ConfirmClassifyRequest) {
+    fun bad(message: String): Nothing =
+        throw appError(ErrorCode.VALIDATION, message, HttpStatusCode.BadRequest)
+
+    if (req.cacheRef.isBlank()) bad("cacheRef is required")
+    if (req.kind.uppercase() !in ResourceBoardService.KINDS) bad("kind must be REQUEST or OFFER")
+    if (req.resourceType.uppercase() !in ResourceBoardService.TYPES) bad("Unknown resourceType")
+    if (req.region.isBlank()) bad("region is required")
+    if (req.description.length > 500) bad("description is too long (max 500)")
+    if ((req.contactPhone?.trim()?.length ?: 0) > 40) bad("contactPhone is too long")
 }
 
 private fun validate(request: ResourcePostRequest) {

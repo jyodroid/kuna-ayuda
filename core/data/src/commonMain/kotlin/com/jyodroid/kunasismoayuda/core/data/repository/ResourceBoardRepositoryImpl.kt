@@ -4,8 +4,10 @@ import com.jyodroid.kunasismoayuda.core.data.auth.SessionManager
 import com.jyodroid.kunasismoayuda.core.data.mapper.toDomain
 import com.jyodroid.kunasismoayuda.core.data.mapper.toDto
 import com.jyodroid.kunasismoayuda.core.data.remote.BoardApi
+import com.jyodroid.kunasismoayuda.core.data.remote.ConfirmClassifyRequestDto
 import com.jyodroid.kunasismoayuda.core.data.settings.PostOwnershipStore
 import com.jyodroid.kunasismoayuda.core.domain.model.ClassifiedPreview
+import com.jyodroid.kunasismoayuda.core.domain.model.EditedClassifiedPost
 import com.jyodroid.kunasismoayuda.core.domain.model.NewResourcePost
 import com.jyodroid.kunasismoayuda.core.domain.model.PostKind
 import com.jyodroid.kunasismoayuda.core.domain.model.ResourcePost
@@ -39,14 +41,27 @@ class ResourceBoardRepositoryImpl(
     override suspend fun previewClassification(text: String, country: String, kind: PostKind?): ClassifiedPreview =
         api.classifyPreview(text, country, kind?.name).toDomain()
 
-    override suspend fun confirmClassification(text: String, country: String, kind: PostKind?): ResourcePost =
-        api.confirmClassify(text, country, kind?.name).toDomain()
-
     override suspend fun previewClassificationImage(bytes: ByteArray, mime: String, country: String, kind: PostKind?): ClassifiedPreview =
         api.classifyImage(bytes, mime, country, kind?.name).toDomain()
 
-    override suspend fun confirmClassificationImage(cacheRef: String, country: String, kind: PostKind?): ResourcePost =
-        api.confirmRef(cacheRef, country, kind?.name).toDomain()
+    override suspend fun confirmClassifiedEdited(
+        edited: EditedClassifiedPost,
+        cacheRef: String,
+        rawText: String?,
+        country: String,
+    ): ResourcePost = api.confirmEdit(
+        ConfirmClassifyRequestDto(
+            cacheRef = cacheRef,
+            kind = edited.kind.name,
+            resourceType = edited.resourceType.name,
+            region = edited.region,
+            description = edited.description,
+            contactPhone = edited.contactPhone,
+            contactName = edited.contactName,
+            rawText = rawText,
+            country = country,
+        ),
+    ).toDomain()
 
     override suspend fun listPending(): List<ResourcePost> =
         api.listPending(sessionManager.requireToken()).map { it.toDomain() }

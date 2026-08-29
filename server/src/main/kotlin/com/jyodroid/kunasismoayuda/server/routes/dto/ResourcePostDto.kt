@@ -66,6 +66,25 @@ data class ConfirmRefRequest(
 )
 
 /**
+ * Confirm an **edited** preview: the poster reviewed the classify result, corrected the core fields
+ * (kind/type/region/description/contact), and sends them here to queue a PENDING post. The moderation
+ * signals (factCheck, riskFlags) and the read-only collectionPoints are NOT accepted from the client —
+ * the server keeps them from the cached classify referenced by [cacheRef], so a poster can't strip them.
+ */
+@Serializable
+data class ConfirmClassifyRequest(
+    val cacheRef: String,
+    val kind: String,
+    val resourceType: String,
+    val region: String,
+    val description: String = "",
+    val contactPhone: String? = null,
+    val contactName: String? = null,
+    val rawText: String? = null, // original pasted text (text path) for moderator context; null for image
+    val country: String = "CO",
+)
+
+/**
  * What Claude extracted from a paste, shown back to the poster to review BEFORE it's sent to a
  * moderator. Nothing is persisted yet — the poster confirms via `POST /api/board/classify/confirm`.
  */

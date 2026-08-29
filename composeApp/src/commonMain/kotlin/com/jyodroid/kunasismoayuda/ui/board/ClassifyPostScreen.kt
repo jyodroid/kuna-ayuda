@@ -2,6 +2,8 @@ package com.jyodroid.kunasismoayuda.ui.board
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -32,9 +35,16 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jyodroid.kunasismoayuda.core.domain.model.ClassifiedPreview
+import com.jyodroid.kunasismoayuda.core.domain.model.EditedClassifiedPost
 import com.jyodroid.kunasismoayuda.core.domain.model.PostKind
+import com.jyodroid.kunasismoayuda.core.domain.model.ResourceType
 import com.jyodroid.kunasismoayuda.media.rememberImagePicker
 import com.jyodroid.kunasismoayuda.resources.Res
+import com.jyodroid.kunasismoayuda.resources.board_contact_disclaimer
+import com.jyodroid.kunasismoayuda.resources.board_field_description
+import com.jyodroid.kunasismoayuda.resources.board_field_name
+import com.jyodroid.kunasismoayuda.resources.board_field_phone
+import com.jyodroid.kunasismoayuda.resources.board_field_region
 import com.jyodroid.kunasismoayuda.resources.board_kind_offer
 import com.jyodroid.kunasismoayuda.resources.board_kind_request
 import com.jyodroid.kunasismoayuda.resources.board_paste_kind_label
@@ -71,7 +81,7 @@ fun ClassifyPostScreen(
     state: ClassifyState,
     onSubmit: (String) -> Unit,
     onSubmitImage: (ByteArray, String) -> Unit,
-    onConfirm: () -> Unit,
+    onConfirm: (EditedClassifiedPost) -> Unit,
     onEdit: () -> Unit,
     onKindChange: (PostKind) -> Unit,
     modifier: Modifier = Modifier,
@@ -218,11 +228,24 @@ private fun InputSection(
     }
 }
 
-/** Step 2: the poster reviews what Claude extracted and confirms before it goes to a moderator. */
+/**
+ * Step 2: the poster reviews what Claude extracted, **edits** the core fields if needed (e.g. fix a
+ * phone the model mangled), and confirms before it goes to a moderator. The collection points and the
+ * moderation signals (fact-check, risk flags) stay read-only — the server keeps them from cache.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PreviewSection(state: ClassifyState, onConfirm: () -> Unit, onEdit: () -> Unit) {
+private fun PreviewSection(state: ClassifyState, onConfirm: (EditedClassifiedPost) -> Unit, onEdit: () -> Unit) {
     val preview = state.preview ?: return
     val busy = state.isConfirming
+
+    // Editable copies seeded from the extraction; reset when a new preview arrives (re-analyze).
+    var kind by remember(preview) { mutableStateOf(preview.kind) }
+    var type by remember(preview) { mutableStateOf(preview.resourceType) }
+    var region by rememberSaveable(preview) { mutableStateOf(preview.region) }
+    var description by rememberSaveable(preview) { mutableStateOf(preview.description) }
+    var contactName by rememberSaveable(preview) { mutableStateOf(preview.contactName.orEmpty()) }
+    var contactPhone by rememberSaveable(preview) { mutableStateOf(preview.contactPhone.orEmpty()) }
 
     Text(
         text = stringResource(Res.string.board_preview_title),
@@ -231,29 +254,73 @@ private fun PreviewSection(state: ClassifyState, onConfirm: () -> Unit, onEdit: 
     )
 
     Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            val title = buildString {
-                append(resourceTypeEmoji(preview.resourceType))
-                append("  ")
-                append(stringResource(resourceTypeLabelRes(preview.resourceType)))
-                if (preview.region.isNotBlank()) append(" · ${preview.region}")
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Kind (request/offer) — editable.
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = kind == PostKind.REQUEST,
+                    onClick = { kind = PostKind.REQUEST },
+                    enabled = !busy,
+                    label = { Text(stringResource(Res.string.board_kind_request)) },
+                )
+                FilterChip(
+                    selected = kind == PostKind.OFFER,
+                    onClick = { kind = PostKind.OFFER },
+                    enabled = !busy,
+                    label = { Text(stringResource(Res.string.board_kind_offer)) },
+                )
             }
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-
-            val kindLabel = if (preview.kind == PostKind.OFFER) {
-                stringResource(Res.string.board_kind_offer)
-            } else {
-                stringResource(Res.string.board_kind_request)
+            // Resource type — editable.
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ResourceType.entries.forEach { rt ->
+                    FilterChip(
+                        selected = type == rt,
+                        onClick = { type = rt },
+                        enabled = !busy,
+                        label = { Text("${resourceTypeEmoji(rt)} ${stringResource(resourceTypeLabelRes(rt))}") },
+                    )
+                }
             }
+            OutlinedTextField(
+                value = region,
+                onValueChange = { region = it },
+                label = { Text(stringResource(Res.string.board_field_region)) },
+                singleLine = true,
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = description,
+                onValueChange = { if (it.length <= 500) description = it },
+                label = { Text(stringResource(Res.string.board_field_description)) },
+                minLines = 2,
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = contactName,
+                onValueChange = { contactName = it },
+                label = { Text(stringResource(Res.string.board_field_name)) },
+                singleLine = true,
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            // The phone is the field the model most often mangles (two numbers merged) — editing it here
+            // is the fix so the "call" action dials a valid number.
+            OutlinedTextField(
+                value = contactPhone,
+                onValueChange = { contactPhone = it },
+                label = { Text(stringResource(Res.string.board_field_phone)) },
+                singleLine = true,
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth(),
+            )
             Text(
-                text = kindLabel,
-                style = MaterialTheme.typography.labelMedium,
+                text = stringResource(Res.string.board_contact_disclaimer),
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            if (preview.description.isNotBlank()) {
-                Text(preview.description, style = MaterialTheme.typography.bodyMedium)
-            }
             if (preview.collectionPoints.isNotEmpty()) {
                 Text(
                     stringResource(Res.string.board_collection_points),
@@ -268,12 +335,6 @@ private fun PreviewSection(state: ClassifyState, onConfirm: () -> Unit, onEdit: 
                     }
                     Text("•  $line", style = MaterialTheme.typography.bodyMedium)
                 }
-            }
-            preview.contactName?.takeIf { it.isNotBlank() }?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            preview.contactPhone?.takeIf { it.isNotBlank() }?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall)
             }
 
             // Google Fact Check signal (if any matched) — a caution, not a verdict; the moderator decides.
@@ -314,8 +375,19 @@ private fun PreviewSection(state: ClassifyState, onConfirm: () -> Unit, onEdit: 
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Button(
-            onClick = onConfirm,
-            enabled = !busy,
+            onClick = {
+                onConfirm(
+                    EditedClassifiedPost(
+                        kind = kind,
+                        resourceType = type,
+                        region = region.trim(),
+                        description = description.trim(),
+                        contactPhone = contactPhone.trim().ifBlank { null },
+                        contactName = contactName.trim().ifBlank { null },
+                    ),
+                )
+            },
+            enabled = !busy && region.isNotBlank(),
             modifier = Modifier.weight(1f).heightIn(min = 48.dp),
         ) {
             Text(stringResource(Res.string.board_preview_confirm))

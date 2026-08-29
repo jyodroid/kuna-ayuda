@@ -259,7 +259,12 @@ private fun QuakeBubble(quake: Quake?, nowMillis: Long, onTap: () -> Unit) {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Text(quake.place, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            quake.place,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f),
+                        )
                         // A "Hoy" badge when the strongest event is itself fresh (< 24h), so a quake
                         // that headlines today still reads as today despite the absolute timestamp.
                         if (isToday(nowMillis, quake.timeMillis)) TodayBadge()
@@ -311,7 +316,12 @@ private fun RecentQuakeBubble(quake: Quake, nowMillis: Long, onTap: () -> Unit) 
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Text(quake.place, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            quake.place,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f),
+                        )
                         if (isToday(nowMillis, quake.timeMillis)) TodayBadge()
                     }
                     Text(
@@ -342,6 +352,8 @@ private fun TodayBadge() {
             stringResource(Res.string.overview_quake_today),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            softWrap = false,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
         )
     }

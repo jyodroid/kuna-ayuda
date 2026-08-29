@@ -77,3 +77,21 @@ data class ConfirmRefRequestDto(
     val country: String = "CO",
     val kind: String? = null,
 )
+
+/**
+ * Body for `POST /api/board/classify/confirm-edit` — confirm an **edited** preview: the poster-corrected
+ * core fields + the `cacheRef` (so the server keeps the moderation signals + collection points from
+ * cache). `rawText` is the original paste (text path) or null (image path).
+ */
+@Serializable
+data class ConfirmClassifyRequestDto(
+    val cacheRef: String,
+    val kind: String,
+    val resourceType: String,
+    val region: String,
+    val description: String = "",
+    val contactPhone: String? = null,
+    val contactName: String? = null,
+    val rawText: String? = null,
+    val country: String = "CO",
+)

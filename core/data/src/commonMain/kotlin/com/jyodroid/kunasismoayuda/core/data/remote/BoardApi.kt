@@ -95,6 +95,16 @@ class BoardApi(
         return response.body()
     }
 
+    /** Step 2 (edited): confirm the poster-corrected preview (both text & image paths use this). */
+    suspend fun confirmEdit(req: ConfirmClassifyRequestDto): ResourcePostDto {
+        val response = client.post("$baseUrl/api/board/classify/confirm-edit") {
+            contentType(ContentType.Application.Json)
+            setBody(req)
+        }
+        if (response.status == HttpStatusCode.UnprocessableEntity) throw UnreadablePasteException()
+        return response.body()
+    }
+
     /** Device-gated resolve: close a post by presenting its owner secret (#4). */
     suspend fun resolve(id: Int, secret: String) {
         client.post("$baseUrl/api/board/$id/resolve") {

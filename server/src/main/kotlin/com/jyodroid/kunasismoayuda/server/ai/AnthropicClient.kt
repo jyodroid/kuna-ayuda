@@ -224,7 +224,10 @@ class AnthropicClient(
           points, phone numbers, links/@handles, dates/hours, and ANY list of items or locations. Keep
           the whole list; never condense specifics into a generic phrase like "a list of organizations".
           Drop only greetings, hashtags spam, and emojis. It may be several sentences or a short list.
-        - contactPhone: a phone number if present, else "".
+        - contactPhone: a SINGLE primary callable phone number, digits only (you may keep a leading "+"
+          country code and spaces WITHIN one number). If the post lists SEVERAL numbers, put only the
+          FIRST here — never merge two numbers into one string like "1111 2222" — and keep ALL of the
+          numbers in `description`. Use "" when no number is present.
         - contactName: a person/organization name if present, else "".
         - collectionPoints: a list of the specific drop-off / collection / distribution points named in the
           post — the places where people bring or pick up the resources. Each item is

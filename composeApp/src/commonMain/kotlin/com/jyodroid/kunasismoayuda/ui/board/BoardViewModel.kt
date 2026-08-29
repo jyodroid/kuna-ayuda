@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jyodroid.kunasismoayuda.core.domain.model.ClassifiedPreview
 import com.jyodroid.kunasismoayuda.core.domain.model.Country
+import com.jyodroid.kunasismoayuda.core.domain.model.EditedClassifiedPost
 import com.jyodroid.kunasismoayuda.core.domain.model.NewResourcePost
 import com.jyodroid.kunasismoayuda.core.domain.model.PostKind
 import com.jyodroid.kunasismoayuda.core.domain.model.ResourcePost
@@ -172,7 +173,8 @@ class BoardViewModel(
         viewModelScope.launch {
             runCatching { repository.previewClassification(trimmed, country.code, kind) }
                 .onSuccess { preview ->
-                    _classifyState.update { it.copy(isSubmitting = false, preview = preview, pendingText = trimmed, cacheRef = null) }
+                    // Keep the cacheRef (the text preview carries one too) so confirm can send edits.
+                    _classifyState.update { it.copy(isSubmitting = false, preview = preview, pendingText = trimmed, cacheRef = preview.cacheRef) }
                 }
                 .onFailure { t ->
                     val unreadable = t is UnreadablePasteException
@@ -203,18 +205,18 @@ class BoardViewModel(
         }
     }
 
-    /** Step 2 — confirm: the poster approved the preview → queue it as a moderated (pending) post. */
-    fun confirmClassified() {
+    /**
+     * Step 2 — confirm: the poster reviewed/edited the preview → queue it as a moderated (pending) post.
+     * [edited] carries the poster-corrected core fields; the moderation signals + collection points are
+     * kept server-side from the cache (by cacheRef). Both the text and image paths carry a cacheRef.
+     */
+    fun confirmClassified(edited: EditedClassifiedPost) {
         val s = _classifyState.value
-        val cacheRef = s.cacheRef
-        val text = s.pendingText
-        if (cacheRef == null && text == null) return
-        val kind = s.kind
+        val cacheRef = s.cacheRef ?: return // no handle → the preview expired; nothing to confirm
         _classifyState.update { it.copy(isConfirming = true, error = false, unreadable = false) }
         viewModelScope.launch {
             runCatching {
-                if (cacheRef != null) repository.confirmClassificationImage(cacheRef, country.code, kind)
-                else repository.confirmClassification(text!!, country.code, kind)
+                repository.confirmClassifiedEdited(edited, cacheRef, rawText = s.pendingText, country = country.code)
             }
                 .onSuccess { _classifyState.update { it.copy(isConfirming = false, sent = true, preview = null) } }
                 .onFailure { t ->
