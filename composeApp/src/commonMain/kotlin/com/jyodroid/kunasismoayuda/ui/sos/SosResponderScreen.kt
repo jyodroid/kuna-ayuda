@@ -31,7 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
+import com.jyodroid.kunasismoayuda.ui.platform.rememberMapLauncher
 import com.jyodroid.kunasismoayuda.ui.platform.rememberPhoneCaller
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
@@ -257,8 +257,8 @@ private fun ReportCard(
     onDeleteRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val uriHandler = LocalUriHandler.current
     val caller = rememberPhoneCaller()
+    val mapLauncher = rememberMapLauncher()
     val isSos = report.status == SosStatus.SOS
     // Danger reports use the error container so they stand out; SAFE uses a calm surface. The badge
     // text also names the status, so meaning is never carried by color alone.
@@ -314,9 +314,7 @@ private fun ReportCard(
                 val lon = report.longitude
                 if (lat != null && lon != null) {
                     OutlinedButton(
-                        onClick = {
-                            uriHandler.openUri("https://www.google.com/maps/search/?api=1&query=$lat,$lon")
-                        },
+                        onClick = { mapLauncher.open(lat, lon, report.region) },
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                     ) {
                         Text(stringResource(Res.string.sos_resp_directions))

@@ -339,7 +339,7 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   `sos_responder` route over `SosRepository.listActive(status)` → `GET /api/sos`. It lists submitted
   reports newest-first with a filter (SOS / A salvo / Todos), SOS cards in the error container + SAFE in
   a calm surface (status also named in text — never colour alone), a "Ver en el mapa" button opening the
-  coords via `LocalUriHandler`, and a call button. **Attended/notified lifecycle:** a top **stats row**
+  coords in the native maps app via `ui/platform MapLauncher` (Apple Maps on iOS), and a call button. **Attended/notified lifecycle:** a top **stats row**
   (SOS pendientes / A salvo pendientes / Atendidos, the pending-SOS cell emphasised when >0), an
   **Activos ↔ Archivados** segmented toggle, and per-card actions — active cards show "Atendido" (SOS) /
   "Notificado" (SAFE) which archive via `POST /{id}/handle`; archived cards show "Restaurar" (`reopen`)
@@ -541,8 +541,17 @@ The app targets users with disabilities in a high-stress context. Conventions to
   limitation `tel:` can't work around) it falls back to copying the number to the clipboard;
   **Desktop (JVM)** tries a `tel:` hand-off (macOS FaceTime / a registered VoIP app) and otherwise
   copies the number to the clipboard (no dialer on desktop). All the call buttons (help directory,
-  shelters, board, search, SOS + responder) go through it. Map/`mailto:`/`https` links still use
+  shelters, board, search, SOS + responder) go through it. `mailto:`/`https` links still use
   `LocalUriHandler` (they work cross-platform).
+- **Opening a location in maps is platform-specific too** (`ui/platform` `MapLauncher`, `expect/actual`,
+  mirroring `PhoneCaller`) — required by **App Store Guideline 4**, which rejected a build for sending
+  users only to a third-party maps app. `rememberMapLauncher().open(lat, lon, label)`: **iOS** launches
+  the **native Apple Maps** app via a `https://maps.apple.com/?ll=…&q=…` universal link (coordinate only
+  in the URL, so it's never a `nil` NSURL; https needs no `LSApplicationQueriesSchemes`); **Android**
+  hands off to the default maps app via a `geo:` `ACTION_VIEW` intent (chooser if several); **Desktop
+  (JVM)** opens OpenStreetMap in the browser. Used by the shelter/help-point "Cómo llegar" (`ShelterCard`,
+  shared by the list + the map's marker bottom sheet) and the SOS responder "Ver en el mapa" — both
+  previously opened a Google Maps URL via `LocalUriHandler`.
 - All user-facing text is localized via Compose Resources (ES default / EN) and uses `sp`/theme
   typography so it scales with the system font size.
 
@@ -563,7 +572,8 @@ Channels and safety Tips — merged so we stay at 5 tabs). Nav labels are center
   **nearest 8** (`Geo.distanceKm`) and recentres — the camera follows any focus change through a
   `LaunchedEffect { cameraState.animateTo(...) }` (firstPosition only seeds frame 0). **Tapping a
   center opens a `ModalBottomSheet`** (`ShelterCard`) that now shows **distance from you** (when known)
-  and a **"Cómo llegar"** button opening the coords in the device maps app via `LocalUriHandler`.
+  and a **"Cómo llegar"** button opening the coords in the device's native maps app via `ui/platform
+  MapLauncher` (Apple Maps on iOS — App Store Guideline 4).
   The map needs network for tiles; bundling offline tiles (pmtiles) is a deliberate future task.
 - The **Overview tab** (`ui/overview/OverviewScreen`, replaces the old list) summarizes the situation.
   It has a **country switcher** at the top and is wrapped in a **`PullToRefreshBox`** (pull to retry;

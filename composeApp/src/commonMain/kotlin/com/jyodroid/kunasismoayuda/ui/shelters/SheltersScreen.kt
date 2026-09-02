@@ -30,7 +30,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
+import com.jyodroid.kunasismoayuda.ui.platform.rememberMapLauncher
 import com.jyodroid.kunasismoayuda.ui.platform.rememberPhoneCaller
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -200,8 +200,8 @@ fun SheltersScreen(
 /** Reused by the map's marker bottom sheet, so it's public. */
 @Composable
 fun ShelterCard(shelter: Shelter, modifier: Modifier = Modifier, distanceKm: Double? = null) {
-    val uriHandler = LocalUriHandler.current
     val caller = rememberPhoneCaller()
+    val mapLauncher = rememberMapLauncher()
     Card(modifier = modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
@@ -266,13 +266,10 @@ fun ShelterCard(shelter: Shelter, modifier: Modifier = Modifier, distanceKm: Dou
                         Text("${stringResource(Res.string.help_call)}  $phone")
                     }
                 }
-                // Opens the coordinates in the device's maps app (or browser) for turn-by-turn routing.
+                // Opens the coordinates in the device's NATIVE maps app (Apple Maps on iOS) — never a
+                // third-party maps app (App Store Guideline 4).
                 OutlinedButton(
-                    onClick = {
-                        uriHandler.openUri(
-                            "https://www.google.com/maps/search/?api=1&query=${shelter.latitude},${shelter.longitude}",
-                        )
-                    },
+                    onClick = { mapLauncher.open(shelter.latitude, shelter.longitude, shelter.name) },
                     modifier = Modifier.heightIn(min = 48.dp),
                 ) {
                     Text(stringResource(Res.string.shelter_directions))

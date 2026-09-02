@@ -4,6 +4,13 @@ All notable changes to Kuna Ayuda. Format based on [Keep a Changelog](https://ke
 this project uses [Semantic Versioning](https://semver.org/). The version lives in
 `gradle/libs.versions.toml` (`desktopPackageVersion`) and is enforced against the git tag by CI.
 
+## [1.5.2] — 2026-09-02
+
+### Changed
+- **Native maps.** "Cómo llegar" (help points) and "Ver en el mapa" (SOS responder) now open the
+  device's **native** maps app — **Apple Maps on iOS**, the default maps app on Android, OpenStreetMap
+  in the browser on Desktop — instead of always sending you to a third-party maps website.
+
 ## [1.5.1] — 2026-08-29
 
 ### Added
