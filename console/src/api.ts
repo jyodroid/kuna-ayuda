@@ -106,6 +106,7 @@ export type BoardPost = {
   contactPhone: string | null;
   contactName: string | null;
   status: string;
+  country: string;
   rawText: string | null;
   factCheck: string | null;
   createdAt: string;
@@ -135,6 +136,7 @@ export type Sos = {
   region: string | null;
   message: string | null;
   contactPhone: string | null;
+  country: string | null;
   createdAt: string;
   handledAt: string | null;
   handledBy: string | null;
@@ -175,9 +177,10 @@ export const admins = {
     api<void>(`/api/admins/${id}/password`, { method: "POST", body: { newPassword } }),
 };
 
+// country undefined/"" ⇒ all countries (the console default). A view filter, never a hard scope.
 export const board = {
-  pending: () => api<BoardPost[]>("/api/board/pending"),
-  active: () => api<BoardPost[]>("/api/board/active"),
+  pending: (country?: string) => api<BoardPost[]>(`/api/board/pending${country ? `?country=${country}` : ""}`),
+  active: (country?: string) => api<BoardPost[]>(`/api/board/active${country ? `?country=${country}` : ""}`),
   approve: (id: number) => api<void>(`/api/board/${id}/approve`, { method: "POST" }),
   reject: (id: number) => api<void>(`/api/board/${id}`, { method: "DELETE" }),
 };
@@ -207,7 +210,8 @@ export const shelters = {
 };
 
 export const sos = {
-  list: (archived: string) => api<Sos[]>(`/api/sos?archived=${archived}`),
+  list: (archived: string, country?: string) =>
+    api<Sos[]>(`/api/sos?archived=${archived}${country ? `&country=${country}` : ""}`),
   handle: (id: number) => api<void>(`/api/sos/${id}/handle`, { method: "POST" }),
   reopen: (id: number) => api<void>(`/api/sos/${id}/reopen`, { method: "POST" }),
   remove: (id: number) => api<void>(`/api/sos/${id}`, { method: "DELETE" }),

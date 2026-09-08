@@ -38,12 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jyodroid.kunasismoayuda.resources.Res
-import com.jyodroid.kunasismoayuda.resources.action_cancel
 import com.jyodroid.kunasismoayuda.resources.sos_field_name
-import com.jyodroid.kunasismoayuda.resources.sos_safe_confirm_body
-import com.jyodroid.kunasismoayuda.resources.sos_safe_confirm_title
-import com.jyodroid.kunasismoayuda.resources.sos_safe_name_hint
-import com.jyodroid.kunasismoayuda.resources.sos_safe_publish
 import com.jyodroid.kunasismoayuda.resources.sos_beacon_active
 import com.jyodroid.kunasismoayuda.resources.sos_beacon_button
 import com.jyodroid.kunasismoayuda.resources.sos_beacon_cancel
@@ -67,7 +62,6 @@ import com.jyodroid.kunasismoayuda.resources.sos_location_on
 import com.jyodroid.kunasismoayuda.resources.sos_pending
 import com.jyodroid.kunasismoayuda.resources.sos_queued
 import com.jyodroid.kunasismoayuda.resources.sos_queued_safe
-import com.jyodroid.kunasismoayuda.resources.sos_safe_button
 import com.jyodroid.kunasismoayuda.resources.sos_safe_sent
 import com.jyodroid.kunasismoayuda.resources.sos_sending
 import com.jyodroid.kunasismoayuda.resources.sos_sent
@@ -78,7 +72,6 @@ fun SosScreen(
     state: SosUiState,
     emergencyNumber: String,
     onSos: (region: String, message: String, phone: String, name: String) -> Unit,
-    onSafe: (name: String, region: String) -> Unit,
     beacon: BeaconState,
     canFlash: Boolean,
     canSound: Boolean,
@@ -93,10 +86,8 @@ fun SosScreen(
     var region by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
-    var showSafeConfirm by remember { mutableStateOf(false) }
 
     val busy = state.phase == SosPhase.LOCATING || state.phase == SosPhase.SENDING
-    val hasName = name.trim().isNotEmpty()
 
     Column(
         modifier = modifier
@@ -151,48 +142,6 @@ fun SosScreen(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-
-        // "I'm safe" is a PUBLIC reassurance check-in: it needs a name and a confirm step before it
-        // publishes. Disabled until a name is entered.
-        OutlinedButton(
-            onClick = { showSafeConfirm = true },
-            enabled = !busy && hasName,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-        ) {
-            Text(stringResource(Res.string.sos_safe_button))
-        }
-        if (!hasName) {
-            Text(
-                stringResource(Res.string.sos_safe_name_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        if (showSafeConfirm) {
-            val preview = name.trim() + if (region.trim().isNotEmpty()) " · ${region.trim()}" else ""
-            AlertDialog(
-                onDismissRequest = { showSafeConfirm = false },
-                title = { Text(stringResource(Res.string.sos_safe_confirm_title)) },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(Res.string.sos_safe_confirm_body))
-                        Text(preview, fontWeight = FontWeight.Bold)
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showSafeConfirm = false
-                        onSafe(name, region)
-                    }) { Text(stringResource(Res.string.sos_safe_publish)) }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showSafeConfirm = false }) {
-                        Text(stringResource(Res.string.action_cancel))
-                    }
-                },
-            )
-        }
 
         if (canFlash || canSound) {
             BeaconSection(

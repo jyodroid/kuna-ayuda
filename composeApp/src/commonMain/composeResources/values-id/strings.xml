@@ -436,6 +436,8 @@
     <string name="search_tab_safe">Selamat</string>
     <string name="safe_empty">Belum ada kabar orang yang selamat.</string>
     <string name="safe_unverified">Kabar dari komunitas, belum terverifikasi.</string>
+    <string name="safe_rationale">Jika komunikasi lambat, beri tahu orang terkasih bahwa Anda baik-baik saja. Tanpa sinyal, kabar Anda disimpan dan dikirim otomatis saat kembali daring.</string>
+    <string name="mod_country_all">Semua</string>
     <string name="safe_status">Selamat</string>
     <string name="time_just_now">baru saja</string>
     <string name="time_minutes_ago">%1$d mnt lalu</string>

@@ -36,6 +36,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.jyodroid.kunasismoayuda.core.domain.model.ResourcePost
+import com.jyodroid.kunasismoayuda.ui.CountryBadge
+import com.jyodroid.kunasismoayuda.ui.CountryFilterRow
 import com.jyodroid.kunasismoayuda.resources.Res
 import com.jyodroid.kunasismoayuda.resources.admin_manage_entry
 import com.jyodroid.kunasismoayuda.resources.shelter_add_entry
@@ -66,6 +68,7 @@ fun ModerationScreen(
     onReject: (Int) -> Unit,
     onLoad: () -> Unit,
     onSelectTab: (ModerationTab) -> Unit,
+    onCountryChange: (String?) -> Unit,
     modifier: Modifier = Modifier,
     // Non-null only for a SUPERADMIN session — opens the admin-account console. Null hides the entry.
     onManageAdmins: (() -> Unit)? = null,
@@ -126,6 +129,8 @@ fun ModerationScreen(
                 label = { Text(stringResource(Res.string.mod_tab_published)) },
             )
         }
+        // Country filter (Todos + each) — a view filter; defaults to the app's selected country.
+        CountryFilterRow(selected = state.country, onSelect = onCountryChange)
         Box(Modifier.weight(1f)) {
             ModerationContent(
                 state = state,
@@ -208,11 +213,14 @@ private fun ActiveCard(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
-            Text(
-                text = post.kind.name,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = post.kind.name,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                CountryBadge(post.country) // which country this post belongs to
+            }
             if (post.description.isNotBlank()) {
                 Text(post.description, style = MaterialTheme.typography.bodyMedium)
             }
@@ -263,11 +271,14 @@ private fun PendingCard(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
-            Text(
-                text = post.kind.name,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = post.kind.name,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                CountryBadge(post.country) // which country this post belongs to
+            }
             if (post.description.isNotBlank()) {
                 Text(post.description, style = MaterialTheme.typography.bodyMedium)
             }

@@ -63,11 +63,11 @@ class ResourceBoardRepositoryImpl(
         ),
     ).toDomain()
 
-    override suspend fun listPending(): List<ResourcePost> =
-        api.listPending(sessionManager.requireToken()).map { it.toDomain() }
+    override suspend fun listPending(country: String?): List<ResourcePost> =
+        api.listPending(country, sessionManager.requireToken()).map { it.toDomain() }
 
-    override suspend fun listActive(): List<ResourcePost> =
-        api.listActive(sessionManager.requireToken()).map { it.toDomain() }
+    override suspend fun listActive(country: String?): List<ResourcePost> =
+        api.listActive(country, sessionManager.requireToken()).map { it.toDomain() }
 
     override suspend fun approve(id: Int) = api.approve(id, sessionManager.requireToken())
 

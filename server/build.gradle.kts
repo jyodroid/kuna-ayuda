@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.jyodroid.kunasismoayuda"
-version = "1.5.2"
+version = "1.5.3"
 
 application {
     mainClass.set("com.jyodroid.kunasismoayuda.server.ApplicationKt")

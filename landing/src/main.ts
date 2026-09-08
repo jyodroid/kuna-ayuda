@@ -1,4 +1,10 @@
 import "./styles.css";
+// Font Awesome brand icons (Apple / Android on the download cards). Bundled by Vite, not a CDN, so
+// the site stays self-contained. In a production build Vite emits these as a <link>, so the icons
+// render with no JS — consistent with the rest of the page.
+import "@fortawesome/fontawesome-free/css/fontawesome.min.css";
+import "@fortawesome/fontawesome-free/css/brands.min.css";
+import "@fortawesome/fontawesome-free/css/solid.min.css";
 
 /**
  * Tiny hand-rolled i18n for a static ES/EN site. Every translatable chunk is written twice in the

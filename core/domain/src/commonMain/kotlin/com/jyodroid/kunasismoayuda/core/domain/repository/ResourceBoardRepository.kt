@@ -46,11 +46,11 @@ interface ResourceBoardRepository {
 
     // --- Moderator-only (require an authenticated ADMIN session) ---
 
-    /** Posts awaiting moderation (status PENDING). */
-    suspend fun listPending(): List<ResourcePost>
+    /** Posts awaiting moderation (status PENDING); [country] null = all countries. */
+    suspend fun listPending(country: String? = null): List<ResourcePost>
 
-    /** Published (ACTIVE) posts, so a moderator can find and remove an abusive live post. */
-    suspend fun listActive(): List<ResourcePost>
+    /** Published (ACTIVE) posts, so a moderator can find and remove an abusive live post; null = all. */
+    suspend fun listActive(country: String? = null): List<ResourcePost>
 
     /** Publish a pending post (make it ACTIVE). */
     suspend fun approve(id: Int)

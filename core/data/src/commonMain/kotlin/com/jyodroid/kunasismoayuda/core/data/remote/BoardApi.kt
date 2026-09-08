@@ -115,14 +115,16 @@ class BoardApi(
 
     // --- Moderator-only: the server enforces role=ADMIN on these; we attach the bearer token. ---
 
-    suspend fun listPending(token: String): List<ResourcePostDto> =
+    suspend fun listPending(country: String?, token: String): List<ResourcePostDto> =
         client.get("$baseUrl/api/board/pending") {
             bearerAuth(token)
+            country?.let { parameter("country", it) } // omit ⇒ all countries
         }.body()
 
-    suspend fun listActive(token: String): List<ResourcePostDto> =
+    suspend fun listActive(country: String?, token: String): List<ResourcePostDto> =
         client.get("$baseUrl/api/board/active") {
             bearerAuth(token)
+            country?.let { parameter("country", it) }
         }.body()
 
     suspend fun approve(id: Int, token: String) {

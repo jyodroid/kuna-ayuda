@@ -22,8 +22,9 @@ interface SosRepository {
      * Reports for the responder view, newest first.
      * @param status "SOS" or "SAFE" to filter; null returns both.
      * @param archived false = pending only (handled_at null); true = archived only; null = both.
+     * @param country ISO code to filter by country; null returns all countries.
      */
-    fun list(status: String?, archived: Boolean?): List<SosReport>
+    fun list(status: String?, archived: Boolean?, country: String? = null): List<SosReport>
 
     /** Archive a report as attended/notified, stamping [by] (moderator email). Returns false if absent. */
     fun markHandled(id: Int, by: String?): Boolean
@@ -37,6 +38,6 @@ interface SosRepository {
     /** Permanently deletes every report created before [cutoff] (60-day purge). Returns the count. */
     fun deleteOlderThan(cutoff: java.time.LocalDateTime): Int
 
-    /** Pending-vs-handled counts for the responder dashboard. */
-    fun stats(): SosStats
+    /** Pending-vs-handled counts for the responder dashboard; [country] null = all countries. */
+    fun stats(country: String? = null): SosStats
 }

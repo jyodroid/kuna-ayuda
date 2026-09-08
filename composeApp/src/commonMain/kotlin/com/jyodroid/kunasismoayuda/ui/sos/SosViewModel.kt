@@ -110,34 +110,6 @@ class SosViewModel(
         }
     }
 
-    /** Publish a public "I'm safe" check-in. [name] is required (the poster confirmed it goes public). */
-    fun sendSafe(name: String, region: String) {
-        _phase.value = SosPhase.SENDING
-        viewModelScope.launch {
-            runCatching {
-                repository.send(
-                    NewSos(
-                        status = SosStatus.SAFE,
-                        latitude = null,
-                        longitude = null,
-                        region = region.trim().ifBlank { null },
-                        message = null,
-                        contactPhone = null,
-                        displayName = name.trim().ifBlank { null },
-                        country = country,
-                    ),
-                )
-            }
-                .onSuccess { result ->
-                    _phase.value = when (result) {
-                        SosSendResult.SENT -> SosPhase.SENT_SAFE
-                        SosSendResult.QUEUED -> SosPhase.QUEUED_SAFE
-                    }
-                }
-                .onFailure { _phase.value = SosPhase.ERROR }
-        }
-    }
-
     fun reset() {
         _phase.value = SosPhase.IDLE
         _precise.value = false

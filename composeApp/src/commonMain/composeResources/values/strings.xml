@@ -436,6 +436,8 @@
     <string name="search_tab_safe">A salvo</string>
     <string name="safe_empty">Aún no hay avisos de personas a salvo.</string>
     <string name="safe_unverified">Avisos de la comunidad, sin verificar.</string>
+    <string name="safe_rationale">Si las comunicaciones están lentas, avísales a tus seres queridos que estás bien. Si no hay señal, tu aviso se guarda y se envía solo cuando vuelva la conexión.</string>
+    <string name="mod_country_all">Todos</string>
     <string name="safe_status">A salvo</string>
     <string name="time_just_now">hace un momento</string>
     <string name="time_minutes_ago">hace %1$d min</string>

@@ -33,7 +33,8 @@ class ResourceBoardServiceTest {
         override fun listActive(kind: String?, region: String?, resourceType: String?, country: String) =
             posts.filter { it.status == "ACTIVE" }
 
-        override fun listByStatus(status: String) = posts.filter { it.status == status }
+        override fun listByStatus(status: String, country: String?) =
+            posts.filter { it.status == status && (country == null || it.country == country) }
 
         override fun create(post: NewResourcePost): ResourcePost {
             val row = ResourcePost(

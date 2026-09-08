@@ -33,12 +33,12 @@ class ResourceBoardRepositoryImpl : ResourceBoardRepository {
         }
     }
 
-    override fun listByStatus(status: String): List<ResourcePost> {
+    override fun listByStatus(status: String, country: String?): List<ResourcePost> {
         if (!DatabaseFactory.initialized) return emptyList()
         return transaction {
-            ResourcePosts.selectAll().where { ResourcePosts.status eq status }
-                .orderBy(ResourcePosts.createdAt, SortOrder.DESC)
-                .map { it.toPost() }
+            val query = ResourcePosts.selectAll().where { ResourcePosts.status eq status }
+            if (country != null) query.andWhere { ResourcePosts.country eq country.uppercase() }
+            query.orderBy(ResourcePosts.createdAt, SortOrder.DESC).map { it.toPost() }
         }
     }
 

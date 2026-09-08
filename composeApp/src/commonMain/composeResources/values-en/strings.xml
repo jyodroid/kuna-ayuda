@@ -436,6 +436,8 @@
     <string name="search_tab_safe">Safe</string>
     <string name="safe_empty">No safe check-ins yet.</string>
     <string name="safe_unverified">Community check-ins, unverified.</string>
+    <string name="safe_rationale">If communications are slow, let your loved ones know you're OK. With no signal, your check-in is saved and sent automatically once you're back online.</string>
+    <string name="mod_country_all">All</string>
     <string name="safe_status">Safe</string>
     <string name="time_just_now">just now</string>
     <string name="time_minutes_ago">%1$d min ago</string>

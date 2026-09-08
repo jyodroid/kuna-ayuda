@@ -354,24 +354,38 @@ function ModeratorsPanel() {
 
 // ---- moderation -------------------------------------------------------------------------------
 
+// Flag + code for a moderation row, so it's clear which country an item belongs to under "Todos".
+const COUNTRY_FLAG: Record<string, string> = { CO: "🇨🇴", ID: "🇮🇩", ES: "🇪🇸", IT: "🇮🇹", PE: "🇵🇪" };
+function countryTag(code?: string | null): string {
+  if (!code) return "";
+  return `${COUNTRY_FLAG[code] ?? ""} ${code}`.trim();
+}
+
 function ModerationPanel() {
   const [sub, setSub] = useState<"board" | "search" | "shelters" | "sos">("board");
+  // Country filter: "" = Todos (all). The console defaults to All (central oversight); a view filter,
+  // never a hard scope. Board + SOS honor "all"; Búsqueda/Puntos are country-scoped, so they fall back to CO.
+  const [country, setCountry] = useState("");
   const label = (s: string) =>
     s === "board" ? "Red de ayuda" : s === "search" ? "Búsqueda" : s === "shelters" ? "Puntos de ayuda" : "SOS";
   return (
     <div className="space-y-3">
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center flex-wrap">
         {(["board", "search", "shelters", "sos"] as const).map((s) => (
           <button key={s} onClick={() => setSub(s)}
             className={`px-3 py-1.5 rounded text-sm ${sub === s ? "bg-primary text-white" : "bg-white border"}`}>
             {label(s)}
           </button>
         ))}
+        <select className="input w-32 ml-auto" value={country} onChange={(e) => setCountry(e.target.value)}>
+          <option value="">Todos</option>
+          {["CO", "ID", "ES", "IT", "PE"].map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
       </div>
-      {sub === "board" && <BoardMod />}
-      {sub === "search" && <SearchMod />}
-      {sub === "shelters" && <ShelterMod />}
-      {sub === "sos" && <SosMod />}
+      {sub === "board" && <BoardMod country={country} />}
+      {sub === "search" && <SearchMod country={country} />}
+      {sub === "shelters" && <ShelterMod country={country} />}
+      {sub === "sos" && <SosMod country={country} />}
     </div>
   );
 }
@@ -385,10 +399,11 @@ function riskFlagLabel(code: string): string {
   }
 }
 
-function BoardMod() {
+function BoardMod({ country }: { country: string }) {
   const [view, setView] = useState<"pending" | "active">("pending");
+  const c = country || undefined; // "" ⇒ all countries
   const { data, error, loading, reload } = useAsync<BoardPost[]>(
-    () => (view === "pending" ? board.pending() : board.active()), [view]);
+    () => (view === "pending" ? board.pending(c) : board.active(c)), [view, country]);
   const act = async (fn: () => Promise<unknown>) => { try { await fn(); reload(); } catch (e: any) { alert(e?.message); } };
   return (
     <div className="space-y-2">
@@ -406,7 +421,7 @@ function BoardMod() {
       )}
       {data?.map((p) => (
         <div key={p.id} className="bg-white rounded-lg shadow p-3">
-          <div className="text-sm font-medium">{p.kind} · {p.resourceType} · {p.region}</div>
+          <div className="text-sm font-medium">{countryTag(p.country)} · {p.kind} · {p.resourceType} · {p.region}</div>
           <div className="text-sm text-neutral-700">{p.description}</div>
           {p.collectionPoints && p.collectionPoints.length > 0 && (
             <div className="mt-1 text-sm">
@@ -438,15 +453,13 @@ function BoardMod() {
   );
 }
 
-function SearchMod() {
-  const [country, setCountry] = useState("CO");
-  const { data, error, loading, reload } = useAsync<SearchReport[]>(() => search.list(country), [country]);
+function SearchMod({ country }: { country: string }) {
+  // Búsqueda is country-scoped server-side; under "Todos" ("") fall back to CO.
+  const c = country || "CO";
+  const { data, error, loading, reload } = useAsync<SearchReport[]>(() => search.list(c), [country]);
   const act = async (fn: () => Promise<unknown>) => { try { await fn(); reload(); } catch (e: any) { alert(e?.message); } };
   return (
     <div className="space-y-2">
-      <select className="input w-32" value={country} onChange={(e) => setCountry(e.target.value)}>
-        {["CO", "ID", "ES", "IT", "PE"].map((c) => <option key={c}>{c}</option>)}
-      </select>
       <Msg error={error} loading={loading} />
       {data?.length === 0 && <p className="text-neutral-500 text-sm">Sin reportes.</p>}
       {data?.map((r) => (
@@ -464,15 +477,13 @@ function SearchMod() {
   );
 }
 
-function ShelterMod() {
-  const [country, setCountry] = useState("CO");
-  const { data, error, loading, reload } = useAsync<Shelter[]>(() => shelters.list(country), [country]);
+function ShelterMod({ country }: { country: string }) {
+  // Puntos de ayuda are country-scoped server-side; under "Todos" ("") fall back to CO.
+  const c = country || "CO";
+  const { data, error, loading, reload } = useAsync<Shelter[]>(() => shelters.list(c), [country]);
   const act = async (fn: () => Promise<unknown>) => { try { await fn(); reload(); } catch (e: any) { alert(e?.message); } };
   return (
     <div className="space-y-2">
-      <select className="input w-32" value={country} onChange={(e) => setCountry(e.target.value)}>
-        {["CO", "ID", "ES", "IT", "PE"].map((c) => <option key={c}>{c}</option>)}
-      </select>
       <Msg error={error} loading={loading} />
       <div className="overflow-x-auto bg-white rounded-lg shadow">
         <table className="min-w-full text-sm">
@@ -493,9 +504,10 @@ function ShelterMod() {
   );
 }
 
-function SosMod() {
+function SosMod({ country }: { country: string }) {
   const [archived, setArchived] = useState("false");
-  const { data, error, loading, reload } = useAsync<Sos[]>(() => sos.list(archived), [archived]);
+  const c = country || undefined; // "" ⇒ all countries
+  const { data, error, loading, reload } = useAsync<Sos[]>(() => sos.list(archived, c), [archived, country]);
   const act = async (fn: () => Promise<unknown>) => { try { await fn(); reload(); } catch (e: any) { alert(e?.message); } };
   return (
     <div className="space-y-2">
@@ -505,7 +517,7 @@ function SosMod() {
       <Msg error={error} loading={loading} />
       {data?.map((r) => (
         <div key={r.id} className={`rounded-lg shadow p-3 ${r.status === "SOS" ? "bg-danger-muted" : "bg-white"}`}>
-          <div className="text-sm font-medium">{r.status} · {r.region ?? "sin región"} · {r.createdAt.replace("T", " ").slice(0, 16)}</div>
+          <div className="text-sm font-medium">{countryTag(r.country)} · {r.status} · {r.region ?? "sin región"} · {r.createdAt.replace("T", " ").slice(0, 16)}</div>
           {r.message && <div className="text-sm">{r.message}</div>}
           {r.latitude != null && <a className="text-primary underline text-xs" target="_blank"
             href={`https://www.openstreetmap.org/?mlat=${r.latitude}&mlon=${r.longitude}#map=15/${r.latitude}/${r.longitude}`}>Ver en el mapa</a>}

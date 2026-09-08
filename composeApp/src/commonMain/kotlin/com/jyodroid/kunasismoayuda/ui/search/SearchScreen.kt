@@ -27,10 +27,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -70,8 +73,18 @@ import com.jyodroid.kunasismoayuda.resources.mod_delete
 import com.jyodroid.kunasismoayuda.resources.mod_delete_confirm
 import com.jyodroid.kunasismoayuda.resources.retry
 import com.jyodroid.kunasismoayuda.resources.safe_empty
+import com.jyodroid.kunasismoayuda.resources.safe_rationale
 import com.jyodroid.kunasismoayuda.resources.safe_status
 import com.jyodroid.kunasismoayuda.resources.safe_unverified
+import com.jyodroid.kunasismoayuda.resources.sos_field_name
+import com.jyodroid.kunasismoayuda.resources.sos_field_region
+import com.jyodroid.kunasismoayuda.resources.sos_queued_safe
+import com.jyodroid.kunasismoayuda.resources.sos_safe_button
+import com.jyodroid.kunasismoayuda.resources.sos_safe_confirm_body
+import com.jyodroid.kunasismoayuda.resources.sos_safe_confirm_title
+import com.jyodroid.kunasismoayuda.resources.sos_safe_name_hint
+import com.jyodroid.kunasismoayuda.resources.sos_safe_publish
+import com.jyodroid.kunasismoayuda.resources.sos_safe_sent
 import com.jyodroid.kunasismoayuda.resources.search_tab_reports
 import com.jyodroid.kunasismoayuda.resources.search_tab_safe
 import com.jyodroid.kunasismoayuda.resources.time_days_ago
@@ -95,6 +108,7 @@ import org.jetbrains.compose.resources.stringResource
 /** The two lists that live under "Búsqueda y reencuentro": lost/found reports, and safe check-ins. */
 enum class ReunifyMode { REPORTS, SAFE }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     state: SearchUiState,
@@ -110,7 +124,10 @@ fun SearchScreen(
     onSafeRetry: () -> Unit = {},
     // Non-null only for a logged-in moderator — a per-card delete for fake/abusive safe posts.
     onSafeDelete: ((Int) -> Unit)? = null,
+    // Publish a public "I'm safe" check-in (moved here from the SOS screen). name required, region optional.
+    onSafeSubmit: (name: String, region: String) -> Unit = { _, _ -> },
 ) {
+    var showSafeCompose by remember { mutableStateOf(false) }
     // Photo currently shown full-screen (id + a description for accessibility); null = none.
     var fullscreen by remember { mutableStateOf<Pair<Int, String>?>(null) }
     var mode by remember { mutableStateOf(ReunifyMode.REPORTS) }
@@ -139,7 +156,21 @@ fun SearchScreen(
             }
 
             if (mode == ReunifyMode.SAFE) {
-                SafeContent(safeState, onSafeRetry, onSafeDelete)
+                // Why this exists — plus the offline reassurance (queued when there's no signal).
+                Text(
+                    text = stringResource(Res.string.safe_rationale),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+                )
+                SafeSendStatus(safeState.sendPhase)
+                PullToRefreshBox(
+                    isRefreshing = safeState.isLoading,
+                    onRefresh = onSafeRetry,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    SafeContent(safeState, onSafeRetry, onSafeDelete)
+                }
                 return@Column
             }
 
@@ -182,50 +213,56 @@ fun SearchScreen(
                 }
             }
 
-            when {
-                state.isLoading -> Centered {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator()
-                        Text(stringResource(Res.string.search_loading), Modifier.padding(top = 8.dp))
-                    }
-                }
-
-                state.error -> Centered {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(Res.string.search_error))
-                        Button(onClick = onRetry, modifier = Modifier.padding(top = 8.dp).heightIn(min = 48.dp)) {
-                            Text(stringResource(Res.string.retry))
+            PullToRefreshBox(
+                isRefreshing = state.isLoading,
+                onRefresh = onRetry,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                when {
+                    state.isLoading -> Centered {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator()
+                            Text(stringResource(Res.string.search_loading), Modifier.padding(top = 8.dp))
                         }
                     }
-                }
 
-                state.reports.isEmpty() -> Centered { Text(stringResource(Res.string.search_empty)) }
+                    state.error -> Centered {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(stringResource(Res.string.search_error))
+                            Button(onClick = onRetry, modifier = Modifier.padding(top = 8.dp).heightIn(min = 48.dp)) {
+                                Text(stringResource(Res.string.retry))
+                            }
+                        }
+                    }
 
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(state.reports, key = { it.id }) { report ->
-                        SearchCard(
-                            report = report,
-                            onPhotoClick = { pid -> fullscreen = pid to report.title },
-                            onDelete = onDelete?.let { del -> { del(report.id) } },
-                        )
+                    state.reports.isEmpty() -> Centered { Text(stringResource(Res.string.search_empty)) }
+
+                    else -> LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(state.reports, key = { it.id }) { report ->
+                            SearchCard(
+                                report = report,
+                                onPhotoClick = { pid -> fullscreen = pid to report.title },
+                                onDelete = onDelete?.let { del -> { del(report.id) } },
+                            )
+                        }
                     }
                 }
             }
         }
 
-        // "New report" only applies to lost/found; the safe list is check-in-from-SOS only.
-        if (mode == ReunifyMode.REPORTS) {
-            ExtendedFloatingActionButton(
-                onClick = onNew,
-                text = { Text(stringResource(Res.string.search_new)) },
-                icon = { Icon(painterResource(Res.drawable.ic_add), contentDescription = null) },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-            )
-        }
+        // REPORTS → new lost/found report; SAFE → publish an "I'm safe" check-in.
+        ExtendedFloatingActionButton(
+            onClick = { if (mode == ReunifyMode.REPORTS) onNew() else showSafeCompose = true },
+            text = {
+                Text(stringResource(if (mode == ReunifyMode.REPORTS) Res.string.search_new else Res.string.sos_safe_button))
+            },
+            icon = { Icon(painterResource(Res.drawable.ic_add), contentDescription = null) },
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+        )
     }
 
     fullscreen?.let { (photoId, title) ->
@@ -234,6 +271,90 @@ fun SearchScreen(
             description = title,
             onDismiss = { fullscreen = null },
         )
+    }
+
+    if (showSafeCompose) {
+        SafeComposeDialog(
+            onSubmit = { name, region ->
+                showSafeCompose = false
+                onSafeSubmit(name, region)
+            },
+            onDismiss = { showSafeCompose = false },
+        )
+    }
+}
+
+/**
+ * Compose + publish an "I'm safe" check-in. A SAFE check-in is inherently public, so it needs a name and
+ * an explicit Publicar/Cancelar confirm (publish or discard — no private path). Region is optional.
+ */
+@Composable
+private fun SafeComposeDialog(onSubmit: (name: String, region: String) -> Unit, onDismiss: () -> Unit) {
+    var name by remember { mutableStateOf("") }
+    var region by remember { mutableStateOf("") }
+    val canPublish = name.trim().isNotEmpty()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.sos_safe_confirm_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(Res.string.sos_safe_confirm_body))
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { if (it.length <= 120) name = it },
+                    label = { Text(stringResource(Res.string.sos_field_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = region,
+                    onValueChange = { region = it },
+                    label = { Text(stringResource(Res.string.sos_field_region)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (!canPublish) {
+                    Text(
+                        stringResource(Res.string.sos_safe_name_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSubmit(name, region) }, enabled = canPublish) {
+                Text(stringResource(Res.string.sos_safe_publish))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.action_cancel)) }
+        },
+    )
+}
+
+/** A brief status line after publishing: sending / sent / queued-offline / error. */
+@Composable
+private fun SafeSendStatus(phase: SafeSendPhase) {
+    val text = when (phase) {
+        SafeSendPhase.SENDING -> stringResource(Res.string.search_loading)
+        SafeSendPhase.SENT -> stringResource(Res.string.sos_safe_sent)
+        SafeSendPhase.QUEUED -> stringResource(Res.string.sos_queued_safe)
+        SafeSendPhase.ERROR -> stringResource(Res.string.search_error)
+        SafeSendPhase.IDLE -> return
+    }
+    val container = when (phase) {
+        SafeSendPhase.ERROR -> MaterialTheme.colorScheme.errorContainer
+        SafeSendPhase.SENT -> MaterialTheme.colorScheme.secondaryContainer
+        SafeSendPhase.QUEUED -> MaterialTheme.colorScheme.tertiaryContainer
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    Card(
+        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = container),
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp)
+            .semantics { liveRegion = LiveRegionMode.Polite },
+    ) {
+        Text(text, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, modifier = Modifier.padding(12.dp))
     }
 }
 

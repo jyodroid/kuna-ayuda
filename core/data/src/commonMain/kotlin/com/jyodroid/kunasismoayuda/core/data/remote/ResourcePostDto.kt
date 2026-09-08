@@ -21,6 +21,7 @@ data class ResourcePostDto(
     val contactName: String? = null,
     val status: String = "ACTIVE",
     val source: String = "manual",
+    val country: String = "CO",
     val rawText: String? = null,
     val factCheck: String? = null,
     val createdAt: String,

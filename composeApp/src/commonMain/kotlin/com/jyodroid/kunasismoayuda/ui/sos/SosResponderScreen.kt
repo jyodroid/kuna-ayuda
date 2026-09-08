@@ -31,6 +31,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.jyodroid.kunasismoayuda.ui.CountryBadge
+import com.jyodroid.kunasismoayuda.ui.CountryFilterRow
 import com.jyodroid.kunasismoayuda.ui.platform.rememberMapLauncher
 import com.jyodroid.kunasismoayuda.ui.platform.rememberPhoneCaller
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -89,6 +91,7 @@ fun SosResponderScreen(
     onDelete: (Int) -> Unit,
     onRetry: () -> Unit,
     onRequestLocation: () -> Unit,
+    onCountryChange: (String?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LaunchedEffect(Unit) { onRetry() }
@@ -99,6 +102,8 @@ fun SosResponderScreen(
     Column(modifier.fillMaxSize()) {
         state.stats?.let { StatsRow(it) }
         ViewToggle(showArchived = state.showArchived, onViewChange = onViewChange)
+        // Country filter (Todos + each). SOS keeps "Todos" available (cross-border responders).
+        CountryFilterRow(selected = state.country, onSelect = onCountryChange)
         // Proximity grouping is for the active list (who to respond to now).
         if (!state.showArchived) {
             NearMeBar(hasLocation = state.moderatorLat != null, denied = state.locationDenied, onRequestLocation = onRequestLocation)
@@ -272,11 +277,17 @@ private fun ReportCard(
         shape = MaterialTheme.shapes.medium,
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = stringResource(if (isSos) Res.string.sos_resp_badge_sos else Res.string.sos_resp_badge_safe),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = stringResource(if (isSos) Res.string.sos_resp_badge_sos else Res.string.sos_resp_badge_safe),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                CountryBadge(report.country) // which country this report is from
+            }
             report.region?.takeIf { it.isNotBlank() }?.let {
                 Text(it, style = MaterialTheme.typography.bodyLarge)
             }

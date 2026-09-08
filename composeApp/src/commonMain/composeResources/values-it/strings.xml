@@ -436,6 +436,8 @@
     <string name="search_tab_safe">Al sicuro</string>
     <string name="safe_empty">Ancora nessun avviso di persone al sicuro.</string>
     <string name="safe_unverified">Avvisi della comunità, non verificati.</string>
+    <string name="safe_rationale">Se le comunicazioni sono lente, fai sapere ai tuoi cari che stai bene. Senza segnale, il tuo avviso viene salvato e inviato automaticamente quando torni online.</string>
+    <string name="mod_country_all">Tutti</string>
     <string name="safe_status">Al sicuro</string>
     <string name="time_just_now">poco fa</string>
     <string name="time_minutes_ago">%1$d min fa</string>

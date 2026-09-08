@@ -12,6 +12,7 @@ data class SosResponse(
     val message: String? = null,
     val contactPhone: String? = null,
     val displayName: String? = null,
+    val country: String? = null, // ISO country code — lets the responder view show/filter by country
     val createdAt: String,
     val handledAt: String? = null,
     val handledBy: String? = null,

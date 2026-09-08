@@ -11,6 +11,7 @@ data class ResourcePost(
     val contactEmail: String?,
     val contactName: String?,
     val createdAt: String,
+    val country: String = "CO", // ISO code — lets moderators see/filter which country a post is for
     val source: String = "manual", // manual | classified — how the entry originated
     val rawText: String? = null,   // original pasted text (classified posts), shown to moderators
     val factCheck: String? = null, // Google Fact Check note (classified posts), shown to moderators

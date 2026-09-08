@@ -278,13 +278,15 @@ class ResourceBoardService(
         else -> "es" // CO, ES (and default)
     }
 
-    /** Admin: posts awaiting moderation. */
-    fun listPending(): List<ResourcePostResponse> =
-        repository.listByStatus(STATUS_PENDING).map { it.toResponse() }
+    /** Admin: posts awaiting moderation ([country] null = all countries). */
+    fun listPending(country: String? = null): List<ResourcePostResponse> =
+        repository.listByStatus(STATUS_PENDING, country.normalizeCountry()).map { it.toResponse() }
 
-    /** Published (ACTIVE) posts across all countries, for moderators to review/remove abusive live posts. */
-    fun listActivePosts(): List<ResourcePostResponse> =
-        repository.listByStatus(STATUS_ACTIVE).map { it.toResponse() }
+    /** Published (ACTIVE) posts, for moderators to review/remove abusive live posts ([country] null = all). */
+    fun listActivePosts(country: String? = null): List<ResourcePostResponse> =
+        repository.listByStatus(STATUS_ACTIVE, country.normalizeCountry()).map { it.toResponse() }
+
+    private fun String?.normalizeCountry(): String? = this?.trim()?.uppercase()?.take(2)?.ifBlank { null }
 
     /** The raw domain post by id (for the audit before-snapshot); null if absent. */
     fun find(id: Int): ResourcePost? = repository.find(id)
@@ -307,6 +309,7 @@ class ResourceBoardService(
         contactName = contactName,
         status = status,
         source = source,
+        country = country,
         rawText = rawText,
         factCheck = factCheck,
         createdAt = createdAt.toString(),

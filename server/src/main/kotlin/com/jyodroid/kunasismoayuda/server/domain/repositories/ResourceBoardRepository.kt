@@ -6,7 +6,7 @@ import java.time.LocalDateTime
 
 interface ResourceBoardRepository {
     fun listActive(kind: String?, region: String?, resourceType: String?, country: String = "CO"): List<ResourcePost>
-    fun listByStatus(status: String): List<ResourcePost>
+    fun listByStatus(status: String, country: String? = null): List<ResourcePost>
     fun create(post: NewResourcePost): ResourcePost
     fun find(id: Int): ResourcePost?
     fun setStatus(id: Int, status: String): Boolean

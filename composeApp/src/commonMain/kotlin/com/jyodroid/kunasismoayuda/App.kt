@@ -623,6 +623,8 @@ private fun AppContent(
                     onSafeRetry = safeViewModel::load,
                     // A moderator can delete a fake/mocking "I'm safe" post; regular users can't.
                     onSafeDelete = if (session != null) safeViewModel::delete else null,
+                    // Publish an "I'm safe" check-in (moved here from the SOS screen).
+                    onSafeSubmit = safeViewModel::sendSafe,
                 )
             }
             composable(ROUTE_SEARCH_CREATE) {
@@ -663,12 +665,15 @@ private fun AppContent(
                 } else {
                     val moderationViewModel: ModerationViewModel = koinViewModel()
                     val moderationState by moderationViewModel.state.collectAsStateWithLifecycle()
+                    // Default the queue to the app's selected country (a filter, not a lock — "Todos" stays).
+                    LaunchedEffect(country) { moderationViewModel.setCountry(country.code) }
                     ModerationScreen(
                         state = moderationState,
                         onApprove = moderationViewModel::approve,
                         onReject = moderationViewModel::reject,
                         onLoad = moderationViewModel::load,
                         onSelectTab = moderationViewModel::selectTab,
+                        onCountryChange = moderationViewModel::setCountry,
                         // The admin-account console is SUPERADMIN-only; plain ADMINs never see the entry.
                         onManageAdmins = if (session?.role == AdminAccount.ROLE_SUPERADMIN) {
                             { navController.navigate(ROUTE_ADMINS) }
@@ -707,7 +712,6 @@ private fun AppContent(
                     state = sosState,
                     emergencyNumber = CountryEmergency.generalNumber(country),
                     onSos = sosViewModel::sendSos,
-                    onSafe = sosViewModel::sendSafe,
                     beacon = beaconState,
                     canFlash = sosViewModel.canFlash,
                     canSound = sosViewModel.canSound,
@@ -743,6 +747,8 @@ private fun AppContent(
                 } else {
                     val responderViewModel: SosResponderViewModel = koinViewModel()
                     val responderState by responderViewModel.state.collectAsStateWithLifecycle()
+                    // Default to the app's selected country (a filter; "Todos" stays available for SOS).
+                    LaunchedEffect(country) { responderViewModel.setCountry(country.code) }
                     SosResponderScreen(
                         state = responderState,
                         onViewChange = responderViewModel::setShowArchived,
@@ -751,6 +757,7 @@ private fun AppContent(
                         onDelete = responderViewModel::delete,
                         onRetry = responderViewModel::load,
                         onRequestLocation = responderViewModel::requestLocation,
+                        onCountryChange = responderViewModel::setCountry,
                     )
                 }
             }

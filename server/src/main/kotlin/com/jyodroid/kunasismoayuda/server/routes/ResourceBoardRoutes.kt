@@ -134,13 +134,13 @@ fun Route.resourceBoardRoutes(service: ResourceBoardService, audit: AuditService
         // Admin moderation queue for classified (PENDING) posts.
         get("/pending") {
             requireAdmin()
-            call.respond(service.listPending())
+            call.respond(service.listPending(call.request.queryParameters["country"]))
         }
 
         // Published (ACTIVE) posts — lets a moderator find and delete an abusive live post (DELETE below).
         get("/active") {
             requireAdmin()
-            call.respond(service.listActivePosts())
+            call.respond(service.listActivePosts(call.request.queryParameters["country"]))
         }
 
         post("/{id}/approve") {

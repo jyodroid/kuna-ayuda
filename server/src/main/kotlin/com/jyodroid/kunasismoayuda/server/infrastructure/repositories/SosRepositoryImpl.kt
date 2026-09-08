@@ -46,11 +46,12 @@ class SosRepositoryImpl : SosRepository {
         }
     }
 
-    override fun list(status: String?, archived: Boolean?): List<SosReport> {
+    override fun list(status: String?, archived: Boolean?, country: String?): List<SosReport> {
         if (!DatabaseFactory.initialized) return emptyList()
         return transaction {
             val query = SosReports.selectAll()
             if (status != null) query.andWhere { SosReports.status eq status }
+            if (country != null) query.andWhere { SosReports.country eq country }
             when (archived) {
                 false -> query.andWhere { SosReports.handledAt.isNull() }
                 true -> query.andWhere { SosReports.handledAt.isNotNull() }
@@ -117,13 +118,14 @@ class SosRepositoryImpl : SosRepository {
         }
     }
 
-    override fun stats(): SosStats {
+    override fun stats(country: String?): SosStats {
         if (!DatabaseFactory.initialized) return SosStats(0, 0, 0, 0)
         return transaction {
             fun count(status: String, handled: Boolean): Int =
                 SosReports.selectAll()
                     .where { SosReports.status eq status }
                     .andWhere { if (handled) SosReports.handledAt.isNotNull() else SosReports.handledAt.isNull() }
+                    .apply { if (country != null) andWhere { SosReports.country eq country } }
                     .count().toInt()
             SosStats(
                 pendingSos = count("SOS", handled = false),

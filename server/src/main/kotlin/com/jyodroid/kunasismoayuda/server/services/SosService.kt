@@ -15,7 +15,8 @@ class SosService(private val repository: SosRepository) {
     companion object {
         val STATUSES = setOf("SOS", "SAFE")
         const val DEFAULT_COUNTRY = "CO"
-        const val SAFE_WINDOW_DAYS = 14L
+        // Public "I'm safe" list follows the 30-day policy (hard-purged at 60 by PurgeService).
+        const val SAFE_WINDOW_DAYS = 30L
         const val SAFE_LIMIT = 200
     }
 
@@ -45,9 +46,10 @@ class SosService(private val repository: SosRepository) {
      * An unrecognized value returns both rather than erroring (a responder should never get an empty
      * screen from a bad query param). [archived] false = pending only, true = archived only, null = both.
      */
-    fun list(status: String?, archived: Boolean?): List<SosResponse> {
+    fun list(status: String?, archived: Boolean?, country: String? = null): List<SosResponse> {
         val normalized = status?.uppercase()?.takeIf { it in STATUSES }
-        return repository.list(normalized, archived).map { it.toResponse() }
+        val countryCode = country?.trim()?.uppercase()?.take(2)?.ifBlank { null }
+        return repository.list(normalized, archived, countryCode).map { it.toResponse() }
     }
 
     /** The raw domain report by id (for the audit before-snapshot); null if absent. */
@@ -62,7 +64,10 @@ class SosService(private val repository: SosRepository) {
     /** Permanently delete a report. Returns false if the id doesn't exist. */
     fun delete(id: Int): Boolean = repository.delete(id)
 
-    fun stats(): SosStatsResponse = repository.stats().toResponse()
+    fun stats(country: String? = null): SosStatsResponse {
+        val countryCode = country?.trim()?.uppercase()?.take(2)?.ifBlank { null }
+        return repository.stats(countryCode).toResponse()
+    }
 
     private fun SosStats.toResponse() = SosStatsResponse(
         pendingSos = pendingSos,
@@ -80,6 +85,7 @@ class SosService(private val repository: SosRepository) {
         message = message,
         contactPhone = contactPhone,
         displayName = displayName,
+        country = country,
         createdAt = createdAt.toString(),
         handledAt = handledAt?.toString(),
         handledBy = handledBy,

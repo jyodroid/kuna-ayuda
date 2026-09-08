@@ -22,6 +22,7 @@ fun ResourcePostDto.toDomain(): ResourcePost = ResourcePost(
     contactName = contactName,
     createdAt = createdAt,
     source = source,
+    country = country,
     rawText = rawText,
     factCheck = factCheck,
     ownerSecret = ownerSecret,

@@ -15,6 +15,7 @@ data class ResourcePostResponse(
     val contactName: String? = null,
     val status: String,
     val source: String = "manual",
+    val country: String = "CO", // ISO code — lets moderators see/filter which country a post belongs to
     val rawText: String? = null, // original pasted text, for moderators reviewing classified posts
     val factCheck: String? = null, // Google Fact Check note, for moderators reviewing classified posts
     val createdAt: String, // ISO-8601

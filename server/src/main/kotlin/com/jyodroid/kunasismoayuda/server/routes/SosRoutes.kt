@@ -45,13 +45,14 @@ fun Route.sosRoutes(service: SosService, audit: AuditService) = route("/api/sos"
                 "all" -> null
                 else -> false
             }
-            call.respond(service.list(call.request.queryParameters["status"], archived))
+            val country = call.request.queryParameters["country"] // null = all countries
+            call.respond(service.list(call.request.queryParameters["status"], archived, country))
         }
 
-        // Pending-vs-handled counts for the responder dashboard.
+        // Pending-vs-handled counts for the responder dashboard (optionally scoped to one country).
         get("/stats") {
             requireAdmin()
-            call.respond(service.stats())
+            call.respond(service.stats(call.request.queryParameters["country"]))
         }
 
         // Archive as attended (SOS) / notified (SAFE), stamping the acting moderator.

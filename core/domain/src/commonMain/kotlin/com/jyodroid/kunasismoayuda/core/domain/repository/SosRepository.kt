@@ -33,9 +33,9 @@ interface SosRepository {
     /**
      * Responder view (moderator-only, requires an active session). Lists submitted reports newest
      * first; [status] filters by SOS or SAFE, null returns both. [archived] false = pending only,
-     * true = archived (handled) only, null = both.
+     * true = archived (handled) only, null = both. [country] null = all countries.
      */
-    suspend fun listActive(status: SosStatus?, archived: Boolean?): List<SosReport>
+    suspend fun listActive(status: SosStatus?, archived: Boolean?, country: String? = null): List<SosReport>
 
     /** Archive a report as attended/notified (moderator-only). */
     suspend fun markHandled(id: Int)
@@ -46,6 +46,6 @@ interface SosRepository {
     /** Permanently delete a report (moderator-only). */
     suspend fun delete(id: Int)
 
-    /** Pending-vs-handled counts for the responder dashboard (moderator-only). */
-    suspend fun stats(): SosStats
+    /** Pending-vs-handled counts for the responder dashboard (moderator-only); [country] null = all. */
+    suspend fun stats(country: String? = null): SosStats
 }

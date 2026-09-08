@@ -34,20 +34,24 @@ class SosApi(
      * null returns both. [archived] false = pending only, true = archived only, null = both.
      * Requires the moderator bearer [token].
      */
-    suspend fun listActive(status: String?, archived: Boolean?, token: String): List<SosResponseDto> =
+    suspend fun listActive(status: String?, archived: Boolean?, country: String?, token: String): List<SosResponseDto> =
         client.get("$baseUrl/api/sos") {
             bearerAuth(token)
             status?.let { parameter("status", it) }
             parameter("archived", if (archived == null) "all" else archived.toString())
+            country?.let { parameter("country", it) } // omit ⇒ all countries
         }.body()
 
     /** Public reassurance list: named "I'm safe" check-ins for [country] (no auth). */
     suspend fun listPublicSafe(country: String): List<SafeCheckInDto> =
         client.get("$baseUrl/api/sos/safe") { parameter("country", country) }.body()
 
-    /** Dashboard counts (admin-only). */
-    suspend fun stats(token: String): SosStatsDto =
-        client.get("$baseUrl/api/sos/stats") { bearerAuth(token) }.body()
+    /** Dashboard counts (admin-only); [country] null = all countries. */
+    suspend fun stats(country: String?, token: String): SosStatsDto =
+        client.get("$baseUrl/api/sos/stats") {
+            bearerAuth(token)
+            country?.let { parameter("country", it) }
+        }.body()
 
     /** Archive a report as attended/notified (admin-only). */
     suspend fun markHandled(id: Int, token: String) {

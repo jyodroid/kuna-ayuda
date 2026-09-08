@@ -22,6 +22,7 @@ data class SosResponderUiState(
     val showArchived: Boolean = false,      // false = active/pending list; true = archived list
     val stats: SosStats? = null,
     val actioningId: Int? = null,           // a report whose archive/reopen/delete is in flight
+    val country: String? = null,            // country filter (null = all); SOS keeps All available
     // Moderator location, for grouping reports by proximity (Cerca / Misma zona / Lejos / Sin ubicación).
     val moderatorLat: Double? = null,
     val moderatorLon: Double? = null,
@@ -64,12 +65,20 @@ class SosResponderViewModel(
         load()
     }
 
+    /** Country filter (null = all countries). The app seeds it to the selected country on open. */
+    fun setCountry(country: String?) {
+        if (country == _state.value.country) return
+        _state.update { it.copy(country = country) }
+        load()
+    }
+
     fun load() {
         val filter = _state.value.filter
         val archived = _state.value.showArchived
+        val country = _state.value.country
         _state.update { it.copy(isLoading = true, error = false) }
         viewModelScope.launch {
-            runCatching { repository.listActive(filter, archived) }
+            runCatching { repository.listActive(filter, archived, country) }
                 .onSuccess { reports -> _state.update { it.copy(isLoading = false, reports = reports, error = false) } }
                 .onFailure { _state.update { it.copy(isLoading = false, error = true) } }
         }
@@ -77,8 +86,9 @@ class SosResponderViewModel(
     }
 
     private fun loadStats() {
+        val country = _state.value.country
         viewModelScope.launch {
-            runCatching { repository.stats() }.onSuccess { s -> _state.update { it.copy(stats = s) } }
+            runCatching { repository.stats(country) }.onSuccess { s -> _state.update { it.copy(stats = s) } }
         }
     }
 

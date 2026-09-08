@@ -24,6 +24,7 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -71,6 +72,7 @@ import com.jyodroid.kunasismoayuda.resources.help_call
 import com.jyodroid.kunasismoayuda.resources.retry
 import org.jetbrains.compose.resources.stringResource
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BoardScreen(
     state: BoardUiState,
@@ -137,44 +139,50 @@ fun BoardScreen(
                 }
             }
 
-            when {
-                state.isLoading -> Centered {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator()
-                        Text(stringResource(Res.string.board_loading), Modifier.padding(top = 8.dp))
-                    }
-                }
-
-                state.error -> Centered {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(Res.string.board_error))
-                        Button(onClick = onRetry, modifier = Modifier.padding(top = 8.dp).heightIn(min = 48.dp)) {
-                            Text(stringResource(Res.string.retry))
+            PullToRefreshBox(
+                isRefreshing = state.isLoading,
+                onRefresh = onRetry,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                when {
+                    state.isLoading -> Centered {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator()
+                            Text(stringResource(Res.string.board_loading), Modifier.padding(top = 8.dp))
                         }
                     }
-                }
 
-                state.posts.isEmpty() -> Centered { Text(stringResource(Res.string.board_empty)) }
-
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 88.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    item {
-                        Text(
-                            text = stringResource(Res.string.board_unverified),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    state.error -> Centered {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(stringResource(Res.string.board_error))
+                            Button(onClick = onRetry, modifier = Modifier.padding(top = 8.dp).heightIn(min = 48.dp)) {
+                                Text(stringResource(Res.string.retry))
+                            }
+                        }
                     }
-                    items(state.posts, key = { it.id }) { post ->
-                        PostCard(
-                            post = post,
-                            isOwned = post.id in state.ownedIds,
-                            isResolving = state.resolvingId == post.id,
-                            onResolve = { onResolve(post.id) },
-                        )
+
+                    state.posts.isEmpty() -> Centered { Text(stringResource(Res.string.board_empty)) }
+
+                    else -> LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 88.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        item {
+                            Text(
+                                text = stringResource(Res.string.board_unverified),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        items(state.posts, key = { it.id }) { post ->
+                            PostCard(
+                                post = post,
+                                isOwned = post.id in state.ownedIds,
+                                isResolving = state.resolvingId == post.id,
+                                onResolve = { onResolve(post.id) },
+                            )
+                        }
                     }
                 }
             }

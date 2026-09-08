@@ -32,8 +32,8 @@ class SosRepositoryImpl(
     override suspend fun listPublicSafe(country: String): List<SafeCheckIn> =
         api.listPublicSafe(country).map { it.toDomain() }
 
-    override suspend fun listActive(status: SosStatus?, archived: Boolean?): List<SosReport> =
-        api.listActive(status?.name, archived, sessionManager.requireToken()).map { it.toDomain() }
+    override suspend fun listActive(status: SosStatus?, archived: Boolean?, country: String?): List<SosReport> =
+        api.listActive(status?.name, archived, country, sessionManager.requireToken()).map { it.toDomain() }
 
     override suspend fun markHandled(id: Int) = api.markHandled(id, sessionManager.requireToken())
 
@@ -41,5 +41,5 @@ class SosRepositoryImpl(
 
     override suspend fun delete(id: Int) = api.delete(id, sessionManager.requireToken())
 
-    override suspend fun stats(): SosStats = api.stats(sessionManager.requireToken()).toDomain()
+    override suspend fun stats(country: String?): SosStats = api.stats(country, sessionManager.requireToken()).toDomain()
 }

@@ -42,6 +42,7 @@ data class SosReport(
     val region: String?,
     val message: String?,
     val contactPhone: String?,
+    val country: String? = null, // ISO code, so the responder view can show/filter by country
     val createdAt: String,
     // Responder lifecycle: null = pending/active; set = archived (attended for SOS, notified for SAFE).
     val handledAt: String? = null,

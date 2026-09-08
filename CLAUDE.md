@@ -246,17 +246,20 @@ otherwise it runs and `/api/*` return empty). Config comes from **project-scoped
   the server issued at creation and returned once in the create response; no auth, the secret IS the
   identity; constant-time compare; RESOLVED→204 / not-owner→403 / missing→404) + `GET /api/board/pending`
   + `GET /api/board/active` (**admin** — published posts, so a moderator can find & delete an abusive
-  live one) + `POST /api/board/{id}/approve` + `DELETE /api/board/{id}` (all **admin**, the classified-content
+  live one) — both take an **optional `?country=`** (absent = all countries; `ResourceBoardResponse`
+  now carries `country` so the queue shows a country badge and can filter) + `POST /api/board/{id}/approve` + `DELETE /api/board/{id}` (all **admin**, the classified-content
   moderation flow — approve→ACTIVE, **delete/resolve→CLOSED and scrubs the post's
   contact_phone/email/name + owner_secret** so contact is public only while a post is live; `DELETE` works
   on ACTIVE posts too, i.e. instant removal of a published post); `POST /api/sos` (public,
   **not** rate-limited — never block someone in danger; accepts SOS or SAFE, and a SAFE carries an
   optional `displayName`+`country`) + **`GET /api/sos/safe?country=`** (public — the community **"I'm
   safe" reassurance list**: named SAFE check-ins for a country, **name+region+time only**, never
-  coords/phone/message; last 14 days, ≤200) + the **admin responder
+  coords/phone/message; last **30 days** (SAFE follows the 30-day public / 60-day hard-delete policy),
+  ≤200) + the **admin responder
   lifecycle**: `GET /api/sos` (`?status=SOS|SAFE` filters — omit/`ALL` returns both, unknown falls back
-  to both rather than erroring; `?archived=false` default = pending, `true` = archived, `all` = both) +
-  `GET /api/sos/stats` (pending-vs-handled counts by kind) + `POST /api/sos/{id}/handle` (archive as
+  to both rather than erroring; `?archived=false` default = pending, `true` = archived, `all` = both;
+  **`?country=` optional — absent = all countries**, so shipped apps keep working) +
+  `GET /api/sos/stats` (pending-vs-handled counts by kind, also `?country=`-filterable) + `POST /api/sos/{id}/handle` (archive as
   attended/notified, stamps the moderator email) + `POST /api/sos/{id}/reopen` (restore to active) +
   `DELETE /api/sos/{id}` (permanent); `GET /api/search` (public, **Lost & Found / reunification** — pets +
   people, `?country=&subject=PET|PERSON&state=LOST|FOUND`, ACTIVE only) + `POST /api/search` (public,
@@ -628,7 +631,19 @@ Channels and safety Tips — merged so we stay at 5 tabs). Nav labels are center
   `core/data` `settings/PostOwnershipStore` (okio JSON, sibling to `CountryStore`), and
   `BoardViewModel` exposes the owned ids so only the owning device sees the affordance. **SOS is a persistent
   red button in the `TopAppBar`** (always one tap away on every screen — not a tab), routing to the
-  `sos` screen with a large "PEDIR AYUDA" button + "Estoy a salvo" check-in.
+  `sos` screen — now **help-only**: a large "PEDIR AYUDA" button, the offline beacon, and the emergency
+  call. The **"Estoy a salvo" check-in moved to Búsqueda y reencuentro → A salvo** (`ui/search`, next to
+  the public list it feeds): a rationale + an "Estoy a salvo" FAB → name + Publicar/Cancelar →
+  `SafeViewModel.sendSafe` (offline-first via the `SosOutbox`; queued when there's no signal). The board
+  and both Búsqueda tabs are now wrapped in a **`PullToRefreshBox`** (like Overview).
+- **Moderation is all-countries by default, with a country filter + badge** (not a hard scope — nothing
+  goes unmoderated). The board moderation queue (`ui/moderation`) and the SOS responder view (`ui/sos`)
+  show a **country badge** on every card (`ui/CountryFilterUi` `CountryBadge`, flag+code from the
+  `Country` enum) and a **`CountryFilterRow`** (Todos + the 5). In the **app** the filter defaults to the
+  selected country (seeded from `App.kt`); the **web console** defaults to **Todos** (a single selector in
+  `ModerationPanel` scoping board/SOS/Búsqueda/Puntos; Búsqueda/Puntos fall back to CO under Todos since
+  those public reads are country-scoped). `Moderation`/`SosResponder` VMs carry a `country` filter threaded
+  into the `?country=` API calls.
 
 ## Roadmap
 Done: **Overview home (quake bubble at the bottom + réplicas, shelters-per-location, aid counts,

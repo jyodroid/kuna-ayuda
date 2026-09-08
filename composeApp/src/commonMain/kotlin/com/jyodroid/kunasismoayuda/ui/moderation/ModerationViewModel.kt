@@ -20,6 +20,7 @@ data class ModerationState(
     val active: List<ResourcePost> = emptyList(),
     val error: Boolean = false,
     val actioningId: Int? = null, // the post currently being approved/rejected/deleted
+    val country: String? = null,  // country filter (null = all countries); a view filter, not a lock
 )
 
 /**
@@ -34,29 +35,45 @@ class ModerationViewModel(
     val state: StateFlow<ModerationState> = _state.asStateFlow()
 
     /** Initial load — the pending queue (the default tab). */
-    fun load() = loadPending()
+    fun load() = loadCurrent()
 
     fun selectTab(tab: ModerationTab) {
         _state.update { it.copy(tab = tab) }
-        when (tab) {
+        loadCurrent()
+    }
+
+    /**
+     * Set the country filter (null = all countries) and reload. The app seeds this to the moderator's
+     * selected country on open; it's a view filter, never a hard scope (All is always available).
+     */
+    fun setCountry(country: String?) {
+        if (country == _state.value.country) return
+        _state.update { it.copy(country = country) }
+        loadCurrent()
+    }
+
+    private fun loadCurrent() {
+        when (_state.value.tab) {
             ModerationTab.PENDING -> loadPending()
             ModerationTab.PUBLISHED -> loadActive()
         }
     }
 
     fun loadPending() {
+        val country = _state.value.country
         _state.update { it.copy(isLoading = true, error = false) }
         viewModelScope.launch {
-            runCatching { repository.listPending() }
+            runCatching { repository.listPending(country) }
                 .onSuccess { posts -> _state.update { it.copy(isLoading = false, pending = posts, error = false) } }
                 .onFailure { _state.update { it.copy(isLoading = false, error = true) } }
         }
     }
 
     fun loadActive() {
+        val country = _state.value.country
         _state.update { it.copy(isLoading = true, error = false) }
         viewModelScope.launch {
-            runCatching { repository.listActive() }
+            runCatching { repository.listActive(country) }
                 .onSuccess { posts -> _state.update { it.copy(isLoading = false, active = posts, error = false) } }
                 .onFailure { _state.update { it.copy(isLoading = false, error = true) } }
         }
