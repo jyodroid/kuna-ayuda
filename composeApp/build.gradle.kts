@@ -94,9 +94,15 @@ android {
     buildTypes {
         getByName("release") {
             if (keystorePropsFile.exists()) signingConfig = signingConfigs.getByName("release")
-            // Minify is left OFF for now: R8 can strip reflection used by Koin/Ktor/kotlinx.serialization.
-            // Turning it on later requires keep rules — a separate, tested change.
-            isMinifyEnabled = false
+            // R8 obfuscation + shrinking. The reflection-heavy libs (Koin/Ktor/kotlinx.serialization)
+            // are covered by keep rules in proguard-rules.pro (+ each lib's own consumer rules).
+            // Resource shrinking is left OFF — Compose Resources are code-referenced and can be
+            // false-positive stripped; obfuscation is what Play's report asks for.
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }

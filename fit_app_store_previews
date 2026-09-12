@@ -4,8 +4,10 @@
 #
 # App Store previews must be an accepted resolution, H.264/HEVC in .mov/.mp4/.m4v, 15–30s, ≤500 MB.
 # This scales+pads each clip (no distortion) to the accepted preview size for its device (auto-detected
-# from aspect ratio) and re-encodes to H.264 + AAC. It warns — but does not fail — if a clip is outside
-# the 15–30s window (Apple enforces that; trim the source and re-run).
+# from aspect ratio) and re-encodes to H.264 + AAC. By default it writes a clean SILENT stereo AAC
+# track — Simulator recordings often have no audio (or a broken one), which App Store Connect rejects as
+# "unsupported or corrupted audio". It warns — but does not fail — if a clip is outside the 15–30s
+# window (Apple enforces that; trim the source and re-run).
 #
 # Usage:
 #   1) Drop your raw videos into  store/screenshots/video-raw/
@@ -17,6 +19,8 @@
 #   TRIM_TO=SECONDS   Trim to this many seconds (e.g. 30). Empty = no trim (default).
 #   TRIM_FROM=SECONDS Start offset for the trim, in seconds. Default 0.
 #   PAD_COLOR=color   ffmpeg pad color name or 0xRRGGBB. Default white.
+#   KEEP_AUDIO=1      Transcode the source audio instead of writing a silent track (use only if you
+#                     actually recorded narration/sound).
 #   IN_DIR / OUT_DIR  Override input/output folders.
 #
 # Accepted preview sizes used (portrait/landscape auto by orientation):
@@ -81,9 +85,22 @@ for src in "${vids[@]}"; do
   out="$OUT_DIR/${base}.mov"
   vf="scale=${TW}:${TH}:force_original_aspect_ratio=decrease,pad=${TW}:${TH}:(ow-iw)/2:(oh-ih)/2:color=${PAD_COLOR}"
 
-  ffmpeg -hide_banner -loglevel error -y ${trim_args[@]+"${trim_args[@]}"} -i "$src" \
-    -vf "$vf" -r 30 -c:v libx264 -profile:v high -pix_fmt yuv420p -b:v 10M \
-    -c:a aac -b:a 256k -movflags +faststart "$out"
+  if [[ -n "${KEEP_AUDIO:-}" ]]; then
+    # Transcode the source audio to AAC (use only if you actually recorded meaningful sound).
+    ffmpeg -hide_banner -loglevel error -y ${trim_args[@]+"${trim_args[@]}"} -i "$src" \
+      -vf "$vf" -r 30 -c:v libx264 -profile:v high -pix_fmt yuv420p -b:v 10M \
+      -c:a aac -b:a 256k -ar 44100 -ac 2 -movflags +faststart "$out"
+  else
+    # Default: replace/add a clean silent stereo AAC track. Simulator recordings frequently have NO
+    # audio stream (or a broken/empty one), which App Store Connect rejects as "unsupported or
+    # corrupted audio". A generated silent AAC track is always valid and is cut to the video length
+    # via -shortest.
+    ffmpeg -hide_banner -loglevel error -y ${trim_args[@]+"${trim_args[@]}"} -i "$src" \
+      -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
+      -vf "$vf" -r 30 -c:v libx264 -profile:v high -pix_fmt yuv420p -b:v 10M \
+      -map 0:v:0 -map 1:a:0 -c:a aac -b:a 192k -ar 44100 -ac 2 -shortest \
+      -movflags +faststart "$out"
+  fi
 
   VW=$(ffprobe -v error -select_streams v:0 -show_entries stream=width  -of csv=p=0 "$out")
   VH=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 "$out")
