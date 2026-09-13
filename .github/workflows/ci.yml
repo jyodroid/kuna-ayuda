@@ -83,7 +83,7 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      - name: Set up Node 22 (for the Vite landing + console builds)
+      - name: Set up Node 22 (for the Vite landing + console + web app builds)
         uses: actions/setup-node@v5
         with:
           node-version: '22'
@@ -91,6 +91,7 @@ jobs:
           cache-dependency-path: |
             landing/package-lock.json
             console/package-lock.json
+            webapp/package-lock.json
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
@@ -106,10 +107,13 @@ jobs:
       - name: Build moderator console
         run: ./gradlew --no-daemon --stacktrace :server:buildConsole
 
-      - name: Build server fat jar (landing + console bundled)
+      - name: Build web app
+        run: ./gradlew --no-daemon --stacktrace :server:buildWebapp
+
+      - name: Build server fat jar (landing + console + web app bundled)
         run: ./gradlew --no-daemon --stacktrace :server:shadowJar
 
-      - name: Upload server fat jar (landing + console bundled)
+      - name: Upload server fat jar (landing + console + web app bundled)
         uses: actions/upload-artifact@v5
         with:
           name: server-fatjar
@@ -133,7 +137,7 @@ jobs:
         uses: actions/setup-java@v5
         with: { distribution: temurin, java-version: '17', cache: gradle }
 
-      - name: Set up Node 22 (to build landing + console for the deploy)
+      - name: Set up Node 22 (to build landing + console + web app for the deploy)
         uses: actions/setup-node@v5
         with:
           node-version: '22'
@@ -141,21 +145,23 @@ jobs:
           cache-dependency-path: |
             landing/package-lock.json
             console/package-lock.json
+            webapp/package-lock.json
 
-      # Rebuild the Vite landing + the React moderator console INTO the server resources so the deployed
-      # jar always serves the current sources — Heroku's JVM buildpack has no Node and can't build them.
-      # We commit the generated dirs LOCALLY only; that commit is pushed to Heroku's git (never to
-      # origin/main), so you never have to commit the built web/ + console/ bundles by hand.
-      - name: Build landing + console into server resources
+      # Rebuild the Vite landing + the React moderator console + the public web app INTO the server
+      # resources so the deployed jar always serves the current sources — Heroku's JVM buildpack has no
+      # Node and can't build them. We commit the generated dirs LOCALLY only; that commit is pushed to
+      # Heroku's git (never to origin/main), so you never have to commit the built bundles by hand.
+      - name: Build landing + console + web app into server resources
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon --stacktrace :server:buildLanding
           ./gradlew --no-daemon --stacktrace :server:buildConsole
+          ./gradlew --no-daemon --stacktrace :server:buildWebapp
 
       # Deploys by pushing to Heroku's git endpoint with an API-key credential (no third-party action;
       # the token comes from the secret and is never echoed). Heroku then runs `./gradlew stage` and
       # boots the fat jar via the root Procfile. -f because Heroku's git branch is just a deploy trigger.
-      - name: Push to Heroku (with freshly built web assets)
+      - name: Push to Heroku (with freshly built landing + console + web app assets)
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
           HEROKU_APP: kuna-ayuda
@@ -166,7 +172,7 @@ jobs:
           fi
           git config user.email "ci@kuna-ayuda.local"
           git config user.name "kuna-ci"
-          git add -f server/src/main/resources/web server/src/main/resources/console
-          git commit -m "ci: build landing + console for Heroku deploy" || echo "No asset changes to commit."
+          git add -f server/src/main/resources/web server/src/main/resources/console server/src/main/resources/app
+          git commit -m "ci: build landing + console + web app for Heroku deploy" || echo "No asset changes to commit."
           git config http.postBuffer 524288000
           git push -f "https://heroku:${HEROKU_API_KEY}@git.heroku.com/${HEROKU_APP}.git" HEAD:refs/heads/main

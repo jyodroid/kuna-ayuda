@@ -152,10 +152,12 @@ jobs:
           cache-dependency-path: |
             landing/package-lock.json
             console/package-lock.json
+            webapp/package-lock.json
       - run: chmod +x ./gradlew
-      # Separate invocations (buildLanding/buildConsole write into processResources' input dir — see ci.yml note).
+      # Separate invocations (buildLanding/buildConsole/buildWebapp write into processResources' input dir — see ci.yml note).
       - run: ./gradlew --no-daemon --stacktrace :server:buildLanding
       - run: ./gradlew --no-daemon --stacktrace :server:buildConsole
+      - run: ./gradlew --no-daemon --stacktrace :server:buildWebapp
       - run: ./gradlew --no-daemon --stacktrace :server:shadowJar
       - uses: actions/upload-artifact@v5
         with:

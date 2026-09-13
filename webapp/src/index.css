@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  @apply bg-neutral-50 text-neutral-900 antialiased;
+}
+
+@layer components {
+  .input {
+    @apply border border-neutral-300 rounded-md px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary;
+  }
+  .btn-primary {
+    @apply bg-primary text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-primary-accent disabled:opacity-60;
+  }
+  .btn-ghost {
+    @apply rounded-md px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-neutral-300 px-3 py-1 text-sm;
+  }
+  .chip-on {
+    @apply border-primary bg-primary-muted text-primary;
+  }
+  .label {
+    @apply block text-xs font-semibold text-neutral-500 mb-1;
+  }
+}
+
+/* Map markers: icon glyph on a white pin with a severity-colored ring (--sev). Icon = type,
+   ring = severity — never color alone (each list row also names the severity in text). */
+.kuna-marker {
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 3px solid var(--sev, #0f5e66);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  font-size: 15px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s ease;
+}
+.kuna-marker:hover {
+  transform: scale(1.12);
+}
+.kuna-marker--on {
+  transform: scale(1.3);
+  z-index: 2;
+  box-shadow: 0 0 0 3px rgba(15, 94, 102, 0.35), 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+.kuna-userdot {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #1a73e8;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.3);
+}

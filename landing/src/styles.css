@@ -80,6 +80,7 @@ img { max-width: 100%; height: auto; }
 .hero .logo-big { height: 76px; width: auto; margin-bottom: 18px; }
 .hero h1 { font-size: clamp(2rem, 5vw, 3.1rem); margin: 0 0 10px; letter-spacing: -0.5px; }
 .hero .tagline { font-size: clamp(1.05rem, 2.4vw, 1.35rem); color: var(--text-muted); max-width: 640px; margin: 0 auto 26px; }
+.hero-cta { margin: 18px 0 0; }
 .badge {
   display: inline-block; background: var(--surface-2); color: var(--teal);
   border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; font-size: 0.85rem; font-weight: 600;

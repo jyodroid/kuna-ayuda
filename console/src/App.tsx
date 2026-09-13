@@ -82,6 +82,7 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <span className="font-semibold">Kuna · Consola</span>
           <div className="flex items-center gap-3 text-sm">
+            <a className="opacity-90 hover:underline" href="/app/" title="Abrir la app pública">Ver app ↗</a>
             <span className="opacity-90">{session.email()} · {session.role()}</span>
             <button className="underline" onClick={onSignOut}>Salir</button>
           </div>

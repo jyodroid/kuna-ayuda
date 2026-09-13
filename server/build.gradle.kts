@@ -124,4 +124,30 @@ tasks {
         from(consoleDist)
         into(consoleResources)
     }
+
+    // --- Public web app (React + Vite + Tailwind + MapLibre) ---
+    // Mirrors buildConsole/buildLanding: a MANUAL dev task (needs Node/npm) that builds webapp/ and
+    // copies its dist into src/main/resources/app (served by the server at /app, bundled by the jar).
+    // NOT wired into processResources — Heroku packages whatever webapp/ is already present.
+    val webappDir = rootProject.layout.projectDirectory.dir("webapp")
+    val webappDist = webappDir.dir("dist")
+    val webappResources = layout.projectDirectory.dir("src/main/resources/app")
+
+    register<Exec>("buildWebappNpm") {
+        group = "webapp"
+        description = "Build the React web app (npm)."
+        workingDir = webappDir.asFile
+        commandLine("bash", "-c", "npm ci || npm install; npm run build")
+        inputs.dir(webappDir.dir("src"))
+        inputs.files(webappDir.file("index.html"), webappDir.file("package.json"))
+        outputs.dir(webappDist)
+    }
+
+    register<Copy>("buildWebapp") {
+        group = "webapp"
+        description = "Build the web app and copy it into resources/app (bundled by the jar)."
+        dependsOn("buildWebappNpm")
+        from(webappDist)
+        into(webappResources)
+    }
 }

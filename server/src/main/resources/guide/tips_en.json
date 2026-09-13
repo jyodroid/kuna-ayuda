@@ -1,0 +1,233 @@
+{
+  "phases": [
+    {
+      "key": "before",
+      "label": "Before",
+      "tips": [
+        {
+          "id": "before_1",
+          "title": "Prepare an emergency kit",
+          "body": "Water, non-perishable food, flashlight, radio, first-aid kit, documents and a whistle.",
+          "steps": [
+            {
+              "img": "story_before_1.png",
+              "caption": "Build a kit"
+            },
+            {
+              "img": "story_before_2.png",
+              "caption": "Make a family plan"
+            },
+            {
+              "img": "story_before_3.png",
+              "caption": "Agree on a meeting point"
+            }
+          ]
+        },
+        {
+          "id": "before_2",
+          "title": "Secure your home",
+          "body": "Anchor shelves and heavy objects; identify safe spots under sturdy furniture.",
+          "steps": []
+        },
+        {
+          "id": "before_3",
+          "title": "Agree on a meeting point",
+          "body": "Choose a family meeting place and an out-of-town contact.",
+          "steps": []
+        }
+      ]
+    },
+    {
+      "key": "during",
+      "label": "During",
+      "tips": [
+        {
+          "id": "during_1",
+          "title": "Drop, cover and hold on",
+          "body": "Protect your head and neck under sturdy furniture until the shaking stops.",
+          "steps": [
+            {
+              "img": "story_during_1.png",
+              "caption": "Drop down"
+            },
+            {
+              "img": "story_during_2.png",
+              "caption": "Cover your head"
+            },
+            {
+              "img": "story_during_3.png",
+              "caption": "Hold on until it stops"
+            }
+          ]
+        },
+        {
+          "id": "during_2",
+          "title": "Stay away from windows",
+          "body": "Avoid glass, façades and falling objects. Don’t use elevators.",
+          "steps": []
+        },
+        {
+          "id": "during_3",
+          "title": "If you’re outdoors or driving",
+          "body": "Move to an open area away from cables and buildings; if driving, stop safely.",
+          "steps": [
+            {
+              "img": "story_outdoor_1.png",
+              "caption": "Move to an open space"
+            },
+            {
+              "img": "story_outdoor_2.png",
+              "caption": "Pull over and stay inside"
+            },
+            {
+              "img": "story_outdoor_3.png",
+              "caption": "Cover your head until it stops"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "after",
+      "label": "After",
+      "tips": [
+        {
+          "id": "after_1",
+          "title": "Check for injuries and expect aftershocks",
+          "body": "Treat injuries, stay calm and be ready for aftershocks.",
+          "steps": [
+            {
+              "img": "story_after_1.png",
+              "caption": "Check for injuries"
+            },
+            {
+              "img": "story_after_2.png",
+              "caption": "Avoid hazards"
+            },
+            {
+              "img": "story_after_3.png",
+              "caption": "Evacuate calmly"
+            }
+          ]
+        },
+        {
+          "id": "after_2",
+          "title": "Shut off the gas if you smell a leak",
+          "body": "Turn off the gas, don’t use flames or switches, and ventilate the area.",
+          "steps": []
+        },
+        {
+          "id": "after_3",
+          "title": "Communicate by text message",
+          "body": "Use text messages to avoid overloading networks and check on your neighbors.",
+          "steps": []
+        }
+      ]
+    },
+    {
+      "key": "mental",
+      "label": "Mental health",
+      "tips": [
+        {
+          "id": "mental_1",
+          "title": "Mental-health line: 192, option 4",
+          "body": "Free, 24-hour national psychological support. In Bogotá you can also call Line 106. If life is at risk, call 123.",
+          "steps": []
+        },
+        {
+          "id": "mental_2",
+          "title": "Your reactions are normal",
+          "body": "Fear, insomnia, sadness or anger after a quake are common responses. Talk about how you feel and don’t face it alone.",
+          "steps": []
+        },
+        {
+          "id": "mental_3",
+          "title": "Techniques to calm down",
+          "body": "Breathe slowly (inhale 4s, exhale 6s), keep sleep and meal routines, and limit exposure to disaster news and images.",
+          "steps": [
+            {
+              "img": "story_calm_1.png",
+              "caption": "Breathe in slowly"
+            },
+            {
+              "img": "story_calm_2.png",
+              "caption": "Breathe out slowly"
+            },
+            {
+              "img": "story_calm_3.png",
+              "caption": "Feel your feet on the ground"
+            }
+          ]
+        },
+        {
+          "id": "mental_4",
+          "title": "Support children",
+          "body": "Listen to them, answer calmly and honestly, keep routines and remind them they are safe. Seek professional help if distress persists.",
+          "steps": [
+            {
+              "img": "story_children_1.png",
+              "caption": "Comfort and reassure"
+            },
+            {
+              "img": "story_children_2.png",
+              "caption": "Listen calmly"
+            },
+            {
+              "img": "story_children_3.png",
+              "caption": "Keep a routine together"
+            }
+          ]
+        },
+        {
+          "id": "mental_5",
+          "title": "Support content (community)",
+          "body": "Informational Instagram account: @saludmental_paracolombia. It’s a community resource, not an official emergency line; in a crisis use Line 192 (option 4) or 123.",
+          "steps": []
+        }
+      ]
+    },
+    {
+      "key": "animals",
+      "label": "Animals",
+      "tips": [
+        {
+          "id": "animals_1",
+          "title": "If you evacuate, take your pet",
+          "body": "Never leave it behind. Use a carrier or leash, bring water, some food and an ID tag with your phone number. Keep it close, tagged or microchipped.",
+          "steps": [
+            {
+              "img": "story_pets_1.png",
+              "caption": "Pet emergency kit"
+            },
+            {
+              "img": "story_pets_2.png",
+              "caption": "Keep your pet close"
+            },
+            {
+              "img": "story_pets_3.png",
+              "caption": "Leash it before going out"
+            }
+          ]
+        },
+        {
+          "id": "animals_2",
+          "title": "Shelters receiving aid",
+          "body": "Several affected foundations accept food, medicine and supplies (e.g. in Pereira, Armenia, Manizales and Villa María). Verify the channels before donating; many are shared via Protección Animal Javeriana.",
+          "steps": []
+        },
+        {
+          "id": "animals_3",
+          "title": "Veterinary care",
+          "body": "Vets and clinics are treating affected pets in quake areas (e.g. Royi Pets in Cali takes in disoriented animals). Confirm availability before traveling there.",
+          "steps": []
+        },
+        {
+          "id": "animals_4",
+          "title": "Lost-pet finder",
+          "body": "The community platform “Buscador de Personas y Mascotas — terremoto Colombia” lets you report and search for missing pets. It’s a community resource; verify details before acting.",
+          "steps": []
+        }
+      ]
+    }
+  ]
+}

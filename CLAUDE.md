@@ -527,6 +527,54 @@ app binaries are **not** bundled (too big for the slug) — the Download links p
 (GitHub Releases recommended). Placeholders to fill before launch: domain, contact email, responsible
 party, governing-law jurisdiction, tagline, real logo, desktop download URLs — and a lawyer review.
 
+### Public web app (`webapp/` → served by `:server` at `/app`)
+A **React 19 + Vite + Tailwind** SPA in **`webapp/`** (repo root npm project, **NOT** a Gradle module;
+clones the `console/` stack) is the **public web version of the app** — live disaster data in the
+browser, ES (default) / EN, for CO/ID/ES/IT/PE. Deps beyond the console stack: **`maplibre-gl`** (same
+OpenFreeMap "Liberty" tiles as the app), **`recharts`** (charts), **`react-router-dom`** (HashRouter —
+static SPA, no server route fallback needed), **`@fortawesome/fontawesome-free`** (icons + photo/guide
+fallbacks). Same-origin ⇒ **no CORS**; `src/api.ts` sends the same baked **`X-App-Key`** the console/app
+use (a deterrent, not a secret) on public GET reads. `<img>` can't set headers, so photos load via
+`photoObjectUrl()` (fetch-with-key → blob URL). i18n is a tiny ES/EN React context (`src/i18n.tsx`,
+persists `localStorage["kuna_lang"]`); selected country is `src/state.tsx` (`localStorage["kuna_country"]`).
+Sections (routes): **Mapa** (`PanelPage`) · **Puntos de ayuda** (`SheltersPage`) · **Red de ayuda**
+(`BoardPage`) · **Búsqueda y reencuentro** (`SearchPage`, Reportes + A salvo tabs) · **Guía**
+(`GuidePage`).
+- **Map = HAZARDS ONLY (quakes + fires)** — a deliberate change from the apps (whose map is help-points).
+  MapLibre (`map/MapView.tsx`) with **icon markers per type** (⛰️/🔥) + a **severity-colored ring**
+  (green/orange/red) + a legend + severity named in text (never colour alone) — fixes the app's confusing
+  red/orange bullets. **Near-me** is a **revertible** [📍 Cerca de mí | País] toggle (browser geolocation,
+  auto-on once on first grant, falls back to country centroid). A **linked side list** (row↔marker sync via
+  `flyTo`), a **detail card** on select (magnitude/depth/FRP/source/time + USGS link), and a **charts strip**
+  (`Charts.tsx`: fire concentration = total FRP by nearest city bar; quakes by magnitude band). Fire points
+  (FIRMS `place=null`) get the app's **nearest-city labeling** ported to `map/firePlace.ts` + city lists in
+  `content/cities.ts` (from `core/domain *Regions.kt`); severity thresholds mirror `Fire.kt`/`QuakeUi.kt`.
+- **Help points are a LIST** (`SheltersPage`), not a map layer: per-card **Cómo llegar** (Google Maps
+  directions), call, accepts/hours, verified badge, **type filter + city filter** (city = nearest known
+  city), and the same revertible near-me toggle. **Candidate to standardize on the apps** (flip them to
+  hazards-on-map + help-points-list). **Data-window notes** surfaced: quakes ~30 d (USGS FDSN default),
+  wildfires ~48 h (FIRMS `dayRange=2`), aid/Búsqueda/A-salvo = last 30 d.
+- **Guía is server-driven** — see the central guide endpoint below.
+**Serving/build**: `routes/Routing.kt` `staticResources("/app", "app")` + `/app`→`/app/` redirect
+(before the `/` catch-all, like `/console`); **`:server:buildWebapp`** (Exec npm build + Copy
+`dist`→`resources/app`) is a **manual dev task** mirroring `buildLanding`/`buildConsole` (add it to CI
+next to those). The marketing landing links to it ("App web" nav + hero button). Read-only in v1 (no
+posting/moderation from the web).
+
+### Central guide endpoint (`GET /api/guide?country=&lang=`) — shared source of truth
+`server/.../routes/GuideRoutes.kt` + `content/GuideContent.kt` + `routes/dto/GuideDto.kt` serve the
+emergency guide as **one source for all platforms**: per-country **emergency numbers** (ported from
+`core/domain EmergencyDirectory.kt`) + **safety tips** loaded from bundled `resources/guide/tips_{es,en}.json`
+(extracted from the app's `strings.xml` — 18 tips across before/during/after/mental/animals). 7 tips
+also carry a wordless **storyboard** (`GuideTip.steps` = `[{img, caption}]`, extracted from the app's
+`story_*` captions); the 21 images are bundled in **`webapp/public/story/`** and served at `/app/story/`
+(gate-free, non-`/api`). The web **Guía** renders them (a "Ver ilustración" toggle) and adds **text-to-speech**
+("Escuchar"/Listen) via the browser **Web Speech API** (`webapp/src/tts.ts`, mirrors the app's
+`Speaker` + `tipSpeechText`) — accessibility parity with the app for low-vision / non-reading users.
+Public, no DB, cached; unknown country → CO, unknown lang → es. **Future:**
+migrate the mobile/desktop apps off their local `strings.xml`/`EmergencyDirectory.kt` to this endpoint —
+needs **id/it** tips added to the JSON first. Covered by `GuideContentTest`.
+
 ## Accessibility
 
 The app targets users with disabilities in a high-stress context. Conventions to keep:

@@ -1,0 +1,233 @@
+{
+  "phases": [
+    {
+      "key": "before",
+      "label": "Antes",
+      "tips": [
+        {
+          "id": "before_1",
+          "title": "Prepara un kit de emergencia",
+          "body": "Agua, alimentos no perecederos, linterna, radio, botiquín, documentos y un silbato.",
+          "steps": [
+            {
+              "img": "story_before_1.png",
+              "caption": "Prepara un kit"
+            },
+            {
+              "img": "story_before_2.png",
+              "caption": "Haz un plan familiar"
+            },
+            {
+              "img": "story_before_3.png",
+              "caption": "Acuerda un punto de encuentro"
+            }
+          ]
+        },
+        {
+          "id": "before_2",
+          "title": "Asegura tu vivienda",
+          "body": "Fija estanterías y objetos pesados; identifica lugares seguros bajo muebles resistentes.",
+          "steps": []
+        },
+        {
+          "id": "before_3",
+          "title": "Acuerda un punto de encuentro",
+          "body": "Define con tu familia un lugar de reunión y un contacto fuera de la ciudad.",
+          "steps": []
+        }
+      ]
+    },
+    {
+      "key": "during",
+      "label": "Durante",
+      "tips": [
+        {
+          "id": "during_1",
+          "title": "Agáchate, cúbrete y sujétate",
+          "body": "Protege cabeza y cuello bajo un mueble resistente hasta que termine el movimiento.",
+          "steps": [
+            {
+              "img": "story_during_1.png",
+              "caption": "Agáchate"
+            },
+            {
+              "img": "story_during_2.png",
+              "caption": "Cúbrete la cabeza"
+            },
+            {
+              "img": "story_during_3.png",
+              "caption": "Agárrate hasta que pare"
+            }
+          ]
+        },
+        {
+          "id": "during_2",
+          "title": "Aléjate de ventanas",
+          "body": "Evita vidrios, fachadas y objetos que puedan caer. No uses ascensores.",
+          "steps": []
+        },
+        {
+          "id": "during_3",
+          "title": "Si estás afuera o conduciendo",
+          "body": "Ve a un espacio abierto lejos de cables y edificios; si conduces, detente con cuidado.",
+          "steps": [
+            {
+              "img": "story_outdoor_1.png",
+              "caption": "Ve a un espacio abierto"
+            },
+            {
+              "img": "story_outdoor_2.png",
+              "caption": "Detén el auto y quédate dentro"
+            },
+            {
+              "img": "story_outdoor_3.png",
+              "caption": "Cúbrete hasta que pare"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "after",
+      "label": "Después",
+      "tips": [
+        {
+          "id": "after_1",
+          "title": "Revisa heridas y prepárate para réplicas",
+          "body": "Atiende heridas, mantén la calma y espera posibles réplicas.",
+          "steps": [
+            {
+              "img": "story_after_1.png",
+              "caption": "Revisa si hay heridos"
+            },
+            {
+              "img": "story_after_2.png",
+              "caption": "Evita peligros"
+            },
+            {
+              "img": "story_after_3.png",
+              "caption": "Evacúa con calma"
+            }
+          ]
+        },
+        {
+          "id": "after_2",
+          "title": "Corta el gas si hueles una fuga",
+          "body": "Cierra el gas, no enciendas llamas ni interruptores y ventila el lugar.",
+          "steps": []
+        },
+        {
+          "id": "after_3",
+          "title": "Comunícate por mensajes de texto",
+          "body": "Usa mensajes de texto para no saturar las redes y revisa a tus vecinos.",
+          "steps": []
+        }
+      ]
+    },
+    {
+      "key": "mental",
+      "label": "Salud mental",
+      "tips": [
+        {
+          "id": "mental_1",
+          "title": "Línea de salud mental: 192, opción 4",
+          "body": "Atención psicológica nacional, gratuita y 24 horas. En Bogotá también puedes llamar a la Línea 106. Si hay riesgo para la vida, llama al 123.",
+          "steps": []
+        },
+        {
+          "id": "mental_2",
+          "title": "Tus reacciones son normales",
+          "body": "Miedo, insomnio, tristeza o rabia tras un sismo son respuestas comunes. Habla de lo que sientes y no lo enfrentes en soledad.",
+          "steps": []
+        },
+        {
+          "id": "mental_3",
+          "title": "Técnicas para calmarte",
+          "body": "Respira despacio (inhala 4s, exhala 6s), mantén rutinas de sueño y comida, y limita la exposición a noticias e imágenes del desastre.",
+          "steps": [
+            {
+              "img": "story_calm_1.png",
+              "caption": "Respira profundo"
+            },
+            {
+              "img": "story_calm_2.png",
+              "caption": "Exhala despacio"
+            },
+            {
+              "img": "story_calm_3.png",
+              "caption": "Siente tus pies en el suelo"
+            }
+          ]
+        },
+        {
+          "id": "mental_4",
+          "title": "Acompaña a niñas y niños",
+          "body": "Escúchalos, respóndeles con calma y honestidad, mantén rutinas y recuérdales que están a salvo. Busca apoyo profesional si el malestar persiste.",
+          "steps": [
+            {
+              "img": "story_children_1.png",
+              "caption": "Abrázalo y tranquilízalo"
+            },
+            {
+              "img": "story_children_2.png",
+              "caption": "Escúchalo con calma"
+            },
+            {
+              "img": "story_children_3.png",
+              "caption": "Mantén la rutina juntos"
+            }
+          ]
+        },
+        {
+          "id": "mental_5",
+          "title": "Contenido de apoyo (comunidad)",
+          "body": "Cuenta informativa en Instagram: @saludmental_paracolombia. Es un recurso de la comunidad, no una línea oficial de emergencia; ante una crisis usa la Línea 192 (opción 4) o el 123.",
+          "steps": []
+        }
+      ]
+    },
+    {
+      "key": "animals",
+      "label": "Animales",
+      "tips": [
+        {
+          "id": "animals_1",
+          "title": "Si evacúas, lleva a tu mascota",
+          "body": "Nunca la dejes atrás. Usa guacal o correa, lleva agua, algo de comida y una identificación con tu teléfono. Mantenla cerca y con placa o microchip.",
+          "steps": [
+            {
+              "img": "story_pets_1.png",
+              "caption": "Kit para tu mascota"
+            },
+            {
+              "img": "story_pets_2.png",
+              "caption": "Mantén tu mascota cerca"
+            },
+            {
+              "img": "story_pets_3.png",
+              "caption": "Con correa antes de salir"
+            }
+          ]
+        },
+        {
+          "id": "animals_2",
+          "title": "Refugios que reciben ayuda",
+          "body": "Varias fundaciones afectadas reciben alimento, medicamentos e insumos (p. ej. en Pereira, Armenia, Manizales y Villa María). Verifica los canales antes de donar; muchos se difunden por Protección Animal Javeriana.",
+          "steps": []
+        },
+        {
+          "id": "animals_3",
+          "title": "Atención veterinaria",
+          "body": "Hay veterinarios y clínicas atendiendo mascotas afectadas en zonas del sismo (p. ej. Royi Pets en Cali recibe animales desorientados). Confirma disponibilidad antes de trasladarte.",
+          "steps": []
+        },
+        {
+          "id": "animals_4",
+          "title": "Buscador de mascotas perdidas",
+          "body": "La plataforma comunitaria «Buscador de Personas y Mascotas — terremoto Colombia» permite reportar y buscar mascotas extraviadas. Es un recurso de la comunidad; verifica los datos antes de actuar.",
+          "steps": []
+        }
+      ]
+    }
+  ]
+}

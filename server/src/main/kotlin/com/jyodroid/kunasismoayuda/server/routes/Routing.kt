@@ -46,6 +46,7 @@ fun Application.configureRouting() {
         photoRoutes(photoRepo)
         sosRoutes(sosService, auditService)
         disasterRoutes(disasterRepo, reportRepo)
+        guideRoutes()
 
         // Super-admin oversight console (React build copied into resources/console by :server:buildConsole).
         // Registered before the "/" catch-all; non-/api so it's never gated. default() serves the SPA shell.
@@ -53,6 +54,11 @@ fun Application.configureRouting() {
         // ("/" static) and flashes the landing logo before the user realizes the console didn't load.
         get("/console") { call.respondRedirect("/console/", permanent = false) }
         staticResources("/console", "console") { default("index.html") }
+
+        // Public web app (React + Vite + MapLibre build copied into resources/app by :server:buildWebapp).
+        // Same non-/api, before-the-catch-all treatment as the console; `/app` redirects to `/app/`.
+        get("/app") { call.respondRedirect("/app/", permanent = false) }
+        staticResources("/app", "app") { default("index.html") }
 
         // Marketing + legal landing page (Vite build copied into resources/web by :server:buildLanding).
         // Non-/api paths are never touched by the app-gate (AppGate.kt) or app JWT. Static only matches
