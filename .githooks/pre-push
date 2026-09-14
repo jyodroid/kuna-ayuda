@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+#
+# Pre-push secret scan (gitleaks) — a PREVENTIVE first line so a secret never leaves your machine.
+# The CI `secret-scan` job remains the authoritative, un-bypassable gate; this hook just catches leaks
+# earlier (before they reach GitHub). It scans only the commits you're actually pushing, and reuses the
+# repo's `.gitleaks.toml` (so the documented public app-key is allowlisted, not a false positive).
+#
+# Enable once per clone:   git config core.hooksPath .githooks
+# Emergency bypass:        git push --no-verify
+#
+# If gitleaks isn't installed it skips with a warning (CI still scans). Install: brew install gitleaks
+set -uo pipefail
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "⚠  gitleaks not installed — skipping local pre-push scan (CI will still scan). Install: brew install gitleaks" >&2
+  exit 0
+fi
+
+ZERO="0000000000000000000000000000000000000000"
+status=0
+
+# git feeds pre-push one line per ref on stdin: <local_ref> <local_sha> <remote_ref> <remote_sha>
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+  [ "$local_sha" = "$ZERO" ] && continue # branch deletion — nothing to scan
+  if [ "$remote_sha" = "$ZERO" ]; then
+    logopts="--log-opts=$local_sha"                 # new branch: scan up to the tip
+  else
+    logopts="--log-opts=${remote_sha}..${local_sha}" # only the new commits
+  fi
+  gitleaks git --no-banner "$logopts" || status=1
+done
+
+if [ "$status" -ne 0 ]; then
+  echo "" >&2
+  echo "✗ gitleaks found a potential secret in the commits you're about to push." >&2
+  echo "  Remove it (and rotate it if it's real), or — for a known PUBLIC value — allowlist it in .gitleaks.toml." >&2
+  echo "  Emergency bypass (use sparingly): git push --no-verify" >&2
+  exit 1
+fi
+exit 0

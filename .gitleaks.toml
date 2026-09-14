@@ -1,0 +1,23 @@
+# gitleaks config — extends the default ruleset and allowlists the app's PUBLIC "app-only" key.
+#
+# That 64-hex value (the `X-App-Key` / `APP_CLIENT_KEY`) is a DETERRENT that is deliberately baked into
+# every client bundle — the mobile/desktop app binary (core:data ServerConfig), the moderator console
+# (/console), and the public web app (/app). It SHIPS to users and is extractable, so it is NOT a secret
+# (see server `config/AppGate.kt`, which documents this). Real secrets — JWT_SECRET, ANTHROPIC_API_KEY,
+# FIRMS_MAP_KEY, DB credentials, HEROKU_API_KEY — live only in env vars / CI secrets and must never be
+# committed; those are still scanned by the default ruleset.
+title = "Kuna Ayuda gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public app-only key (X-App-Key) — a client-side deterrent, not a secret; see config/AppGate.kt."
+regexes = [
+  '''b7e2d40915a86c3f0e1d7942bc63f58a2049e1cd76b8340af5921e6d0c8b47f3''',
+]
+# Built Vite bundles are generated artifacts committed for the Node-less Heroku deploy; the same public
+# key is minified into them. Ignore the generated dirs (source is scanned normally).
+paths = [
+  '''server/src/main/resources/(web|console|app)/.*''',
+]

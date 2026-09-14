@@ -69,6 +69,24 @@ Studio, `./gradlew :server:run` (backend + landing), `./gradlew :composeApp:run`
 Found a vulnerability? **Please don't open a public issue.** Email the maintainer (see the repository
 profile / landing-page contact) with details, and give us a reasonable window to fix it before disclosure.
 
+### Secret scanning (gitleaks)
+
+We scan for committed secrets with [gitleaks](https://github.com/gitleaks/gitleaks), configured by the
+root `.gitleaks.toml` (default ruleset + an allowlist for the **public** `X-App-Key` deterrent, which is
+intentionally shipped in every client bundle — see `server/.../config/AppGate.kt`). Real secrets
+(`JWT_SECRET`, API keys, DB creds, `HEROKU_API_KEY`, …) live only in env vars / CI secrets — never in the
+repo.
+
+- **CI** runs gitleaks on every push/PR (the authoritative gate).
+- **Locally**, enable the preventive pre-push hook once per clone so a secret never leaves your machine:
+  ```sh
+  brew install gitleaks           # or your platform's package
+  git config core.hooksPath .githooks
+  ```
+  The `.githooks/pre-push` hook scans only the commits you're pushing and blocks on a finding. Emergency
+  bypass: `git push --no-verify` (CI still catches it). If gitleaks isn't installed the hook skips with a
+  warning. If a **real** secret was ever committed, **rotate it** — deleting the commit isn't enough.
+
 ## Code of conduct
 
 Be kind, patient, and constructive. Assume good intent. This is a volunteer, public-good project — treat
