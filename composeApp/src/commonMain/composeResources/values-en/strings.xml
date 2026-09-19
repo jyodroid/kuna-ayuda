@@ -12,6 +12,7 @@
     <string name="country_picker_title">Choose your country</string>
     <string name="country_picker_subtitle">You’ll see earthquakes, affected places and help points for that country. You can change it later in Overview.</string>
     <string name="country_change">Change</string>
+    <string name="country_suggested">Suggested</string>
     <string name="country_colombia">Colombia</string>
     <string name="country_indonesia">Indonesia</string>
     <string name="country_spain">Spain</string>
@@ -23,7 +24,6 @@
     <string name="overview_recent_quake_title">Recent activity</string>
     <string name="overview_quake_today">Today</string>
     <string name="overview_shelters_title">Help centers</string>
-    <string name="overview_shelters_count">%1$d centers across %2$d places</string>
     <string name="overview_network_title">Aid network</string>
     <string name="overview_network_counts">%1$d offers · %2$d requests</string>
     <string name="overview_affected_title">Affected places</string>
@@ -382,6 +382,13 @@
     <string name="story_outdoor_1">Move to an open space</string>
     <string name="story_outdoor_2">Pull over and stay inside</string>
     <string name="story_outdoor_3">Cover your head until it stops</string>
+    <string name="story_windows_1">Move away from windows</string>
+    <string name="story_windows_2">Avoid façades and falling objects</string>
+    <string name="story_windows_3">Don't use the elevator; take the stairs</string>
+    <string name="story_comms_1">Text your neighbors to check in without overloading networks</string>
+    <string name="story_gas_1">Shut off the gas valve</string>
+    <string name="story_gas_2">Don't use flames or switches</string>
+    <string name="story_gas_3">Ventilate by opening windows</string>
 
     <string name="tip_before_1_title">Prepare an emergency kit</string>
     <string name="tip_before_1_body">Water, non-perishable food, flashlight, radio, first-aid kit, documents and a whistle.</string>
@@ -443,4 +450,21 @@
     <string name="time_minutes_ago">%1$d min ago</string>
     <string name="time_hours_ago">%1$d h ago</string>
     <string name="time_days_ago">%1$d d ago</string>
+
+    <!-- Overview redesign: status header, count chips, data-window notes, nearest help point -->
+    <string name="overview_shelters_count_short">%1$d help centers</string>
+    <string name="overview_quake_window">Strongest in the last 30 days</string>
+    <string name="overview_recent_quake_window">Most recent · last 48 h</string>
+    <string name="data_window_quakes">last 30 days</string>
+    <string name="data_window_fires">last 48 h</string>
+    <string name="overview_status_calm">No active alerts</string>
+    <string name="overview_status_calm_sub">Check the Guide to prepare</string>
+    <string name="overview_guide_cta">View the Guide</string>
+    <string name="overview_updated">Updated · %1$s</string>
+    <string name="overview_nearest_shelter">Nearest help center</string>
+    <string name="overview_use_location">Show the nearest</string>
+    <string name="overview_chip_quakes">Quakes</string>
+    <string name="overview_chip_fires">Fires</string>
+    <string name="overview_chip_shelters">Centers</string>
+    <string name="overview_chip_board">Aid network</string>
 </resources>

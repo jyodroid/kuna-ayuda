@@ -106,6 +106,7 @@ import com.jyodroid.kunasismoayuda.ui.fires.FiresViewModel
 import com.jyodroid.kunasismoayuda.ui.overview.OverviewScreen
 import com.jyodroid.kunasismoayuda.ui.quakes.QuakeDetailScreen
 import com.jyodroid.kunasismoayuda.ui.quakes.QuakesViewModel
+import com.jyodroid.kunasismoayuda.ui.search.ReunifyMode
 import com.jyodroid.kunasismoayuda.ui.search.SearchCreateScreen
 import com.jyodroid.kunasismoayuda.ui.search.SafeViewModel
 import com.jyodroid.kunasismoayuda.ui.search.SearchScreen
@@ -263,6 +264,15 @@ private fun AppContent(
     }
     val featuredAffected = featuredQuake?.let { viewModel.affectedRegions(it) } ?: emptyList()
     val aftershocks = featuredQuake?.let { viewModel.aftershocks(it) } ?: emptyList()
+    // How many quakes fall in the headline window (30 days) — the Overview count chip + honest label.
+    val quakeCount = remember(state.quakes) {
+        val cutoff = Clock.System.now().toEpochMilliseconds() - FEATURED_WINDOW_DAYS * 24L * 60L * 60L * 1000L
+        state.quakes.count { it.timeMillis >= cutoff }
+    }
+    // Freshness stamp for the Overview: refreshes whenever a new feed lands (no ViewModel change needed).
+    val lastUpdatedMillis = remember(state.quakes, firesState.fires) {
+        Clock.System.now().toEpochMilliseconds()
+    }
     // The quake whose detail is open — set from whichever bubble was tapped; falls back to the headline.
     var selectedQuake by remember { mutableStateOf<Quake?>(null) }
 
@@ -275,6 +285,9 @@ private fun AppContent(
     val rankedFires = remember(firesState.fires) { firesViewModel.rankedFires() }
     // The fire whose detail is open — chosen from the fires list; falls back to the featured fire.
     var selectedFire by remember { mutableStateOf<Fire?>(null) }
+    // Which Búsqueda sub-tab is active — hoisted so the Overview "Estoy a salvo" shortcut can open the
+    // A-salvo list directly. Also remembers the last sub-tab across tab switches.
+    var searchMode by remember { mutableStateOf(ReunifyMode.REPORTS) }
 
     // The map is help-points only — official aid centers coloured by type. The quake itself is
     // never drawn here; all quake/réplica detail lives in the Overview bubble.
@@ -286,8 +299,16 @@ private fun AppContent(
     val locationProvider: LocationProvider = koinInject()
     val locationScope = rememberCoroutineScope()
     var userCoords by remember { mutableStateOf<Coordinates?>(null) }
-    var nearMeOnly by remember { mutableStateOf(false) }
+    // Citizen lens: the map defaults to near-me. It only actually *shows* near-me once we have a fix
+    // (`userCoords != null`); until then / if permission is denied it renders the country fallback, so
+    // `true` here means "prefer near-me", not "hide everything".
+    var nearMeOnly by remember { mutableStateOf(true) }
+    // Independent of the map's nearMeOnly, so the Refugios list and the map don't fight over one toggle.
+    var sheltersNearMe by remember { mutableStateOf(false) }
     var locating by remember { mutableStateOf(false) }
+    // The mobile map is location-first: request a fix once when the Map tab first opens (contextual, not
+    // on app launch). Granted → nearest help centers centered on the user; denied → the country fallback.
+    var mapLocateAttempted by remember { mutableStateOf(false) }
 
     val nearestShelters = userCoords?.let { uc ->
         shelters.sortedBy { Geo.distanceKm(uc.latitude, uc.longitude, it.latitude, it.longitude) }
@@ -306,18 +327,10 @@ private fun AppContent(
             label = shelter.name,
         )
     }
-    // Active wildfires overlay the help points as orange markers (only when not filtering "near me",
-    // so the near-me view stays focused on the closest help centers).
-    val fireMarkers = if (nearMeOnly) emptyList() else firesState.fires.map { fire ->
-        MapMarker(
-            id = "fire:${fire.id}",
-            latitude = fire.latitude,
-            longitude = fire.longitude,
-            kind = MarkerKind.FIRE,
-            label = null,
-        )
-    }
-    val markers = shelterMarkers + fireMarkers
+    // The mobile map is the CITIZEN lens: "where can I get help near me" — help centers only. Hazards
+    // (quakes/fires) are NOT drawn here; they live in the Overview bubbles + the fires list. (Hazards on
+    // a map are the coordinator/analyst lens — that's the webapp.)
+    val markers = shelterMarkers
 
     // Focus: "near me" centers tight on the user; otherwise on the help points in the quake's
     // affected places (fallback: all points, then the selected country's center). Affected regions
@@ -344,19 +357,28 @@ private fun AppContent(
         mapFocusZoom = country.defaultZoom
     }
 
-    fun requestNearMe() {
+    // One place to acquire a fix; callers decide what to switch on once granted. On denial/no-fix we
+    // keep showing everything (the toggles stay available), never prompting on load.
+    fun fetchLocation(onGranted: () -> Unit) {
         locationScope.launch {
             locating = true
             when (val r = locationProvider.current()) {
                 is LocationResult.Granted -> {
                     userCoords = r.coordinates
-                    nearMeOnly = true
+                    onGranted()
                 }
-                // No permission / no fix: keep showing all points (the button stays available).
                 else -> Unit
             }
             locating = false
         }
+    }
+
+    fun requestNearMe() = fetchLocation { nearMeOnly = true }
+
+    // The nearest help point to the user (name + km), once a fix exists — surfaced on the Overview.
+    val nearestShelter: Pair<Shelter, Double>? = userCoords?.let { uc ->
+        shelters.minByOrNull { Geo.distanceKm(uc.latitude, uc.longitude, it.latitude, it.longitude) }
+            ?.let { s -> s to Geo.distanceKm(uc.latitude, uc.longitude, s.latitude, s.longitude) }
     }
 
     var selectedShelterId by remember { mutableStateOf<Int?>(null) }
@@ -415,6 +437,8 @@ private fun AppContent(
                             Text(stringResource(Res.string.mod_logout))
                         }
                     } else if (currentRoute != ROUTE_SOS && currentRoute != ROUTE_MODERATION && currentRoute != ROUTE_ADMINS && currentRoute != ROUTE_SOS_RESPONDER && currentRoute != ROUTE_SHELTER_CREATE) {
+                        // SOS lives here (top-right) — a bottom FAB was tried but overlapped scroll content
+                        // and clashed with the per-screen bottom-right FABs, so it was reverted.
                         Button(
                             onClick = {
                                 sosViewModel.reset()
@@ -474,6 +498,10 @@ private fun AppContent(
                     boardSummary = boardSummary,
                     featuredFire = featuredFire,
                     featuredFireNear = featuredFireNear,
+                    quakeCount = quakeCount,
+                    fireCount = rankedFires.size,
+                    lastUpdatedMillis = lastUpdatedMillis,
+                    nearestShelter = nearestShelter,
                     currentCountry = country,
                     onCountryChange = onCountryChange,
                     onRefresh = {
@@ -494,6 +522,14 @@ private fun AppContent(
                     onFireTap = { navController.navigate(ROUTE_FIRES) },
                     onSheltersTap = { navController.navigateTop(ROUTE_SHELTERS) },
                     onNetworkTap = { navController.navigateTop(ROUTE_BOARD) },
+                    // Fill the user's location on demand (no prompt on load) so the nearest-help-point line
+                    // can appear; reuses the shared fetch used by the map.
+                    onUseLocation = { fetchLocation {} },
+                    onGuideTap = { navController.navigateTop(ROUTE_GUIDE) },
+                    onSafeCheckIn = {
+                        searchMode = ReunifyMode.SAFE
+                        navController.navigateTop(ROUTE_SEARCH)
+                    },
                 )
             }
             composable(ROUTE_QUAKE_DETAIL) {
@@ -527,6 +563,15 @@ private fun AppContent(
                 }
             }
             composable(ROUTE_MAP) {
+                // Location-first: on the first open of the Map tab, ask for a fix once. Grant → near-me
+                // (nearest help centers, camera on the user); deny → the country fallback view. Guarded so
+                // it prompts at most once per app session.
+                LaunchedEffect(Unit) {
+                    if (!mapLocateAttempted) {
+                        mapLocateAttempted = true
+                        requestNearMe()
+                    }
+                }
                 Box(Modifier.fillMaxSize()) {
                     DisasterMap(
                         markers = markers,
@@ -542,17 +587,19 @@ private fun AppContent(
                         userLon = userCoords?.longitude,
                         modifier = Modifier.fillMaxSize(),
                     )
-                    // Toggle between "closest to me" (device location) and all help points.
+                    // Toggle between "closest to me" (device location) and all help points. "Showing
+                    // near-me" requires an actual fix — otherwise the button offers to locate (or retry).
+                    val nearMeShowing = nearMeOnly && userCoords != null
                     ExtendedFloatingActionButton(
                         onClick = {
-                            if (nearMeOnly) nearMeOnly = false else requestNearMe()
+                            if (nearMeShowing) nearMeOnly = false else requestNearMe()
                         },
                         text = {
                             Text(
                                 stringResource(
                                     when {
                                         locating -> Res.string.map_locating
-                                        nearMeOnly -> Res.string.map_show_all
+                                        nearMeShowing -> Res.string.map_show_all
                                         else -> Res.string.map_near_me
                                     },
                                 ),
@@ -586,6 +633,7 @@ private fun AppContent(
                     },
                     onSearch = { navController.navigate(ROUTE_SEARCH) },
                     onResolve = boardViewModel::resolve,
+                    onToggleNearMe = boardViewModel::toggleNearMe,
                 )
             }
             composable(ROUTE_BOARD_CREATE) {
@@ -625,6 +673,9 @@ private fun AppContent(
                     onSafeDelete = if (session != null) safeViewModel::delete else null,
                     // Publish an "I'm safe" check-in (moved here from the SOS screen).
                     onSafeSubmit = safeViewModel::sendSafe,
+                    // Hoisted sub-tab, so the Overview "Estoy a salvo" shortcut can open A-salvo directly.
+                    mode = searchMode,
+                    onModeChange = { searchMode = it },
                 )
             }
             composable(ROUTE_SEARCH_CREATE) {
@@ -648,12 +699,22 @@ private fun AppContent(
                     onDeleteShelter = { shelter ->
                         shelterAdminViewModel.delete(shelter.id) { sheltersViewModel.load() }
                     },
+                    // Revertible near-me for the list (independent of the map's toggle, shared coords).
+                    userLat = userCoords?.latitude,
+                    userLon = userCoords?.longitude,
+                    nearActive = sheltersNearMe,
+                    locating = locating,
+                    onToggleNearMe = {
+                        if (sheltersNearMe) sheltersNearMe = false else fetchLocation { sheltersNearMe = true }
+                    },
                 )
             }
             composable(ROUTE_GUIDE) {
                 GuideScreen(
                     country = country,
                     onModeration = { navController.navigate(ROUTE_MODERATION) },
+                    // Same "is a hazard active" predicate as the Overview StatusHeader.
+                    hazardActive = featuredQuake != null || recentQuake != null || rankedFires.isNotEmpty(),
                 )
             }
             composable(ROUTE_MODERATION) {
@@ -719,6 +780,7 @@ private fun AppContent(
                     onStopBeacon = sosViewModel::stopBeacon,
                     onToggleLight = sosViewModel::setBeaconLight,
                     onToggleSound = sosViewModel::setBeaconSound,
+                    onPrepareLocation = sosViewModel::prepareLocation,
                 )
             }
             composable(ROUTE_SHELTER_CREATE) {

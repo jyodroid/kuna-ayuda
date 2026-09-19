@@ -61,15 +61,15 @@ testcontainers = "1.20.4"
 mockk = "1.13.13"
 
 projectApplicationId = "com.jyodroid.kunasismoayuda"
-projectVersionName = "1.5.3"
+projectVersionName = "1.6.0"
 projectMinSdkVersion = "26"
 projectTargetSdkVersion = "36"
 projectCompileSdkVersion = "36"
-projectVersionCode = "12"
+projectVersionCode = "13"
 
 # Desktop Version
 desktopPackageName = "kunaSismoAyuda"
-desktopPackageVersion = "1.5.3"
+desktopPackageVersion = "1.6.0"
 runner = "1.7.0"
 junit = "1.3.0"
 uiTooling = "1.11.1"

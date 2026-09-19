@@ -1,7 +1,7 @@
 {
   "name": "kuna-ayuda-landing",
   "private": true,
-  "version": "1.5.3",
+  "version": "1.6.0",
   "type": "module",
   "description": "Marketing + legal landing site for Kuna Ayuda, bundled into the Ktor :server.",
   "scripts": {

@@ -1,7 +1,7 @@
 {
   "name": "kuna-webapp",
   "private": true,
-  "version": "1.5.3",
+  "version": "1.6.0",
   "type": "module",
   "description": "Kuna Ayuda public web app (live disaster data), served by :server at /app.",
   "scripts": {

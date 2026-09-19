@@ -69,6 +69,9 @@ import com.jyodroid.kunasismoayuda.resources.board_resolve
 import com.jyodroid.kunasismoayuda.resources.board_search_cta
 import com.jyodroid.kunasismoayuda.resources.board_unverified
 import com.jyodroid.kunasismoayuda.resources.help_call
+import com.jyodroid.kunasismoayuda.resources.map_locating
+import com.jyodroid.kunasismoayuda.resources.map_near_me
+import com.jyodroid.kunasismoayuda.resources.map_show_all
 import com.jyodroid.kunasismoayuda.resources.retry
 import org.jetbrains.compose.resources.stringResource
 
@@ -83,6 +86,7 @@ fun BoardScreen(
     onPastePost: () -> Unit,
     onSearch: () -> Unit,
     onResolve: (Int) -> Unit,
+    onToggleNearMe: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Box(modifier.fillMaxSize()) {
@@ -123,6 +127,29 @@ fun BoardScreen(
                         label = { Text("${resourceTypeEmoji(type)} ${stringResource(resourceTypeLabelRes(type))}") },
                     )
                 }
+            }
+
+            // Best-effort "nearest first" (citizen lens): sorts posts by the city named in each region.
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilterChip(
+                    selected = state.nearMe,
+                    onClick = onToggleNearMe,
+                    label = {
+                        Text(
+                            stringResource(
+                                when {
+                                    state.locating -> Res.string.map_locating
+                                    state.nearMe -> Res.string.map_show_all
+                                    else -> Res.string.map_near_me
+                                },
+                            ),
+                        )
+                    },
+                    modifier = Modifier.heightIn(min = 48.dp),
+                )
             }
 
             // Secondary actions: paste-and-classify + entry to Lost & Found (keeps us at 5 tabs).

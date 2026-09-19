@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  App (Activity) theme. Intentionally minimal: the real UI is themed by Compose (KunaTheme). This theme
+  only controls the pre-first-frame window background + the default system-bar look, and it is DayNight
+  (see values-night) so dark mode gets a dark launch background and correctly-contrasted bar icons.
+
+  It sets NO android:statusBarColor / android:navigationBarColor (both deprecated on API 35) — edge-to-edge
+  and bar appearance are handled at runtime by enableEdgeToEdge() in MainActivity.
+-->
+<resources>
+    <style name="Theme.KunaAyuda" parent="@android:style/Theme.Material.Light.NoActionBar" />
+</resources>

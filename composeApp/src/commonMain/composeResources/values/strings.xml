@@ -12,6 +12,7 @@
     <string name="country_picker_title">Elige tu país</string>
     <string name="country_picker_subtitle">Verás los sismos, lugares afectados y puntos de ayuda de ese país. Puedes cambiarlo luego en Resumen.</string>
     <string name="country_change">Cambiar</string>
+    <string name="country_suggested">Sugerido</string>
     <string name="country_colombia">Colombia</string>
     <string name="country_indonesia">Indonesia</string>
     <string name="country_spain">España</string>
@@ -23,7 +24,6 @@
     <string name="overview_recent_quake_title">Actividad reciente</string>
     <string name="overview_quake_today">Hoy</string>
     <string name="overview_shelters_title">Centros de ayuda</string>
-    <string name="overview_shelters_count">%1$d centros en %2$d lugares</string>
     <string name="overview_network_title">Red de ayuda</string>
     <string name="overview_network_counts">%1$d ofertas · %2$d solicitudes</string>
     <string name="overview_affected_title">Lugares afectados</string>
@@ -382,6 +382,13 @@
     <string name="story_outdoor_1">Ve a un espacio abierto</string>
     <string name="story_outdoor_2">Detén el auto y quédate dentro</string>
     <string name="story_outdoor_3">Cúbrete hasta que pare</string>
+    <string name="story_windows_1">Aléjate de las ventanas</string>
+    <string name="story_windows_2">Evita fachadas y objetos que caen</string>
+    <string name="story_windows_3">No uses el ascensor; usa las escaleras</string>
+    <string name="story_comms_1">Escribe a tus vecinos por mensaje de texto para no saturar las redes</string>
+    <string name="story_gas_1">Cierra la llave del gas</string>
+    <string name="story_gas_2">No enciendas llamas ni interruptores</string>
+    <string name="story_gas_3">Ventila el lugar abriendo ventanas</string>
 
     <string name="tip_before_1_title">Prepara un kit de emergencia</string>
     <string name="tip_before_1_body">Agua, alimentos no perecederos, linterna, radio, botiquín, documentos y un silbato.</string>
@@ -443,4 +450,21 @@
     <string name="time_minutes_ago">hace %1$d min</string>
     <string name="time_hours_ago">hace %1$d h</string>
     <string name="time_days_ago">hace %1$d d</string>
+
+    <!-- Overview redesign: status header, count chips, data-window notes, nearest help point -->
+    <string name="overview_shelters_count_short">%1$d centros de ayuda</string>
+    <string name="overview_quake_window">El más fuerte de los últimos 30 días</string>
+    <string name="overview_recent_quake_window">El más reciente · últimas 48 h</string>
+    <string name="data_window_quakes">últimos 30 días</string>
+    <string name="data_window_fires">últimas 48 h</string>
+    <string name="overview_status_calm">Sin alertas activas</string>
+    <string name="overview_status_calm_sub">Consulta la Guía para prepararte</string>
+    <string name="overview_guide_cta">Ver la Guía</string>
+    <string name="overview_updated">Actualizado · %1$s</string>
+    <string name="overview_nearest_shelter">Centro más cercano</string>
+    <string name="overview_use_location">Ver el más cercano</string>
+    <string name="overview_chip_quakes">Sismos</string>
+    <string name="overview_chip_fires">Incendios</string>
+    <string name="overview_chip_shelters">Centros</string>
+    <string name="overview_chip_board">Red de ayuda</string>
 </resources>

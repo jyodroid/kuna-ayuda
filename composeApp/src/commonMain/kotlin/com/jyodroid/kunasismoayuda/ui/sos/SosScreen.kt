@@ -23,6 +23,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,6 +80,7 @@ fun SosScreen(
     onStopBeacon: () -> Unit,
     onToggleLight: (Boolean) -> Unit,
     onToggleSound: (Boolean) -> Unit,
+    onPrepareLocation: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val caller = rememberPhoneCaller()
@@ -86,6 +88,10 @@ fun SosScreen(
     var region by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
+
+    // Acquire a fix as soon as the screen opens, so the user sees whether coordinates will be attached
+    // before they even tap — and so the send is instant.
+    LaunchedEffect(Unit) { onPrepareLocation() }
 
     val busy = state.phase == SosPhase.LOCATING || state.phase == SosPhase.SENDING
 
@@ -113,6 +119,8 @@ fun SosScreen(
         ) {
             Text(stringResource(Res.string.sos_button), fontSize = 22.sp, fontWeight = FontWeight.Bold)
         }
+
+        LocationReadyChip(state.locationReady)
 
         OutlinedTextField(
             value = name,
@@ -286,6 +294,29 @@ private fun PendingBanner(pending: Int) {
             modifier = Modifier.padding(16.dp),
         )
     }
+}
+
+/**
+ * Pre-send location readiness, shown right under the PEDIR AYUDA button so the user knows what the
+ * rescuer will receive BEFORE sending. State (not colour alone) carries the meaning; announced politely.
+ */
+@Composable
+private fun LocationReadyChip(ready: Boolean?) {
+    val text = when (ready) {
+        true -> stringResource(Res.string.sos_location_on)
+        false -> stringResource(Res.string.sos_location_off)
+        null -> stringResource(Res.string.sos_locating)
+    }
+    val color = when (ready) {
+        true -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = color,
+        modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
+    )
 }
 
 @Composable

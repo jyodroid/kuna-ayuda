@@ -114,6 +114,13 @@ import com.jyodroid.kunasismoayuda.resources.story_before_3
 import com.jyodroid.kunasismoayuda.resources.story_during_1
 import com.jyodroid.kunasismoayuda.resources.story_during_2
 import com.jyodroid.kunasismoayuda.resources.story_during_3
+import com.jyodroid.kunasismoayuda.resources.story_windows_1
+import com.jyodroid.kunasismoayuda.resources.story_windows_2
+import com.jyodroid.kunasismoayuda.resources.story_windows_3
+import com.jyodroid.kunasismoayuda.resources.story_comms_1
+import com.jyodroid.kunasismoayuda.resources.story_gas_1
+import com.jyodroid.kunasismoayuda.resources.story_gas_2
+import com.jyodroid.kunasismoayuda.resources.story_gas_3
 import com.jyodroid.kunasismoayuda.resources.story_pets_1
 import com.jyodroid.kunasismoayuda.resources.story_pets_2
 import com.jyodroid.kunasismoayuda.resources.story_pets_3
@@ -194,17 +201,30 @@ private val outdoorDrivingSteps = listOf(
     StoryStep(Res.drawable.story_outdoor_2, Res.string.story_outdoor_2),
     StoryStep(Res.drawable.story_outdoor_3, Res.string.story_outdoor_3),
 )
+private val windowsHazardSteps = listOf(
+    StoryStep(Res.drawable.story_windows_1, Res.string.story_windows_1),
+    StoryStep(Res.drawable.story_windows_2, Res.string.story_windows_2),
+    StoryStep(Res.drawable.story_windows_3, Res.string.story_windows_3),
+)
+private val textCommsSteps = listOf(
+    StoryStep(Res.drawable.story_comms_1, Res.string.story_comms_1),
+)
+private val gasLeakSteps = listOf(
+    StoryStep(Res.drawable.story_gas_1, Res.string.story_gas_1),
+    StoryStep(Res.drawable.story_gas_2, Res.string.story_gas_2),
+    StoryStep(Res.drawable.story_gas_3, Res.string.story_gas_3),
+)
 
 private val tips = listOf(
     Tip(Res.string.tip_before_1_title, Res.string.tip_before_1_body, Phase.BEFORE, Res.drawable.tip_kit, steps = beforeQuakeSteps),
     Tip(Res.string.tip_before_2_title, Res.string.tip_before_2_body, Phase.BEFORE, Res.drawable.tip_home),
     Tip(Res.string.tip_before_3_title, Res.string.tip_before_3_body, Phase.BEFORE, Res.drawable.tip_place),
     Tip(Res.string.tip_during_1_title, Res.string.tip_during_1_body, Phase.DURING, Res.drawable.tip_shield, steps = duringQuakeSteps),
-    Tip(Res.string.tip_during_2_title, Res.string.tip_during_2_body, Phase.DURING, Res.drawable.tip_warning),
+    Tip(Res.string.tip_during_2_title, Res.string.tip_during_2_body, Phase.DURING, Res.drawable.tip_warning, steps = windowsHazardSteps),
     Tip(Res.string.tip_during_3_title, Res.string.tip_during_3_body, Phase.DURING, Res.drawable.tip_car, steps = outdoorDrivingSteps),
     Tip(Res.string.tip_after_1_title, Res.string.tip_after_1_body, Phase.AFTER, Res.drawable.tip_medical, steps = afterQuakeSteps),
-    Tip(Res.string.tip_after_2_title, Res.string.tip_after_2_body, Phase.AFTER, Res.drawable.tip_fire),
-    Tip(Res.string.tip_after_3_title, Res.string.tip_after_3_body, Phase.AFTER, Res.drawable.tip_message),
+    Tip(Res.string.tip_after_2_title, Res.string.tip_after_2_body, Phase.AFTER, Res.drawable.tip_fire, steps = gasLeakSteps),
+    Tip(Res.string.tip_after_3_title, Res.string.tip_after_3_body, Phase.AFTER, Res.drawable.tip_message, steps = textCommsSteps),
     // The mental-health line itself is rendered dynamically (per-country number) ahead of these.
     Tip(Res.string.tip_mental_2_title, Res.string.tip_mental_2_body, Phase.MENTAL, Res.drawable.tip_mind),
     Tip(Res.string.tip_mental_3_title, Res.string.tip_mental_3_body, Phase.MENTAL, Res.drawable.tip_calm, steps = calmingSteps),
@@ -227,17 +247,24 @@ private data class TipUi(
 private data class StepUi(val iconRes: DrawableResource, val caption: String)
 
 @Composable
-fun SafetyTipsScreen(country: Country, modifier: Modifier = Modifier) {
+fun SafetyTipsScreen(country: Country, hazardActive: Boolean = false, modifier: Modifier = Modifier) {
     val visibleTips = tips.filter { !it.coOnly || country == Country.COLOMBIA }
     val speaker = rememberSpeaker()
     var selected by remember { mutableStateOf<TipUi?>(null) }
+
+    // In a live event, lead with what to do NOW (During/After) rather than "prepare a kit" (Before).
+    val phaseOrder = if (hazardActive) {
+        listOf(Phase.DURING, Phase.AFTER, Phase.BEFORE, Phase.MENTAL, Phase.ANIMALS)
+    } else {
+        Phase.entries.toList()
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Phase.entries.forEach { phase ->
+        phaseOrder.forEach { phase ->
             item(key = "header-${phase.name}") {
                 Text(
                     text = stringResource(phase.titleRes),

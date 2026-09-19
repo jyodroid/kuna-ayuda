@@ -126,11 +126,14 @@ fun SearchScreen(
     onSafeDelete: ((Int) -> Unit)? = null,
     // Publish a public "I'm safe" check-in (moved here from the SOS screen). name required, region optional.
     onSafeSubmit: (name: String, region: String) -> Unit = { _, _ -> },
+    // The active Reportes/A-salvo tab is hoisted, so the Overview "Estoy a salvo" shortcut can deep-link
+    // straight to the A-salvo list.
+    mode: ReunifyMode = ReunifyMode.REPORTS,
+    onModeChange: (ReunifyMode) -> Unit = {},
 ) {
     var showSafeCompose by remember { mutableStateOf(false) }
     // Photo currently shown full-screen (id + a description for accessibility); null = none.
     var fullscreen by remember { mutableStateOf<Pair<Int, String>?>(null) }
-    var mode by remember { mutableStateOf(ReunifyMode.REPORTS) }
 
     Box(modifier.fillMaxSize()) {
         // Cap the content width and centre it so cards don't stretch across wide screens (tablets,
@@ -145,12 +148,12 @@ fun SearchScreen(
             ) {
                 FilterChip(
                     selected = mode == ReunifyMode.REPORTS,
-                    onClick = { mode = ReunifyMode.REPORTS },
+                    onClick = { onModeChange(ReunifyMode.REPORTS) },
                     label = { Text(stringResource(Res.string.search_tab_reports)) },
                 )
                 FilterChip(
                     selected = mode == ReunifyMode.SAFE,
-                    onClick = { mode = ReunifyMode.SAFE },
+                    onClick = { onModeChange(ReunifyMode.SAFE) },
                     label = { Text(stringResource(Res.string.search_tab_safe)) },
                 )
             }

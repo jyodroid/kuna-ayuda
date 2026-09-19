@@ -39,12 +39,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jyodroid.kunasismoayuda.core.domain.model.Shelter
 import com.jyodroid.kunasismoayuda.core.domain.model.ShelterType
+import com.jyodroid.kunasismoayuda.core.domain.util.Geo
 import androidx.compose.material3.Icon
 import org.jetbrains.compose.resources.painterResource
 import com.jyodroid.kunasismoayuda.resources.Res
 import com.jyodroid.kunasismoayuda.resources.ic_check
 import com.jyodroid.kunasismoayuda.resources.admin_cancel
 import com.jyodroid.kunasismoayuda.resources.help_call
+import com.jyodroid.kunasismoayuda.resources.map_locating
+import com.jyodroid.kunasismoayuda.resources.map_near_me
+import com.jyodroid.kunasismoayuda.resources.map_show_all
 import com.jyodroid.kunasismoayuda.resources.retry
 import com.jyodroid.kunasismoayuda.resources.shelter_delete
 import com.jyodroid.kunasismoayuda.resources.shelter_delete_confirm_msg
@@ -78,10 +82,20 @@ fun SheltersScreen(
     isModerator: Boolean = false,
     onEditShelter: (Shelter) -> Unit = {},
     onDeleteShelter: (Shelter) -> Unit = {},
+    // Revertible "near me": device coords + toggle fed from App.kt (shared location machinery). When
+    // active, the list sorts by distance and each card shows the km to the user.
+    userLat: Double? = null,
+    userLon: Double? = null,
+    nearActive: Boolean = false,
+    locating: Boolean = false,
+    onToggleNearMe: () -> Unit = {},
 ) {
     // null = show all cities. rememberSaveable so the selection survives leaving/returning to the tab
     // (plain remember is discarded when the destination leaves composition on a tab switch).
     var selectedCity by rememberSaveable { mutableStateOf<String?>(null) }
+    // Type filter — stored as the enum NAME (a String is Saveable; the enum isn't) so it also survives.
+    var selectedTypeName by rememberSaveable { mutableStateOf<String?>(null) }
+    val activeType = selectedTypeName?.let { name -> ShelterType.entries.firstOrNull { it.name == name } }
     var pendingDelete by remember { mutableStateOf<Shelter?>(null) }
 
     when {
@@ -110,13 +124,24 @@ fun SheltersScreen(
             val cities = remember(state.shelters) {
                 state.shelters.map { cityOf(it.address) }.filter { it.isNotBlank() }.distinct().sorted()
             }
+            // The types actually present, so we don't show empty type chips.
+            val types = remember(state.shelters) {
+                ShelterType.entries.filter { t -> state.shelters.any { it.type == t } }
+            }
             // If the current selection is no longer present (data changed), fall back to "all".
             val activeCity = selectedCity?.takeIf { it in cities }
-            val filtered = if (activeCity == null) {
-                state.shelters
-            } else {
-                state.shelters.filter { cityOf(it.address) == activeCity }
-            }
+            val hasCoords = userLat != null && userLon != null
+            val filtered = state.shelters
+                .filter { activeCity == null || cityOf(it.address) == activeCity }
+                .filter { activeType == null || it.type == activeType }
+                .let { list ->
+                    // Near me: sort ascending by distance (revertible — off restores the source order).
+                    if (nearActive && hasCoords) {
+                        list.sortedBy { Geo.distanceKm(userLat, userLon, it.latitude, it.longitude) }
+                    } else {
+                        list
+                    }
+                }
 
             LazyColumn(
                 modifier = modifier.fillMaxSize(),
@@ -129,6 +154,47 @@ fun SheltersScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+                // Revertible "near me" toggle — mirrors the map FAB and the web pill; the label states
+                // the current mode in text (never colour alone).
+                item {
+                    FilterChip(
+                        selected = nearActive,
+                        onClick = onToggleNearMe,
+                        label = {
+                            Text(
+                                stringResource(
+                                    when {
+                                        locating -> Res.string.map_locating
+                                        nearActive -> Res.string.map_show_all
+                                        else -> Res.string.map_near_me
+                                    },
+                                ),
+                            )
+                        },
+                        modifier = Modifier.heightIn(min = 48.dp),
+                    )
+                }
+                if (types.size > 1) {
+                    item {
+                        Row(
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            FilterChip(
+                                selected = activeType == null,
+                                onClick = { selectedTypeName = null },
+                                label = { Text(stringResource(Res.string.shelters_filter_all)) },
+                            )
+                            types.forEach { type ->
+                                FilterChip(
+                                    selected = activeType == type,
+                                    onClick = { selectedTypeName = if (activeType == type) null else type.name },
+                                    label = { Text(typeLabel(type)) },
+                                )
+                            }
+                        }
+                    }
                 }
                 if (cities.size > 1) {
                     item {
@@ -152,9 +218,15 @@ fun SheltersScreen(
                     }
                 }
                 items(filtered, key = { it.id }) { shelter ->
+                    // Show the distance only while near-me is active and we have a fix.
+                    val dist = if (nearActive && hasCoords) {
+                        Geo.distanceKm(userLat, userLon, shelter.latitude, shelter.longitude)
+                    } else {
+                        null
+                    }
                     if (isModerator) {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            ShelterCard(shelter)
+                            ShelterCard(shelter, distanceKm = dist)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 OutlinedButton(
                                     onClick = { onEditShelter(shelter) },
@@ -170,7 +242,7 @@ fun SheltersScreen(
                             }
                         }
                     } else {
-                        ShelterCard(shelter)
+                        ShelterCard(shelter, distanceKm = dist)
                     }
                 }
             }

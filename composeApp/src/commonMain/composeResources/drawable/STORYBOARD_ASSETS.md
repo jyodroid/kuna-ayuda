@@ -21,6 +21,13 @@ masters kept in `~/Documents/kuna-ayuda/storyboard/`).
 | `story_during_2.png` | Cover your head under a sturdy table |
 | `story_during_3.png` | Hold on to the table leg until the shaking stops |
 
+### Windows / glass / elevators — attached to the "Stay away from windows" tip (`tip_during_2`)
+| File | Step |
+|------|------|
+| `story_windows_1.png` | Move away from windows; find a safe interior space |
+| `story_windows_2.png` | Avoid glass façades and falling objects; stay near sturdy structures |
+| `story_windows_3.png` | Don't use elevators during/after a quake; take the stairs |
+
 ### Outdoors / driving — attached to the "if you're outdoors or driving" tip (`tip_during_3`)
 | File | Step |
 |------|------|
@@ -41,6 +48,18 @@ masters kept in `~/Documents/kuna-ayuda/storyboard/`).
 | `story_after_1.png` | Check for injuries (first aid) |
 | `story_after_2.png` | Avoid hazards (cracked building, gas flame, downed power line) |
 | `story_after_3.png` | Evacuate calmly to an open assembly area |
+
+### Gas leak — attached to the After "shut off the gas if you smell a leak" tip (`tip_after_2`)
+| File | Step |
+|------|------|
+| `story_gas_1.png` | Shut off the gas valve |
+| `story_gas_2.png` | Don't use flames or switches |
+| `story_gas_3.png` | Ventilate by opening windows |
+
+### Communicate by text — attached to the After "communicate by text message" tip (`tip_after_3`)
+| File | Step |
+|------|------|
+| `story_comms_1.png` | Text your neighbors to check in without overloading networks (single-panel storyboard) |
 
 ### Pets — attached to the Animals "evacuate with pets" tip (`tip_animals_1`)
 | File | Step |

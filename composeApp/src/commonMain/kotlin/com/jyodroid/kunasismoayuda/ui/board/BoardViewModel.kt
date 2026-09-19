@@ -11,6 +11,11 @@ import com.jyodroid.kunasismoayuda.core.domain.model.ResourcePost
 import com.jyodroid.kunasismoayuda.core.domain.model.ResourceType
 import com.jyodroid.kunasismoayuda.core.data.remote.UnreadablePasteException
 import com.jyodroid.kunasismoayuda.core.domain.repository.ResourceBoardRepository
+import com.jyodroid.kunasismoayuda.core.domain.util.Geo
+import com.jyodroid.kunasismoayuda.core.domain.util.RegionLocate
+import com.jyodroid.kunasismoayuda.core.location.Coordinates
+import com.jyodroid.kunasismoayuda.core.location.LocationProvider
+import com.jyodroid.kunasismoayuda.core.location.LocationResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,6 +30,8 @@ data class BoardUiState(
     val typeFilter: ResourceType? = null, // null = all resource types
     val ownedIds: Set<Int> = emptySet(),  // posts this device created — the ones it can resolve (#4)
     val resolvingId: Int? = null,         // a post whose resolve is in flight
+    val nearMe: Boolean = false,          // sort posts by rough distance to the user (citizen lens)
+    val locating: Boolean = false,        // acquiring a fix for the near-me toggle
 )
 
 data class CreateState(
@@ -52,7 +59,12 @@ data class BoardSummary(
 
 class BoardViewModel(
     private val repository: ResourceBoardRepository,
+    private val locationProvider: LocationProvider,
 ) : ViewModel() {
+
+    // Server-order posts, kept so toggling near-me off restores the original order without a reload.
+    private var rawPosts: List<ResourcePost> = emptyList()
+    private var coords: Coordinates? = null
 
     private val _state = MutableStateFlow(BoardUiState())
     val state: StateFlow<BoardUiState> = _state.asStateFlow()
@@ -115,11 +127,48 @@ class BoardViewModel(
         _state.update { it.copy(isLoading = true, error = false) }
         viewModelScope.launch {
             runCatching { repository.list(kind, null, type, country.code) }
-                .onSuccess { posts -> _state.update { it.copy(isLoading = false, posts = posts, error = false) } }
+                .onSuccess { posts ->
+                    rawPosts = posts
+                    _state.update { it.copy(isLoading = false, posts = orderPosts(posts), error = false) }
+                }
                 .onFailure { _state.update { it.copy(isLoading = false, error = true) } }
             // Refresh which posts this device owns (drives the "resolve" affordance).
             runCatching { repository.ownedPostIds() }
                 .onSuccess { ids -> _state.update { it.copy(ownedIds = ids) } }
+        }
+    }
+
+    /**
+     * Toggle "nearest first". On → acquire a fix (once) and sort posts by rough distance from the user
+     * to the city named in each post's region (best-effort, unmatched sink to the bottom). Off → restore
+     * the server order. Revertible, mirroring the map/shelters near-me.
+     */
+    fun toggleNearMe() {
+        if (_state.value.nearMe) {
+            coords = null
+            _state.update { it.copy(nearMe = false, posts = orderPosts(rawPosts)) }
+            return
+        }
+        _state.update { it.copy(locating = true) }
+        viewModelScope.launch {
+            val c = when (val r = locationProvider.current()) {
+                is LocationResult.Granted -> r.coordinates
+                else -> null
+            }
+            coords = c
+            _state.update {
+                it.copy(locating = false, nearMe = c != null, posts = orderPosts(rawPosts))
+            }
+        }
+    }
+
+    /** Sort by distance from the user to each post's matched region city; unmatched posts sort last. */
+    private fun orderPosts(posts: List<ResourcePost>): List<ResourcePost> {
+        val c = coords ?: return posts
+        return posts.sortedBy { post ->
+            RegionLocate.match(post.region, country)
+                ?.let { r -> Geo.distanceKm(c.latitude, c.longitude, r.latitude, r.longitude) }
+                ?: Double.MAX_VALUE
         }
     }
 

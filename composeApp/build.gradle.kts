@@ -94,11 +94,16 @@ android {
     buildTypes {
         getByName("release") {
             if (keystorePropsFile.exists()) signingConfig = signingConfigs.getByName("release")
-            // R8 obfuscation + shrinking. The reflection-heavy libs (Koin/Ktor/kotlinx.serialization)
-            // are covered by keep rules in proguard-rules.pro (+ each lib's own consumer rules).
-            // Resource shrinking is left OFF — Compose Resources are code-referenced and can be
-            // false-positive stripped; obfuscation is what Play's report asks for.
+            // R8 obfuscation + code AND resource shrinking (Play flags resource shrinking being off).
+            // The reflection-heavy libs (Koin/Ktor/kotlinx.serialization) are covered by keep rules in
+            // proguard-rules.pro (+ each lib's own consumer rules).
+            // Resource shrinking is SAFE here: Compose Multiplatform resources live under
+            // `composeResources/` and load via the generated `Res` accessors (packaged as app files, NOT
+            // Android `res/`/`R`), so the Android resource shrinker never considers them. Only classic
+            // Android `res/` (adaptive-icon XML, mipmaps, ic_launcher_background, Theme.KunaAyuda,
+            // androidMain app_name) is in scope, and all of it is manifest/code-referenced.
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

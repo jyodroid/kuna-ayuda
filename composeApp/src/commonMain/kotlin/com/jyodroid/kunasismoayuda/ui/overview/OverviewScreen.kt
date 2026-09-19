@@ -16,15 +16,20 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,23 +59,39 @@ import com.jyodroid.kunasismoayuda.resources.country_indonesia
 import com.jyodroid.kunasismoayuda.resources.country_italy
 import com.jyodroid.kunasismoayuda.resources.country_peru
 import com.jyodroid.kunasismoayuda.resources.country_spain
+import com.jyodroid.kunasismoayuda.resources.data_window_fires
 import com.jyodroid.kunasismoayuda.resources.error_generic
 import com.jyodroid.kunasismoayuda.resources.loading
 import com.jyodroid.kunasismoayuda.resources.no_quakes
 import com.jyodroid.kunasismoayuda.resources.overview_affected_none
 import com.jyodroid.kunasismoayuda.resources.overview_affected_subtitle
 import com.jyodroid.kunasismoayuda.resources.overview_affected_title
+import com.jyodroid.kunasismoayuda.resources.overview_chip_board
+import com.jyodroid.kunasismoayuda.resources.overview_chip_fires
+import com.jyodroid.kunasismoayuda.resources.overview_chip_quakes
+import com.jyodroid.kunasismoayuda.resources.overview_chip_shelters
+import com.jyodroid.kunasismoayuda.resources.overview_fire_count
 import com.jyodroid.kunasismoayuda.resources.overview_fire_hint
 import com.jyodroid.kunasismoayuda.resources.overview_fire_none
 import com.jyodroid.kunasismoayuda.resources.overview_fire_title
+import com.jyodroid.kunasismoayuda.resources.overview_guide_cta
+import com.jyodroid.kunasismoayuda.resources.overview_nearest_shelter
 import com.jyodroid.kunasismoayuda.resources.overview_network_counts
 import com.jyodroid.kunasismoayuda.resources.overview_network_title
 import com.jyodroid.kunasismoayuda.resources.overview_quake_hint
 import com.jyodroid.kunasismoayuda.resources.overview_quake_today
+import com.jyodroid.kunasismoayuda.resources.overview_quake_window
 import com.jyodroid.kunasismoayuda.resources.overview_recent_quake_title
-import com.jyodroid.kunasismoayuda.resources.overview_shelters_count
+import com.jyodroid.kunasismoayuda.resources.overview_recent_quake_window
+import com.jyodroid.kunasismoayuda.resources.overview_shelters_count_short
 import com.jyodroid.kunasismoayuda.resources.overview_shelters_title
+import com.jyodroid.kunasismoayuda.resources.overview_status_calm
+import com.jyodroid.kunasismoayuda.resources.overview_status_calm_sub
+import com.jyodroid.kunasismoayuda.resources.overview_updated
+import com.jyodroid.kunasismoayuda.resources.overview_use_location
 import com.jyodroid.kunasismoayuda.resources.retry
+import com.jyodroid.kunasismoayuda.resources.shelter_distance
+import com.jyodroid.kunasismoayuda.resources.sos_safe_button
 import com.jyodroid.kunasismoayuda.resources.time_days_ago
 import com.jyodroid.kunasismoayuda.resources.time_hours_ago
 import com.jyodroid.kunasismoayuda.resources.time_just_now
@@ -83,11 +104,14 @@ import com.jyodroid.kunasismoayuda.ui.quakes.MagnitudeBadge
 import com.jyodroid.kunasismoayuda.ui.quakes.QuakesUiState
 import com.jyodroid.kunasismoayuda.ui.quakes.formatQuakeTime
 import org.jetbrains.compose.resources.stringResource
+import kotlin.math.roundToInt
 
 /**
- * Home/summary tab: one glanceable card per topic. The quake is a **bubble** — tapping it opens the
- * full detail + réplicas ([onQuakeTap]); the map tab never shows quake info. Shelters are summarized
- * per location with the quake's affected places first, so aid near the affected area stands out.
+ * Home/summary tab. A **StatusHeader** reads the whole situation at a glance (count chips, a calm
+ * "no active alerts" state, a freshness stamp, and a quick "I'm safe" shortcut); below it come the help
+ * summaries and the hazard bubbles. Each hazard figure is labelled with its window so it's clear what it
+ * means: the quake bubble is *the strongest of the last 30 days*, the fire bubble *the most relevant of N
+ * active fires in the last 48 h*. The quake/fire are **bubbles** — tapping opens the full detail.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,6 +125,13 @@ fun OverviewScreen(
     boardSummary: BoardSummary,
     featuredFire: Fire?,
     featuredFireNear: FirePlace? = null,
+    // Situation counts for the header chips + the honest window labels.
+    quakeCount: Int = 0,
+    fireCount: Int = 0,
+    // When a load last landed (null = not yet); shown as "Actualizado · hace N min".
+    lastUpdatedMillis: Long? = null,
+    // The closest help point to the user, once location is granted (name + km). Null = no location yet.
+    nearestShelter: Pair<Shelter, Double>? = null,
     currentCountry: Country,
     onCountryChange: (Country) -> Unit,
     onRefresh: () -> Unit,
@@ -109,6 +140,9 @@ fun OverviewScreen(
     onFireTap: () -> Unit,
     onSheltersTap: () -> Unit,
     onNetworkTap: () -> Unit,
+    onUseLocation: () -> Unit = {},
+    onGuideTap: () -> Unit = {},
+    onSafeCheckIn: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.fillMaxSize()) {
@@ -155,9 +189,26 @@ fun OverviewScreen(
                     }
 
                     else -> {
-                        // Help first (shelters, aid network, affected places); the quake is
-                        // de-prioritized to the bottom as a tappable bubble → detail + réplicas.
-                        item { SheltersSummary(shelters, affectedRegions, onSheltersTap) }
+                        // At-a-glance situation first, then help (shelters, aid network, affected
+                        // places), then the hazard bubbles → detail + réplicas.
+                        item {
+                            StatusHeader(
+                                quakeCount = quakeCount,
+                                fireCount = fireCount,
+                                sheltersCount = shelters.size,
+                                boardCount = boardSummary.offers + boardSummary.requests,
+                                hasActiveHazard = featuredQuake != null || recentQuake != null || fireCount > 0,
+                                lastUpdatedMillis = lastUpdatedMillis,
+                                nowMillis = nowMillis,
+                                onQuakeTap = onQuakeTap,
+                                onFireTap = onFireTap,
+                                onSheltersTap = onSheltersTap,
+                                onNetworkTap = onNetworkTap,
+                                onGuideTap = onGuideTap,
+                                onSafeCheckIn = onSafeCheckIn,
+                            )
+                        }
+                        item { SheltersSummary(shelters, nearestShelter, onSheltersTap, onUseLocation) }
                         item { NetworkSummary(boardSummary, onNetworkTap) }
                         item { AffectedPlaces(affectedRegions) }
                         item { QuakeBubble(featuredQuake, nowMillis, onQuakeTap) }
@@ -166,13 +217,107 @@ fun OverviewScreen(
                         if (recentQuake != null) {
                             item { RecentQuakeBubble(recentQuake, nowMillis, onRecentQuakeTap) }
                         }
-                        item { FireBubble(featuredFire, featuredFireNear, onFireTap) }
+                        item { FireBubble(featuredFire, featuredFireNear, fireCount, onFireTap) }
                         item { AppVersionFooter() }
                     }
                 }
             }
         }
     }
+}
+
+/**
+ * The one-glance situation banner: a freshness stamp + a quick "I'm safe" shortcut, an optional calm
+ * "no active alerts" card when nothing is happening, and a scrollable row of tappable count chips.
+ */
+@Composable
+private fun StatusHeader(
+    quakeCount: Int,
+    fireCount: Int,
+    sheltersCount: Int,
+    boardCount: Int,
+    hasActiveHazard: Boolean,
+    lastUpdatedMillis: Long?,
+    nowMillis: Long,
+    onQuakeTap: () -> Unit,
+    onFireTap: () -> Unit,
+    onSheltersTap: () -> Unit,
+    onNetworkTap: () -> Unit,
+    onGuideTap: () -> Unit,
+    onSafeCheckIn: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            if (lastUpdatedMillis != null) {
+                Text(
+                    stringResource(
+                        Res.string.overview_updated,
+                        relativeAgoText(relativeAgo(nowMillis, lastUpdatedMillis)),
+                    ),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+            } else {
+                Spacer(Modifier.weight(1f))
+            }
+            TextButton(onClick = onSafeCheckIn, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text(stringResource(Res.string.sos_safe_button))
+            }
+        }
+
+        // When nothing is active, reassure and point to preparedness rather than showing empty bubbles.
+        if (!hasActiveHazard) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                ),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        stringResource(Res.string.overview_status_calm),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    Text(
+                        stringResource(Res.string.overview_status_calm_sub),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    TextButton(onClick = onGuideTap, modifier = Modifier.heightIn(min = 48.dp)) {
+                        Text(stringResource(Res.string.overview_guide_cta))
+                    }
+                }
+            }
+        }
+
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            CountChip(quakeCount, stringResource(Res.string.overview_chip_quakes), onQuakeTap)
+            CountChip(fireCount, stringResource(Res.string.overview_chip_fires), onFireTap)
+            CountChip(sheltersCount, stringResource(Res.string.overview_chip_shelters), onSheltersTap, enabledWhenZero = true)
+            CountChip(boardCount, stringResource(Res.string.overview_chip_board), onNetworkTap, enabledWhenZero = true)
+        }
+    }
+}
+
+/** A compact "N Label" chip. Disabled (greyed) when the count is 0 and tapping wouldn't lead anywhere. */
+@Composable
+private fun CountChip(count: Int, label: String, onClick: () -> Unit, enabledWhenZero: Boolean = false) {
+    AssistChip(
+        onClick = onClick,
+        enabled = count > 0 || enabledWhenZero,
+        label = { Text("$count $label") },
+        colors = AssistChipDefaults.assistChipColors(),
+    )
 }
 
 @Composable
@@ -269,6 +414,12 @@ private fun QuakeBubble(quake: Quake?, nowMillis: Long, onTap: () -> Unit) {
                         // that headlines today still reads as today despite the absolute timestamp.
                         if (isToday(nowMillis, quake.timeMillis)) TodayBadge()
                     }
+                    // The window label: this is the strongest of the last 30 days, not "the" quake.
+                    Text(
+                        stringResource(Res.string.overview_quake_window),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     Text(
                         formatQuakeTime(quake.timeMillis),
                         style = MaterialTheme.typography.bodySmall,
@@ -300,12 +451,19 @@ private fun RecentQuakeBubble(quake: Quake, nowMillis: Long, onTap: () -> Unit) 
             .clickable(onClick = onTap),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                stringResource(Res.string.overview_recent_quake_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.semantics { heading() },
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    stringResource(Res.string.overview_recent_quake_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.semantics { heading() },
+                )
+                Text(
+                    stringResource(Res.string.overview_recent_quake_window),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -368,7 +526,7 @@ private fun relativeAgoText(ago: TimeAgo): String = when (ago.unit) {
 }
 
 @Composable
-private fun FireBubble(fire: Fire?, near: FirePlace?, onTap: () -> Unit) {
+private fun FireBubble(fire: Fire?, near: FirePlace?, fireCount: Int, onTap: () -> Unit) {
     val hint = stringResource(Res.string.overview_fire_hint)
     Card(
         modifier = Modifier
@@ -390,6 +548,12 @@ private fun FireBubble(fire: Fire?, near: FirePlace?, onTap: () -> Unit) {
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                     )
+                    // Count + window, so it's clear this is the most relevant of N active fires.
+                    Text(
+                        "${stringResource(Res.string.overview_fire_count, fireCount)} · ${stringResource(Res.string.data_window_fires)}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     FireIntensityBadge(fire.intensity)
                     Text(
                         firePlaceLabel(fire, near),
@@ -403,22 +567,35 @@ private fun FireBubble(fire: Fire?, near: FirePlace?, onTap: () -> Unit) {
     }
 }
 
+/**
+ * A short help-centers summary: a single count + a quick link (the per-city breakdown lived here before,
+ * but the fragile address-tail parsing made it noisy and it duplicated the Refugios screen). When the
+ * user has granted location, it also names the nearest help point; otherwise it offers to find it.
+ */
 @Composable
 private fun SheltersSummary(
     shelters: List<Shelter>,
-    affected: List<AffectedRegion>,
+    nearest: Pair<Shelter, Double>?,
     onClick: () -> Unit,
+    onUseLocation: () -> Unit,
 ) {
-    val byLocation = sheltersByLocation(shelters, affected)
     SummaryCard(
         title = stringResource(Res.string.overview_shelters_title),
-        subtitle = stringResource(Res.string.overview_shelters_count, shelters.size, byLocation.size),
+        subtitle = stringResource(Res.string.overview_shelters_count_short, shelters.size),
         onClick = onClick,
     ) {
-        byLocation.forEach { (city, count) ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(city, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("$count", fontWeight = FontWeight.Medium)
+        if (nearest != null) {
+            val (s, km) = nearest
+            val shown = ((km * 10).roundToInt() / 10.0).toString()
+            Text(
+                "${stringResource(Res.string.overview_nearest_shelter)}: ${s.name} · ${stringResource(Res.string.shelter_distance, shown)}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium,
+            )
+        } else if (shelters.isNotEmpty()) {
+            TextButton(onClick = onUseLocation, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text(stringResource(Res.string.overview_use_location))
             }
         }
     }
@@ -480,38 +657,4 @@ private fun SummaryCard(
             content()
         }
     }
-}
-
-@Composable
-private fun Centered(modifier: Modifier, content: @Composable () -> Unit) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp)
-            .semantics { liveRegion = LiveRegionMode.Polite },
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) { content() }
-}
-
-/**
- * Groups shelters by city (parsed from the address tail after the last comma; "Otros" if none),
- * counting each. Cities that are among the quake's affected regions are listed first so aid near the
- * affected area is what the user sees, ahead of unaffected big cities.
- */
-internal fun sheltersByLocation(
-    shelters: List<Shelter>,
-    affected: List<AffectedRegion>,
-): List<Pair<String, Int>> {
-    val affectedNames = affected.map { it.region.name }.toSet()
-    val counts = shelters
-        .groupingBy { it.address.substringAfterLast(',', "").trim().ifBlank { "Otros" } }
-        .eachCount()
-    return counts.entries
-        .sortedWith(
-            compareByDescending<Map.Entry<String, Int>> { it.key in affectedNames }
-                .thenByDescending { it.value }
-                .thenBy { it.key },
-        )
-        .map { it.key to it.value }
 }

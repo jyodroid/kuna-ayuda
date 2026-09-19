@@ -8,6 +8,7 @@ import com.jyodroid.kunasismoayuda.core.domain.model.NewSos
 import com.jyodroid.kunasismoayuda.core.domain.model.SosSendResult
 import com.jyodroid.kunasismoayuda.core.domain.model.SosStatus
 import com.jyodroid.kunasismoayuda.core.domain.repository.SosRepository
+import com.jyodroid.kunasismoayuda.core.location.Coordinates
 import com.jyodroid.kunasismoayuda.core.location.LocationProvider
 import com.jyodroid.kunasismoayuda.core.location.LocationResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,8 @@ data class SosUiState(
     val phase: SosPhase = SosPhase.IDLE,
     val preciseLocation: Boolean = false,
     val pending: Int = 0,
+    // Pre-send location readiness for the chip: null = unknown/locating, true = have a fix, false = none.
+    val locationReady: Boolean? = null,
 )
 
 class SosViewModel(
@@ -65,6 +68,9 @@ class SosViewModel(
 
     private val _phase = MutableStateFlow(SosPhase.IDLE)
     private val _precise = MutableStateFlow(false)
+    private val _locationReady = MutableStateFlow<Boolean?>(null)
+    // A fix acquired when the screen opens, reused on send so the SOS goes out immediately.
+    private var preparedCoords: Coordinates? = null
 
     /** The selected country, so a public "I'm safe" check-in lands on the right country's list. */
     var country: String = "CO"
@@ -73,14 +79,29 @@ class SosViewModel(
     fun setCountry(code: String) { country = code }
 
     val state: StateFlow<SosUiState> =
-        combine(_phase, _precise, repository.pending) { phase, precise, pending ->
-            SosUiState(phase = phase, preciseLocation = precise, pending = pending)
+        combine(_phase, _precise, repository.pending, _locationReady) { phase, precise, pending, ready ->
+            SosUiState(phase = phase, preciseLocation = precise, pending = pending, locationReady = ready)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SosUiState())
+
+    /** Acquire a fix when the SOS screen opens, so the user sees whether coordinates will be attached
+     *  BEFORE sending — and so the send itself is instant. Never blocks the UI. */
+    fun prepareLocation() {
+        _locationReady.value = null // "locating…"
+        viewModelScope.launch {
+            val coords = when (val result = locationProvider.current()) {
+                is LocationResult.Granted -> result.coordinates
+                else -> null
+            }
+            preparedCoords = coords
+            _locationReady.value = coords != null
+        }
+    }
 
     fun sendSos(region: String, message: String, phone: String, name: String = "") {
         _phase.value = SosPhase.LOCATING
         viewModelScope.launch {
-            val coords = when (val result = locationProvider.current()) {
+            // Reuse the fix acquired on open; only read again if we don't have one yet.
+            val coords = preparedCoords ?: when (val result = locationProvider.current()) {
                 is LocationResult.Granted -> result.coordinates
                 else -> null
             }
@@ -113,5 +134,7 @@ class SosViewModel(
     fun reset() {
         _phase.value = SosPhase.IDLE
         _precise.value = false
+        _locationReady.value = null
+        preparedCoords = null
     }
 }

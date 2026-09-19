@@ -39,6 +39,8 @@ private enum class GuideSection { CHANNELS, TIPS }
 fun GuideScreen(
     country: Country,
     onModeration: () -> Unit,
+    // When a hazard is active, the Tips lead with During/After (what to do NOW) instead of Before.
+    hazardActive: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var section by remember { mutableStateOf(GuideSection.CHANNELS) }
@@ -60,7 +62,7 @@ fun GuideScreen(
         Box(Modifier.weight(1f).fillMaxSize()) {
             when (section) {
                 GuideSection.CHANNELS -> HelpDirectoryScreen(country)
-                GuideSection.TIPS -> SafetyTipsScreen(country)
+                GuideSection.TIPS -> SafetyTipsScreen(country, hazardActive = hazardActive)
             }
         }
         // Bottom row: the public "Privacy & Terms" link (left) + the discreet moderation entry (right).

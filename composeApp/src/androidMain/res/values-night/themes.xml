@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark variant: dark window background + light system-bar icons in dark mode. See values/themes.xml. -->
+<resources>
+    <style name="Theme.KunaAyuda" parent="@android:style/Theme.Material.NoActionBar" />
+</resources>

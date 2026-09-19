@@ -17,6 +17,16 @@ with a first-run country picker (persisted) and a country switcher on the Overvi
   sources (SGC primary for CO, USGS fallback/primary elsewhere), normalizes it, and owns moderated
   data (shelters/acopios, help & SOS requests) plus push fan-out in later milestones.
 
+**Two product lenses (decided 2026-09-14 — steer features by this).** The mobile/desktop **app** and the
+public **web app** (`webapp/`, `/app`) serve **two different users**: the **app = the citizen/victim
+lens** (someone who may be *in* a disaster — my location, the nearest help, quick, accessible,
+offline-friendly), and the **web app = the coordinator/analyst lens** (someone *analyzing* the situation,
+not necessarily on-site — hazards-on-a-map, charts, all-the-data). Practical rules that follow: the
+**mobile map is help-centers-only + location-first** (nearest-to-me, country fallback; hazards live in
+the Overview bubbles + fires list, never on the app map); **charts / hazards-on-a-map / analyst views are
+web-only.** When adding a feature, ask *which lens* — don't assume parity between the two. (See the
+`project_kuna_product_lenses` memory.)
+
 **Multi-country design:** the client sends `?country=CO|ID|ES|IT|PE` on `GET /api/quakes`, `/api/shelters`
 and `/api/board`; **the server owns the quake bounding box** (`upstream/CountryBBoxes`) and filters
 shelters/board by a `country` column. **The client owns the per-country region lists** (major cities)
@@ -468,6 +478,20 @@ depends on everything KMP; `:server` is independent.
   `mipmap-*/ic_launcher*.webp` never rendered (left, harmless). App **label is "Kuna Ayuda"**. The country
   picker is shown outside the app Scaffold, so it applies its own `safeDrawingPadding()` (else the title
   collides with the status bar / Dynamic Island).
+- **Android release compliance (Play findings, 2026-09).** The **Activity theme** is a minimal **DayNight**
+  `Theme.KunaAyuda` (`androidMain/res/values/themes.xml` = `@android:style/Theme.Material.Light.NoActionBar`,
+  `values-night/themes.xml` = the dark `Theme.Material.NoActionBar`; manifest `android:theme` points to it)
+  — replaced the light-only platform theme so dark mode gets a dark launch background + correctly-contrasted
+  system-bar icons. It sets **no** `android:statusBarColor`/`navigationBarColor` (both deprecated on API 35);
+  **edge-to-edge** is handled at runtime by `enableEdgeToEdge()` in `MainActivity`, and Compose already
+  consumes insets (Material3 `Scaffold` + the picker's `safeDrawingPadding`). We call **no** deprecated bar
+  setters ourselves (the Play "deprecated APIs" hit was `androidx.activity`'s own guarded edge-to-edge
+  back-compat, the sanctioned path). **R8 now shrinks resources too**: release has `isMinifyEnabled = true`
+  **+ `isShrinkResources = true`** (`composeApp/build.gradle.kts`) — safe because Compose Multiplatform
+  resources live under `composeResources/` (loaded via the generated `Res` accessors, NOT Android `res/`/`R`),
+  so the resource shrinker only touches classic `res/` (icons/theme/`app_name`), all manifest/code-referenced
+  (verified: `assembleRelease`'s shrinker report keeps `mipmap/ic_launcher*`, `string/app_name`,
+  `style/Theme_KunaAyuda`).
 
 ### Data sources
 - **USGS** FDSN GeoJSON (`earthquake.usgs.gov/fdsnws/event/1/query`), bounded to Colombia's bbox —
@@ -644,10 +668,32 @@ Channels and safety Tips — merged so we stay at 5 tabs). Nav labels are center
   the `time_*` strings) — the deliberate absolute/relative split is the point of the two cards. Tapping
   either sets `selectedQuake` (mirrors `selectedFire`) and the detail route renders
   `selectedQuake ?: featuredQuake` with that quake's own affected places + réplicas. Covered by
-  `QuakeRecencyTest`. Then **shelters per location** (grouped by city, affected cities first), **aid
-  network** offers vs requests (`BoardViewModel.summary`), and the **affected places** list. Réplicas
+  `QuakeRecencyTest`. **Overview redesign (2026-09):** a **StatusHeader** now leads — at-a-glance
+  **count chips** (sismos 30d · incendios activos · centros · red de ayuda, each tappable to its
+  route/tab; disabled when 0 for hazards), an **"Actualizado · hace N min"** freshness stamp
+  (`lastUpdatedMillis` = a `remember(state.quakes, firesState.fires)` timestamp, no VM change), a quick
+  **"Estoy a salvo"** shortcut (deep-links to Búsqueda → A-salvo via a hoisted `searchMode`), and, when
+  there are **no active hazards**, a reassuring **"Sin alertas activas"** card linking to the Guía. Each
+  hazard figure is now **window-labelled** so it reads honestly: the quake bubble says *"El más fuerte de
+  los últimos 30 días"* (`overview_quake_window`), the recent bubble *"El más reciente · últimas 48 h"*,
+  and the fire bubble shows the **active-fire count + window** (`overview_fire_count` fed by
+  `rankedFires.size` · `data_window_fires`). The **help-centers card is now short** — a single count
+  (`overview_shelters_count_short`) + a quick link, plus the **nearest help point** (name + km) once the
+  user grants location on demand (`onUseLocation` → the shared `fetchLocation`), replacing the old
+  fragile address-tail per-city breakdown (`sheltersByLocation` removed). Then **aid network** offers vs
+  requests (`BoardViewModel.summary`) and the **affected places** list. Réplicas
   come from `IdentifyAftershocksUseCase` (core/domain/usecase — spatial/temporal cluster heuristic,
   120 km / ±3 days, reusing `Geo.distanceKm`), surfaced via `QuakesViewModel.aftershocks(quake)`.
+  The **Refugios list** (`ui/shelters SheltersScreen`) also gained a **type filter** (chips over the
+  present `ShelterType`s) and a **revertible near-me** toggle (reuses the map's shared `userCoords`/
+  `fetchLocation`; when on, sorts by `Geo.distanceKm` and shows each card's distance) — mirroring the web
+  shelters list. **Product-strategy pivot (2026-09-14):** these round-1 changes are kept, but the
+  once-planned "flip the mobile map to hazards-only" is **CANCELLED** — the apps and the webapp now serve
+  **two different users** (see "Two product lenses" at the top). The mobile map instead went
+  **location-first, help-centers-only**: opening the Map tab requests a fix once (`mapLocateAttempted`
+  one-shot `LaunchedEffect` in `App.kt` ROUTE_MAP → `requestNearMe`), shows the nearest help centers
+  centered on the user, and falls back to the country view when permission is denied; fire markers were
+  removed from the app map (`markers = shelterMarkers`). Charts + hazards-on-a-map stay **web-only**.
 - **Guide tips** each show a monochrome illustrative vector (`composeResources/drawable/tip_*.xml`) in
   the `TipCard`. `SafetyTipsScreen` groups tips by `Phase` (Before/During/After plus a **Mental health**
   section — line 192 opción 4 / 106 / 123, normal reactions, calming techniques, supporting children,
@@ -678,12 +724,24 @@ Channels and safety Tips — merged so we stay at 5 tabs). Nav labels are center
   `POST /api/board/{id}/resolve` — the owner secret from the create response is persisted locally in
   `core/data` `settings/PostOwnershipStore` (okio JSON, sibling to `CountryStore`), and
   `BoardViewModel` exposes the owned ids so only the owning device sees the affordance. **SOS is a persistent
-  red button in the `TopAppBar`** (always one tap away on every screen — not a tab), routing to the
-  `sos` screen — now **help-only**: a large "PEDIR AYUDA" button, the offline beacon, and the emergency
-  call. The **"Estoy a salvo" check-in moved to Búsqueda y reencuentro → A salvo** (`ui/search`, next to
+  red `Button` in the `TopAppBar`** (top-right, always one tap away; hidden on the SOS screen + moderator
+  flows — moderation shows "Sign out" instead). (A bottom-anchored SOS FAB was tried in the 2026-09 sweep but
+  **reverted** — it overlapped scroll content, e.g. the Overview footer, and clashed with the per-screen
+  bottom-right FABs on Board/Búsqueda/Map.) It routes
+  to the `sos` screen — **help-only**: a large "PEDIR AYUDA" button, a **live "location ready ✓/✗" chip**
+  (`SosViewModel.prepareLocation()` acquires a fix on screen-open so the user knows what the rescuer gets
+  BEFORE sending, and the send reuses it), the offline beacon, and the emergency call. Android now takes a
+  **fresh one-shot GPS fix** (`getCurrentLocation`, ≤8s, falls back to last-known) instead of only stale
+  last-known. The **"Estoy a salvo" check-in moved to Búsqueda y reencuentro → A salvo** (`ui/search`, next to
   the public list it feeds): a rationale + an "Estoy a salvo" FAB → name + Publicar/Cancelar →
-  `SafeViewModel.sendSafe` (offline-first via the `SosOutbox`; queued when there's no signal). The board
-  and both Búsqueda tabs are now wrapped in a **`PullToRefreshBox`** (like Overview).
+  `SafeViewModel.sendSafe` (offline-first via the `SosOutbox`; queued when there's no signal). The Overview
+  StatusHeader's "Estoy a salvo" shortcut deep-links straight to that A-salvo tab (hoisted `searchMode`).
+  The board and both Búsqueda tabs are now wrapped in a **`PullToRefreshBox`** (like Overview). The **aid
+  board** also has a best-effort **"nearest first"** near-me toggle (`BoardViewModel.toggleNearMe` +
+  `core/domain RegionLocate` matches each post's region NAME to a `CountryRegions` city → `Geo.distanceKm`;
+  unmatched posts sink). The **Guide → Tips** reorder to **During/After-first when a hazard is active**
+  (`GuideScreen(hazardActive=…)` → `SafetyTipsScreen`), and the **first-run country picker** floats the
+  device-locale country to the top with a "Sugerido" badge (`ui/settings deviceRegionCode` expect/actual).
 - **Moderation is all-countries by default, with a country filter + badge** (not a hard scope — nothing
   goes unmoderated). The board moderation queue (`ui/moderation`) and the SOS responder view (`ui/sos`)
   show a **country badge** on every card (`ui/CountryFilterUi` `CountryBadge`, flag+code from the

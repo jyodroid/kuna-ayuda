@@ -11,12 +11,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
@@ -31,6 +34,7 @@ import com.jyodroid.kunasismoayuda.resources.country_peru
 import com.jyodroid.kunasismoayuda.resources.country_picker_subtitle
 import com.jyodroid.kunasismoayuda.resources.country_picker_title
 import com.jyodroid.kunasismoayuda.resources.country_spain
+import com.jyodroid.kunasismoayuda.resources.country_suggested
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -66,10 +70,21 @@ fun CountryPickerScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(8.dp))
-        Country.entries.forEach { country ->
+        // Suggest the device's country (from its locale/region — offline, no permission) by floating it
+        // to the top with a "Sugerido" badge. It's only a hint: the choice is still an explicit tap.
+        val suggested = remember {
+            deviceRegionCode()?.let { rc -> Country.entries.firstOrNull { it.code.equals(rc, ignoreCase = true) } }
+        }
+        val ordered = if (suggested != null) {
+            listOf(suggested) + Country.entries.filter { it != suggested }
+        } else {
+            Country.entries.toList()
+        }
+        ordered.forEach { country ->
             CountryOption(
                 flag = country.flag,
                 label = stringResource(country.labelRes()),
+                suggested = country == suggested,
                 onClick = { onSelect(country) },
             )
         }
@@ -81,6 +96,7 @@ fun CountryPickerScreen(
 private fun CountryOption(
     flag: String,
     label: String,
+    suggested: Boolean,
     onClick: () -> Unit,
 ) {
     Card(
@@ -93,7 +109,20 @@ private fun CountryOption(
         ) {
             Text(text = flag, style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.width(16.dp))
-            Text(text = label, style = MaterialTheme.typography.titleMedium)
+            Text(text = label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            if (suggested) {
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    shape = RoundedCornerShape(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.country_suggested),
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    )
+                }
+            }
         }
     }
 }

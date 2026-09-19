@@ -12,6 +12,7 @@
     <string name="country_picker_title">Pilih negara Anda</string>
     <string name="country_picker_subtitle">Anda akan melihat gempa, tempat terdampak, dan titik bantuan untuk negara tersebut. Anda dapat mengubahnya nanti di Ringkasan.</string>
     <string name="country_change">Ubah</string>
+    <string name="country_suggested">Disarankan</string>
     <string name="country_colombia">Kolombia</string>
     <string name="country_indonesia">Indonesia</string>
     <string name="country_spain">Spanyol</string>
@@ -23,7 +24,6 @@
     <string name="overview_recent_quake_title">Aktivitas terbaru</string>
     <string name="overview_quake_today">Hari ini</string>
     <string name="overview_shelters_title">Pusat bantuan</string>
-    <string name="overview_shelters_count">%1$d pusat di %2$d tempat</string>
     <string name="overview_network_title">Jaringan bantuan</string>
     <string name="overview_network_counts">%1$d tawaran · %2$d permintaan</string>
     <string name="overview_affected_title">Tempat terdampak</string>
@@ -382,6 +382,13 @@
     <string name="story_outdoor_1">Menuju area terbuka</string>
     <string name="story_outdoor_2">Berhenti dan tetap di mobil</string>
     <string name="story_outdoor_3">Lindungi kepala sampai berhenti</string>
+    <string name="story_windows_1">Menjauhlah dari jendela</string>
+    <string name="story_windows_2">Hindari fasad dan benda yang jatuh</string>
+    <string name="story_windows_3">Jangan pakai lift; gunakan tangga</string>
+    <string name="story_comms_1">Kirim SMS ke tetangga agar jaringan tidak kelebihan beban</string>
+    <string name="story_gas_1">Tutup katup gas</string>
+    <string name="story_gas_2">Jangan nyalakan api atau sakelar</string>
+    <string name="story_gas_3">Beri ventilasi dengan membuka jendela</string>
 
     <string name="tip_before_1_title">Siapkan tas siaga</string>
     <string name="tip_before_1_body">Air, makanan tahan lama, senter, radio, kotak P3K, dokumen, dan peluit.</string>
@@ -443,4 +450,21 @@
     <string name="time_minutes_ago">%1$d mnt lalu</string>
     <string name="time_hours_ago">%1$d jam lalu</string>
     <string name="time_days_ago">%1$d hr lalu</string>
+
+    <!-- Overview redesign: status header, count chips, data-window notes, nearest help point -->
+    <string name="overview_shelters_count_short">%1$d pusat bantuan</string>
+    <string name="overview_quake_window">Terkuat dalam 30 hari terakhir</string>
+    <string name="overview_recent_quake_window">Terbaru · 48 jam terakhir</string>
+    <string name="data_window_quakes">30 hari terakhir</string>
+    <string name="data_window_fires">48 jam terakhir</string>
+    <string name="overview_status_calm">Tidak ada peringatan aktif</string>
+    <string name="overview_status_calm_sub">Lihat Panduan untuk bersiap</string>
+    <string name="overview_guide_cta">Lihat Panduan</string>
+    <string name="overview_updated">Diperbarui · %1$s</string>
+    <string name="overview_nearest_shelter">Pusat bantuan terdekat</string>
+    <string name="overview_use_location">Tampilkan yang terdekat</string>
+    <string name="overview_chip_quakes">Gempa</string>
+    <string name="overview_chip_fires">Kebakaran</string>
+    <string name="overview_chip_shelters">Pusat</string>
+    <string name="overview_chip_board">Jaringan bantuan</string>
 </resources>
