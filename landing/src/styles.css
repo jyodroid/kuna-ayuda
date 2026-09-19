@@ -85,6 +85,8 @@ img { max-width: 100%; height: auto; }
   display: inline-block; background: var(--surface-2); color: var(--teal);
   border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; font-size: 0.85rem; font-weight: 600;
 }
+a.badge { text-decoration: none; cursor: pointer; transition: background .15s, border-color .15s; }
+a.badge:hover { background: var(--surface); border-color: var(--teal); }
 
 /* Sections */
 section { padding: 48px 0; }

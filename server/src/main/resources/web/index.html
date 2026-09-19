@@ -9,12 +9,18 @@
       content="Kuna Ayuda: una red de ayuda ante desastres (sismos e incendios) para Colombia, Indonesia, España, Italia y Perú. Sismos e incendios en vivo, mapa de puntos de ayuda, red de ayuda mutua y SOS."
     />
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <!-- TODO: set canonical + og:url once the domain is registered -->
+    <link rel="canonical" href="https://kunaayuda.org/" />
     <meta property="og:title" content="Kuna Ayuda" />
     <meta property="og:description" content="Red de ayuda ante desastres para tu comunidad." />
     <meta property="og:type" content="website" />
-    <script type="module" crossorigin src="/assets/main-DkHqQJNj.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/main-BW7l2YDL.css">
+    <meta property="og:url" content="https://kunaayuda.org/" />
+    <meta property="og:image" content="https://kunaayuda.org/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Kuna Ayuda" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="module" crossorigin src="/assets/main-BqUjcYKi.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/main-DkxxOiXJ.css">
   </head>
   <body>
     <span data-doctitle data-lang="es">Kuna Ayuda — Red de ayuda ante desastres</span>
@@ -28,6 +34,7 @@
         </a>
         <nav class="nav">
           <a href="#features"><span data-lang="es">Qué hace</span><span data-lang="en" hidden>Features</span></a>
+          <a href="/app/"><span data-lang="es">App web</span><span data-lang="en" hidden>Web app</span></a>
           <a href="#download"><span data-lang="es">Descargar</span><span data-lang="en" hidden>Download</span></a>
           <a href="/privacy"><span data-lang="es">Privacidad</span><span data-lang="en" hidden>Privacy</span></a>
           <span class="lang-toggle" role="group" aria-label="Language">
@@ -46,10 +53,13 @@
           <!-- TODO: replace with your final tagline -->
           <p class="tagline" data-lang="es">Una red de ayuda ante desastres, para tu comunidad.</p>
           <p class="tagline" data-lang="en" hidden>A disaster-relief resource network, for your community.</p>
-          <span class="badge">
-            <span data-lang="es">Apps móviles: próximamente · Escritorio: disponible</span>
-            <span data-lang="en" hidden>Mobile apps: coming soon · Desktop: available</span>
-          </span>
+          <a class="badge" href="#download">
+            <span data-lang="es">Disponible en Android, iOS y escritorio</span>
+            <span data-lang="en" hidden>Available on Android, iOS &amp; desktop</span>
+          </a>
+          <p class="hero-cta">
+            <a class="btn" href="/app/"><span data-lang="es">Abrir la app web</span><span data-lang="en" hidden>Open the web app</span></a>
+          </p>
         </div>
       </section>
 
@@ -133,11 +143,11 @@
       <section id="download">
         <div class="wrap">
           <h2><span data-lang="es">Descargar</span><span data-lang="en" hidden>Download</span></h2>
-          <p class="lead" data-lang="es">La app de escritorio ya está disponible. Las apps para Android e iOS llegarán pronto a las tiendas.</p>
-          <p class="lead" data-lang="en" hidden>The desktop app is available now. Android and iOS apps are coming soon to the stores.</p>
+          <p class="lead" data-lang="es">Ya disponible para Android, iOS y escritorio.</p>
+          <p class="lead" data-lang="en" hidden>Available now for Android, iOS and desktop.</p>
           <div class="downloads">
             <div class="dl">
-              <h3 data-lang="es">💻 Escritorio</h3><h3 data-lang="en" hidden>💻 Desktop</h3>
+              <h3 data-lang="es"><i class="fa-solid fa-desktop" aria-hidden="true"></i> Escritorio</h3><h3 data-lang="en" hidden><i class="fa-solid fa-desktop" aria-hidden="true"></i> Desktop</h3>
               <p data-lang="es">Instalador nativo para macOS, Windows y Linux. No necesitas nada más.</p>
               <p data-lang="en" hidden>Native installer for macOS, Windows and Linux. Nothing else to install.</p>
               <div class="dl-row">
@@ -165,16 +175,16 @@
               </details>
             </div>
             <div class="dl">
-              <h3>📱 Android</h3>
-              <p data-lang="es">Próximamente en Google Play.</p>
-              <p data-lang="en" hidden>Coming soon to Google Play.</p>
-              <span class="btn" aria-disabled="true"><span data-lang="es">Próximamente</span><span data-lang="en" hidden>Coming soon</span></span>
+              <h3><i class="fa-brands fa-android" aria-hidden="true"></i> Android</h3>
+              <p data-lang="es">Ya disponible para tu dispositivo con Android.</p>
+              <p data-lang="en" hidden>Available now for your Android device.</p>
+              <a class="btn" href="https://play.google.com/store/apps/details?id=com.jyodroid.kunasismoayuda&pcampaignid=web_share" target="_blank" rel="noopener noreferrer"><span data-lang="es">Descargar en Google Play</span><span data-lang="en" hidden>Download on Google Play</span></a>
             </div>
             <div class="dl">
-              <h3>🍎 iOS</h3>
-              <p data-lang="es">Próximamente en la App Store.</p>
-              <p data-lang="en" hidden>Coming soon to the App Store.</p>
-              <span class="btn" aria-disabled="true"><span data-lang="es">Próximamente</span><span data-lang="en" hidden>Coming soon</span></span>
+              <h3><i class="fa-brands fa-apple" aria-hidden="true"></i> iOS</h3>
+              <p data-lang="es">Ya disponible para iPhone e iPad.</p>
+              <p data-lang="en" hidden>Available now for iPhone and iPad.</p>
+              <a class="btn" href="https://apps.apple.com/app/kuna-ayuda/id6803325410"><span data-lang="es">Descargar en la App Store</span><span data-lang="en" hidden>Download on the App Store</span></a>
             </div>
           </div>
         </div>
